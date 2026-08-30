@@ -26,6 +26,7 @@ public class BackgroundJobWorker {
     @ConfigProperty(name="developer-analytics.worker.id", defaultValue="worker-1") String workerId;
 
     @Scheduled(every="{developer-analytics.worker.poll-interval}", concurrentExecution=Scheduled.ConcurrentExecution.SKIP)
+    @Transactional
     void poll() {
         if(!"worker".equalsIgnoreCase(runtimeRole)) return;
         jobs.claimNext(workerId, OffsetDateTime.now()).ifPresent(this::execute);
@@ -37,7 +38,6 @@ public class BackgroundJobWorker {
         recovery.recoverInterruptedJobs();
     }
 
-    @Transactional
     void execute(BackgroundJob job) {
         MDC.put("backgroundJobId", job.getId().toString());
         try {
