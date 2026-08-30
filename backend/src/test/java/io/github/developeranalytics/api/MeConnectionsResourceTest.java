@@ -2,10 +2,10 @@ package io.github.developeranalytics.api;
 
 import io.github.developeranalytics.auth.AuthenticationService;
 import io.github.developeranalytics.domain.model.AppUser;
-import io.github.developeranalytics.domain.model.ProviderConnection;
 import io.github.developeranalytics.support.TestFixtureService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.Cookie;
+import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
@@ -59,10 +59,14 @@ void onlyCurrentUsersConnectionsAreVisibleAndMutable() {
 
     given()
         .cookie(cookie)
+        .contentType(ContentType.JSON)
+        .body("{\"dataDisposition\":\"PRESERVE_ANALYSED_DATA\"}")
     .when()
         .post("/api/me/connections/github/disconnect")
     .then()
         .statusCode(200)
-        .body("status", equalTo("DISCONNECTED"));
+        .body("connection.status", equalTo("DISCONNECTED"))
+        .body("dataDisposition", equalTo("PRESERVE_ANALYSED_DATA"))
+        .body("analysedDataRemoved", equalTo(false));
 }
 }
