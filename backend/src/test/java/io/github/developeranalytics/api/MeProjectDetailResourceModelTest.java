@@ -27,7 +27,8 @@ class MeProjectDetailResourceModelTest {
                         false,
                         false,
                         List.of("api"),
-                        OffsetDateTime.parse("2026-08-20T08:00:00Z")
+                        OffsetDateTime.parse("2026-08-20T08:00:00Z"),
+                        false
                 ),
                 new MeProjectDetailResource.Activity(
                         10, 2, 1, 1, 100, 40,
