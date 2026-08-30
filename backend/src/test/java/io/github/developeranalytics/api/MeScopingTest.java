@@ -1,19 +1,14 @@
 package io.github.developeranalytics.api;
 
 import io.github.developeranalytics.auth.AuthenticationService;
-import io.github.developeranalytics.auth.CryptoTokens;
-import io.github.developeranalytics.domain.auth.UserSession;
 import io.github.developeranalytics.domain.model.AppUser;
-import io.github.developeranalytics.domain.model.ProviderIdentity;
 import io.github.developeranalytics.domain.model.SourceRepository;
+import io.github.developeranalytics.support.TestFixtureService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.Cookie;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 
-import java.time.OffsetDateTime;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
@@ -21,11 +16,10 @@ import static org.hamcrest.Matchers.hasSize;
 
 @QuarkusTest
 class MeScopingTest {
-
     @Inject
-    EntityManager entityManager;
+    TestFixtureService fixtures;
 
-    @Test
+@Test
     void unauthenticatedMeIsRejected() {
         given()
         .when()
@@ -34,58 +28,38 @@ class MeScopingTest {
             .statusCode(401);
     }
 
-    @Test
-    @Transactional
-    void repositoryEndpointsOnlyReturnCurrentUsersData() {
-        AppUser userA = AppUser.create();
-        entityManager.persist(userA);
 
-        ProviderIdentity identityA = new ProviderIdentity(
-                userA, "github", "1001", "alice", "Alice");
-        entityManager.persist(identityA);
+@Test
+void repositoryEndpointsOnlyReturnCurrentUsersData() {
+    AppUser userA = fixtures.createUserWithSession(
+            "1001", "alice", "Alice", "session-token-user-a");
+    SourceRepository repositoryA = fixtures.createRepository(
+            userA, "repo-a", "alice", "repository-a");
 
-        AppUser userB = AppUser.create();
-        entityManager.persist(userB);
+    AppUser userB = fixtures.createUserWithSession(
+            "1002", "bob", "Bob", "session-token-user-b");
+    SourceRepository repositoryB = fixtures.createRepository(
+            userB, "repo-b", "bob", "repository-b");
 
-        ProviderIdentity identityB = new ProviderIdentity(
-                userB, "github", "1002", "bob", "Bob");
-        entityManager.persist(identityB);
+    Cookie cookie = new Cookie.Builder(
+            AuthenticationService.SESSION_COOKIE,
+            "session-token-user-a"
+    ).build();
 
-        SourceRepository own = new SourceRepository(
-                userA, "github", "repo-a", "alice", "alice-repo");
-        entityManager.persist(own);
+    given()
+        .cookie(cookie)
+    .when()
+        .get("/api/me/repositories")
+    .then()
+        .statusCode(200)
+        .body("$", hasSize(1))
+        .body("[0].id", equalTo(repositoryA.getId().toString()));
 
-        SourceRepository other = new SourceRepository(
-                userB, "github", "repo-b", "bob", "bob-repo");
-        entityManager.persist(other);
-
-        String rawToken = "session-token-user-a";
-        UserSession session = new UserSession(
-                userA,
-                CryptoTokens.sha256(rawToken),
-                OffsetDateTime.now().plusHours(1));
-        entityManager.persist(session);
-
-        entityManager.flush();
-
-        Cookie sessionCookie = new Cookie.Builder(
-                AuthenticationService.SESSION_COOKIE, rawToken)
-                .build();
-
-        given()
-            .cookie(sessionCookie)
-        .when()
-            .get("/api/me/repositories")
-        .then()
-            .statusCode(200)
-            .body("$", hasSize(1))
-            .body("[0].name", equalTo("alice-repo"));
-
-        given()
-            .cookie(sessionCookie)
-        .when()
-            .get("/api/me/repositories/" + other.getId())
-        .then()
-            .statusCode(404);
-    }
+    given()
+        .cookie(cookie)
+    .when()
+        .get("/api/me/repositories/" + repositoryB.getId())
+    .then()
+        .statusCode(404);
+}
 }

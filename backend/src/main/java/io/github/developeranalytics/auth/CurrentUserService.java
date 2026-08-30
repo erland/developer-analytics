@@ -6,6 +6,7 @@ import io.github.developeranalytics.persistence.auth.AuthenticationRepository;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.OffsetDateTime;
@@ -16,6 +17,7 @@ public class CurrentUserService {
     @Inject
     AuthenticationRepository authenticationRepository;
 
+    @Transactional
     public CurrentUser requireCurrentUser(String rawSessionToken) {
         if (rawSessionToken == null || rawSessionToken.isBlank()) {
             throw new NotAuthorizedException("Authentication required");

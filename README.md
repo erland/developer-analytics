@@ -245,3 +245,10 @@ The backend now sets:
 `quarkus.hibernate-orm.mapping.format.global=ignore`
 
 This follows Quarkus' recommended behavior when the application does not need REST-specific JSON customization for Hibernate JSON columns, keeping persistence serialization independent from the REST ObjectMapper.
+
+
+## CI correction – committed REST test fixtures
+
+After the Hibernate JSON fix, Quarkus started correctly and all Flyway migrations succeeded. Three REST tests still returned `401` because their session fixtures were created in an uncommitted test transaction while the HTTP request executed in a separate transaction.
+
+A dedicated `TestFixtureService` now creates authentication/repository/connection fixtures in `REQUIRES_NEW` transactions, committing them before RestAssured calls the API. This matches real request visibility and preserves the intended `/me` authentication tests.
