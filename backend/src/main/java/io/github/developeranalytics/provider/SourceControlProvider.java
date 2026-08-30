@@ -10,6 +10,16 @@ public interface SourceControlProvider {
             String pageCursor
     ) throws ProviderException;
 
+    ProviderRepositorySnapshot fetchRepositorySnapshot(
+            ProviderAccessToken accessToken,
+            ProviderRepository repository
+    ) throws ProviderException;
+
+    ProviderLanguageBreakdown fetchRepositoryLanguages(
+            ProviderAccessToken accessToken,
+            ProviderRepository repository
+    ) throws ProviderException;
+
     PagedResult<ProviderContribution> listContributions(
             ProviderAccessToken accessToken,
             ProviderRepository repository,

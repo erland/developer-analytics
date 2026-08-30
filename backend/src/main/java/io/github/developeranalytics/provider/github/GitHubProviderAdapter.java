@@ -71,6 +71,41 @@ public class GitHubProviderAdapter implements SourceControlProvider {
 
 
 
+
+@Override
+public ProviderLanguageBreakdown fetchRepositoryLanguages(
+        ProviderAccessToken accessToken,
+        ProviderRepository repository
+) throws ProviderException {
+    String fullName = repository.fullName();
+    if (fullName == null || !fullName.contains("/")) {
+        throw new ProviderException("GitHub repository full name is required", 0);
+    }
+
+    HttpResponse<String> response = sendGet(
+            URI.create(API_BASE + "/repos/" + fullName + "/languages"),
+            accessToken
+    );
+
+    JsonNode object = parse(response.body());
+    if (!object.isObject()) {
+        throw new ProviderException(
+                "GitHub languages response was not an object",
+                response.statusCode()
+        );
+    }
+
+    Map<String, Long> languages = new LinkedHashMap<>();
+    object.fields().forEachRemaining(entry ->
+            languages.put(entry.getKey(), entry.getValue().asLong())
+    );
+
+    return new ProviderLanguageBreakdown(
+            languages,
+            parseRateLimit(response)
+    );
+}
+
 @Override
 public PagedResult<ProviderContribution> listContributions(
         ProviderAccessToken accessToken,
@@ -368,9 +403,25 @@ HttpResponse<String> sendGet(URI uri, ProviderAccessToken accessToken) throws Pr
                 node.path("archived").asBoolean(false),
                 parseDate(node, "created_at"),
                 parseDate(node, "updated_at"),
-                parseDate(node, "pushed_at")
+                parseDate(node, "pushed_at"),
+                node.hasNonNull("description") ? node.get("description").asText() : null,
+                mapTopics(node)
         );
     }
+
+
+private List<String> mapTopics(JsonNode node) {
+    JsonNode topics = node.path("topics");
+    if (!topics.isArray()) return List.of();
+
+    List<String> result = new ArrayList<>();
+    for (JsonNode topic : topics) {
+        if (topic.isTextual() && !topic.asText().isBlank()) {
+            result.add(topic.asText());
+        }
+    }
+    return result;
+}
 
     ProviderRateLimit parseRateLimit(HttpResponse<?> response) {
         Integer limit = parseIntegerHeader(response, "X-RateLimit-Limit");

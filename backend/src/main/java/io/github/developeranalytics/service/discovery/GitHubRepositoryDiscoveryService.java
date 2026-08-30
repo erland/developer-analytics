@@ -80,6 +80,8 @@ public DiscoveryResult discover(AppUser user) throws ProviderException {
                         providerRepository.name(),
                         providerRepository.fullName(),
                         providerRepository.htmlUrl(),
+                        providerRepository.description(),
+                        providerRepository.topics(),
                         mapOwnerType(providerRepository.ownerType()),
                         ownership(providerUser, providerRepository),
                         mapVisibility(providerRepository.visibility()),

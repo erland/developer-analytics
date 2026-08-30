@@ -246,3 +246,283 @@ Important safeguards:
 - the API returns `nextOffset` so the frontend or a later orchestration job can continue through large inventories.
 
 This keeps repository inventories with hundreds of projects from creating an uncontrolled burst of duplicate worker jobs.
+
+
+## Contribution sync progress and completion state
+
+Step 32 adds persistent contribution-sync state per repository.
+
+Each run records status (`QUEUED`, `RUNNING`, `COMPLETED`, `FAILED`, `RATE_LIMITED`), contributions seen/created/updated, pages processed, rate-limit information, timestamps and the last error.
+
+Authenticated endpoints:
+
+- `GET /api/me/contribution-sync-runs`
+- `GET /api/me/contribution-sync-runs?repositoryId=<uuid>`
+- `GET /api/me/contribution-sync-runs/{id}`
+
+The frontend can now follow repository discovery and contribution discovery without reading internal background-job records.
+
+
+## Technology catalogue
+
+Step 33 introduces a provider-neutral technology catalogue.
+
+Each technology has:
+
+- a stable key,
+- display name,
+- category,
+- aliases,
+- language evidence,
+- file/path evidence,
+- manifest/dependency evidence,
+- active/inactive state.
+
+The built-in catalogue is stored in `src/main/resources/technology-catalogue.json`, while the database table allows the catalogue to become configurable later without changing repository-analysis code.
+
+Initial entries cover common languages, frameworks, databases, containers, CI/CD and infrastructure tooling. The next detection steps consume the evidence fields rather than hard-coding technology names into scanners.
+
+Endpoint:
+
+- `GET /api/technology-catalogue`
+
+
+## Language-based technology evidence
+
+Step 34 uses GitHub's repository language breakdown as deterministic technology evidence.
+
+For every observed GitHub language that matches a catalogue entry, the backend stores:
+
+- repository,
+- technology,
+- evidence type `LANGUAGE`,
+- strength `OBSERVED`,
+- provider language name,
+- measured byte count,
+- observation timestamp.
+
+This intentionally records evidence rather than declaring that a user is "skilled" or an "expert" in a technology.
+
+Endpoints:
+
+- `POST /api/me/sync/github/repositories/{repositoryId}/language-evidence`
+- `GET /api/me/repositories/{repositoryId}/technology-evidence`
+
+Language evidence jobs are user-scoped and deduplicated per repository.
+
+
+## File- and manifest-based technology evidence
+
+Step 35 adds deterministic detection from repository structure and selected text manifests.
+
+The GitHub adapter:
+
+- reads the default branch tree,
+- selects relevant technology files,
+- fetches textual content for a bounded number of manifests,
+- never clones the full repository or stores raw source code as part of normal analysis.
+
+Evidence types:
+
+- `FILE` — presence/path of a relevant file or directory,
+- `MANIFEST` — deterministic token/dependency match inside a selected manifest.
+
+Examples include `pom.xml`, `package.json`, `Dockerfile`, Compose, GitHub Actions workflows, Kubernetes/Helm files, Terraform and Swift package files.
+
+Endpoint:
+
+- `POST /api/me/sync/github/repositories/{repositoryId}/file-manifest-evidence`
+
+Results remain available through:
+
+- `GET /api/me/repositories/{repositoryId}/technology-evidence`
+
+
+## Technology evidence strength
+
+Step 36 converts accumulated evidence into a transparent user-level technology assessment.
+
+The model considers:
+
+- number of repositories,
+- number of independent evidence types,
+- total evidence volume,
+- duration between first and latest observation,
+- recent repository activity.
+
+Labels:
+
+- `EXPOSURE`
+- `LIMITED`
+- `MODERATE`
+- `STRONG`
+
+The score and its point breakdown are stored in `rationale` so the result is explainable. The label explicitly describes evidence strength and must not be presented as formal skill proficiency.
+
+Endpoints:
+
+- `POST /api/me/technology-assessments/recalculate`
+- `GET /api/me/technology-assessments`
+
+
+## Technology timeline
+
+Step 37 builds chart-ready technology timelines from deterministic evidence and contribution activity.
+
+For each observed technology the API exposes:
+
+- first observed use,
+- latest observed use,
+- total observed repository count,
+- public repository count,
+- private repository count,
+- projects per year,
+- contribution activity per year.
+
+Monthly activity is stored in the existing `technology_activity_month` aggregate table. Activity is attributed to a technology when a contribution occurred in a repository where that technology has observed evidence.
+
+Endpoints:
+
+- `POST /api/me/technology-timeline/recalculate`
+- `GET /api/me/technology-timeline`
+
+The API keeps public/private counts separate so later report modes can omit private repository identity while still using aggregated private evidence.
+
+
+## Project category taxonomy
+
+Step 38 introduces a data-driven project taxonomy. Categories are stored as rows, not as a Java enum, so the taxonomy can evolve without a code deployment.
+
+Built-in categories include web application, mobile application, game, backend service, API, library, framework, developer tooling, automation, infrastructure/platform, DevOps/CI/CD, security, observability, data/database, integration, AI/ML, architecture/modelling, documentation/education and experiment/prototype.
+
+Repositories may have multiple category assignments. Assignments keep their source (`DETERMINISTIC`, `AI`, `MANUAL`), confidence and rationale separately.
+
+Endpoint:
+
+- `GET /api/project-category-taxonomy`
+
+
+## Deterministic project classification
+
+Step 39 classifies repositories before any AI provider is involved. Signals include GitHub topics, detected technologies, known files/repository structure, and repository name/description metadata.
+
+Each category receives an explicit point score from independent signals. Assignments are stored with source `DETERMINISTIC`, confidence (`LOW`, `MEDIUM`, `HIGH`) and a rationale containing the exact supporting signals. Repositories can have multiple categories, and deterministic assignments are recalculated rather than appended indefinitely.
+
+Endpoints:
+
+- `POST /api/me/sync/repositories/{repositoryId}/classification`
+- `GET /api/me/repositories/{repositoryId}/project-categories`
+
+Repository discovery now persists GitHub description and topics. This step also restores the missing step-35 enqueue method for file/manifest evidence so the job service remains internally consistent.
+
+
+## Project significance and user involvement
+
+Step 40 deliberately keeps two concepts separate.
+
+### Project significance
+
+The project-side assessment uses explainable sub-scores for:
+
+- popularity proxy,
+- observed contribution volume/contributor breadth proxy,
+- longevity,
+- organisation/ecosystem context,
+- current activity.
+
+The current V1 does not yet collect GitHub stars/watchers, so the popularity component explicitly records that it is using repository-state proxies rather than pretending those metrics are available.
+
+### User involvement
+
+The user-side assessment independently uses:
+
+- contribution count,
+- duration of involvement,
+- recency,
+- relative share of the observed project contributions.
+
+Both sides receive their own score, level and rationale. The ranking endpoint sorts by project significance first and involvement second, but it returns both complete breakdowns rather than a single opaque global score.
+
+Endpoints:
+
+- `POST /api/me/project-significance/recalculate`
+- `GET /api/me/project-significance`
+
+
+## Significant external projects
+
+Step 41 identifies repositories not owned directly by the user where at least one of the two step-40 dimensions is high:
+
+- project significance is `HIGH` or `VERY_HIGH`,
+- user involvement is `HIGH` or `VERY_HIGH`,
+- or both.
+
+The result keeps the dimensions separate and adds a `matchReason`:
+
+- `PROJECT_SIGNIFICANCE`
+- `USER_INVOLVEMENT`
+- `BOTH`
+
+Each API result includes both complete rationale maps so the user can see exactly why the project surfaced.
+
+Endpoint:
+
+- `GET /api/me/significant-external-projects`
+
+Projects directly owned by the user are excluded; organisation-owned and otherwise external repositories remain eligible.
+
+
+## Activity views
+
+Step 44 adds a user-scoped activity endpoint:
+
+- `GET /api/me/activity?from=YYYY-MM-DD&to=YYYY-MM-DD`
+
+The endpoint calculates commit counts per year and month, active projects, average/median commit size and additions/deletions from measured contribution records. Date filters are optional and inclusive by calendar date.
+
+
+## Project inventory
+
+Step 45 adds a paged project inventory endpoint with server-side filtering:
+
+- `GET /api/me/project-inventory`
+
+Supported query parameters:
+
+- `page`
+- `pageSize`
+- `search`
+- `ownership=own|external`
+- `visibility=public|private`
+- `activity=active|inactive`
+- `category=<category-key>`
+- `technology=<technology-key>`
+
+Inventory rows include category and technology metadata for display and filtering.
+
+
+## Project detail
+
+Step 46 adds a consolidated authenticated endpoint:
+
+- `GET /api/me/projects/{repositoryId}`
+
+It returns repository metadata, contribution/activity timeline, technology evidence, project categories, the separate project-significance and user-involvement assessments, and repository synchronisation state.
+
+
+## Technology views
+
+Step 47 adds a consolidated authenticated technology endpoint:
+
+- `GET /api/me/technologies`
+
+Each technology includes its evidence level and score, project/evidence counts, first/latest observation, recent-project count, monthly activity timeline and up to five representative projects. The response preserves the explicit distinction between evidence strength and formal proficiency.
+
+
+## Project-type views
+
+Step 48 adds an authenticated project-type analytics endpoint:
+
+- `GET /api/me/project-types`
+
+Each category returns the number of classified projects, total observed contribution activity, monthly category evolution with active-project counts, and up to five representative projects. Repositories may appear in multiple categories by design.

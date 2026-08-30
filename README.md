@@ -259,3 +259,124 @@ A dedicated `TestFixtureService` now creates authentication/repository/connectio
 The final failing backend test created two GitHub `ProviderIdentity` rows for the same application user, conflicting with the model's unique `(user_id, provider)` constraint.
 
 The connection test fixture now reuses the user's existing GitHub identity and only creates one when none exists. This matches the production identity model.
+
+
+## Development status – Step 32
+
+Step 32 is complete: contribution discovery now persists per-repository progress, completion/error state and provider rate-limit information, exposed through `/api/me/contribution-sync-runs`.
+
+Next: **Step 33** according to the development plan.
+
+
+## Development status – Step 33
+
+Step 33 is complete: the backend now has a provider-neutral technology catalogue with stable keys, categories, aliases and evidence definitions for language-, file- and manifest-based detection.
+
+Next: **Step 34 – Implement Language-Based Evidence**.
+
+
+## Development status – Step 34
+
+Step 34 is complete: GitHub repository language statistics are now collected as measured `LANGUAGE` evidence and mapped deterministically to the technology catalogue. The system records observations, not expertise claims.
+
+Next: **Step 35 – Implement File/Manifest-Based Detection**.
+
+
+## Development status – Step 35
+
+Step 35 is complete: selected repository files and manifests are now inspected deterministically and stored as separate `FILE` and `MANIFEST` technology evidence. Raw source repositories are not cloned or persisted for this analysis.
+
+Next: **Step 36 – Calculate Technology Evidence Strength**.
+
+
+## Development status – Step 36
+
+Step 36 is complete: repository technology evidence can now be aggregated into transparent user-level labels `EXPOSURE`, `LIMITED`, `MODERATE` and `STRONG`, with an explainable numerical score and rationale.
+
+Next: **Step 37** according to the development plan.
+
+
+## Development status – Step 37
+
+Step 37 is complete: technology evidence and contribution history are now combined into chart-ready timelines with first/latest observation, yearly project/activity counts and separate public/private repository evidence.
+
+Next: **Phase 9 – Project Classification and Significance**, beginning with Step 38.
+
+
+## Development status – Step 38
+
+Step 38 is complete: project classification now has a data-driven multi-category taxonomy rather than a fixed enum. The schema also supports multiple category assignments per repository with source, confidence and rationale.
+
+Next: **Step 39** according to the development plan.
+
+
+## Development status – Step 39
+
+Step 39 is complete: repositories can now be classified deterministically from topics, technology evidence, known files/structure and repository metadata. Every assignment is multi-category capable and stores its score, confidence and exact supporting signals.
+
+A missing `enqueueFileManifestEvidence` method from the earlier step-35 implementation was also restored while consolidating the job service.
+
+Next: **Step 40** according to the development plan.
+
+
+## Development status – Step 40
+
+Step 40 is complete: project significance and user involvement are now calculated and stored as two separate, explainable assessments. Ranking can use both dimensions without collapsing them into a single opaque score.
+
+Next: **Step 41** according to the development plan.
+
+
+## Development status – Step 41
+
+Step 41 is complete: significant external projects can now be queried directly when project significance, user involvement or both are high. API responses preserve the full evidence for each dimension and explain which condition caused the project to be surfaced.
+
+Next: **Phase 10 – Dashboard and Responsive UX**, beginning with Step 42.
+
+
+## Development status – Step 42
+
+Step 42 is complete: the frontend now has a responsive authenticated application shell with session state, loading/error handling, data freshness status, desktop navigation and a mobile navigation drawer.
+
+Next: **Step 43** according to the development plan.
+
+
+## Development status – Step 43
+
+Step 43 is complete: the authenticated Overview now presents repository, activity, technology, project-category and significant-project summaries using the existing API surface, with responsive cards designed for phone-sized screens.
+
+Next: **Step 44** according to the development plan.
+
+
+## Development status – Step 44
+
+Step 44 is complete: Activity now provides period-filtered commit trends, active projects, average/median commit size and additions/deletions through a user-scoped API and responsive dashboard views.
+
+Next: **Step 45** according to the development plan.
+
+
+## Development status – Step 45
+
+Step 45 is complete: Projects now provides a paged, searchable and filterable inventory supporting own/external, public/private, active/inactive, project category and technology filters, with a mobile-adaptive card layout.
+
+Next: **Step 46** according to the development plan.
+
+
+## Development status – Step 46
+
+Step 46 is complete: the Projects section now opens a consolidated project detail view covering metadata, activity, technologies/evidence, categories, user involvement, project significance and synchronisation state.
+
+Next: **Step 47** according to the development plan.
+
+
+## Development status – Step 47
+
+Step 47 is complete: Technologies now provides a consolidated evidence-based view with project counts, first/latest use, activity timeline and representative projects, while retaining the existing non-proficiency semantics.
+
+Next: **Step 48** according to the development plan.
+
+
+## Development status – Step 48
+
+Step 48 is complete: Project types now shows project counts per category, contribution activity, category evolution over time and representative projects through a responsive category view.
+
+Next: **Phase 11 – Private Repository Support**, beginning with Step 49.

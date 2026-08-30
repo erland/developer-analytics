@@ -52,6 +52,33 @@ public class MeSyncResource {
         )).build();
     }
 
+
+@POST
+@Path("/github/repositories/{repositoryId}/language-evidence")
+public Response queueGitHubLanguageEvidence(
+        @CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken,
+        @PathParam("repositoryId") java.util.UUID repositoryId
+) {
+    CurrentUser current = currentUserService.requireCurrentUser(sessionToken);
+    BackgroundJob job =
+            discoveryJobs.enqueueLanguageEvidence(current.user(), repositoryId);
+
+    if (job == null) {
+        return Response.status(Response.Status.CONFLICT)
+                .entity(Map.of(
+                        "status", "ALREADY_QUEUED",
+                        "repositoryId", repositoryId
+                ))
+                .build();
+    }
+
+    return Response.accepted(Map.of(
+            "jobId", job.getId(),
+            "jobType", job.getJobType(),
+            "status", job.getStatus().name()
+    )).build();
+}
+
     @POST
     @Path("/github/repositories/{repositoryId}/contributions")
     public Response queueGitHubContributionDiscovery(
