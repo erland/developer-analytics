@@ -35,19 +35,31 @@ public class MeActivityResource {
         OffsetDateTime fromDate = parseStart(from);
         OffsetDateTime toDate = parseEnd(to);
 
-        List<Object[]> rows = entityManager.createQuery(
+        StringBuilder jpql = new StringBuilder(
                 "select c.occurredAt, c.additions, c.deletions, c.repository.id " +
                 "from Contribution c " +
-                "where c.user.id=:userId and c.type=:type " +
-                "and (:fromDate is null or c.occurredAt >= :fromDate) " +
-                "and (:toDate is null or c.occurredAt < :toDate) " +
-                "order by c.occurredAt",
-                Object[].class)
+                "where c.user.id=:userId and c.type=:type"
+        );
+        if (fromDate != null) {
+            jpql.append(" and c.occurredAt >= :fromDate");
+        }
+        if (toDate != null) {
+            jpql.append(" and c.occurredAt < :toDate");
+        }
+        jpql.append(" order by c.occurredAt");
+
+        var query = entityManager.createQuery(jpql.toString(), Object[].class)
             .setParameter("userId", current.user().getId())
-            .setParameter("type", io.github.developeranalytics.domain.model.Contribution.Type.COMMIT)
-            .setParameter("fromDate", fromDate)
-            .setParameter("toDate", toDate)
-            .getResultList();
+            .setParameter("type", io.github.developeranalytics.domain.model.Contribution.Type.COMMIT);
+
+        if (fromDate != null) {
+            query.setParameter("fromDate", fromDate);
+        }
+        if (toDate != null) {
+            query.setParameter("toDate", toDate);
+        }
+
+        List<Object[]> rows = query.getResultList();
 
         Map<Integer, Integer> commitsPerYear = new TreeMap<>();
         Map<YearMonth, Integer> commitsPerMonth = new TreeMap<>();

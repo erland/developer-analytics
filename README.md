@@ -871,3 +871,9 @@ Step 91 remains blocked until this corrected Step 90 candidate passes the comple
 ## CI correction after Step 90 – fix 6
 
 The next full acceptance run exposed five remaining CI integration issues. The frontend Vitest suite is now scoped to `src/**/*.test.{ts,tsx}` so Playwright specifications stay in their dedicated mobile job. Acceptance-test session fixtures now hash tokens with the same SHA-256 + unpadded Base64URL representation as the backend, the generated large-account repository UUIDs use the canonical 8-4-4-4-12 format, and the Nginx runtime upgrades Alpine packages during image construction so fixable critical OS vulnerabilities are removed before Trivy scans the image.
+
+## CI correction after Step 90 – fix 8
+
+The final large-account acceptance failure exposed a PostgreSQL/Hibernate query
+typing issue in the all-time activity endpoint. Optional date predicates are now
+added dynamically instead of binding untyped null timestamp parameters.
