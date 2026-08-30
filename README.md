@@ -877,3 +877,10 @@ The next full acceptance run exposed five remaining CI integration issues. The f
 The final large-account acceptance failure exposed a PostgreSQL/Hibernate query
 typing issue in the all-time activity endpoint. Optional date predicates are now
 added dynamically instead of binding untyped null timestamp parameters.
+
+## CI correction after Step 90 – fix 9
+
+The final large-account filtering assertion used search-target repositories whose
+sequence numbers also matched the excluded-private fixture rule. Search targets
+are now generated on included repository rows, and CI checks that the two fixture
+rules cannot overlap again.

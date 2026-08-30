@@ -146,7 +146,7 @@ SELECT
   CASE WHEN n % 5 = 0 THEN 'ORGANIZATION' ELSE 'USER' END,
   CASE WHEN n % 5 = 0 THEN 'EXTERNAL' ELSE 'OWNED_BY_USER' END,
   CASE
-    WHEN n % 20 = 0 THEN 'search-target-' || lpad(n::text,3,'0')
+    WHEN n % 20 = 1 THEN 'search-target-' || lpad(n::text,3,'0')
     ELSE 'repository-' || lpad(n::text,3,'0')
   END,
   CASE
