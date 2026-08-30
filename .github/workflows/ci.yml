@@ -37,8 +37,7 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Check frontend test layers
-        working-directory: ..
-        run: python3 scripts/check-frontend-test-layers.py
+        run: python3 ../scripts/check-frontend-test-layers.py
 
       - name: Audit production frontend dependencies
         run: npm audit --omit=dev --audit-level=high
@@ -75,8 +74,7 @@ jobs:
           cache: maven
 
       - name: Check backend test layers
-        working-directory: ..
-        run: python3 scripts/check-backend-test-layers.py
+        run: python3 ../scripts/check-backend-test-layers.py
 
       - name: Verify backend
         run: mvn --batch-mode --no-transfer-progress verify

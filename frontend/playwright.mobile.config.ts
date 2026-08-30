@@ -9,6 +9,7 @@ export default defineConfig({
   reporter: 'list',
   use: {
     ...devices['iPhone 13'],
+    browserName: 'chromium',
     baseURL: 'http://127.0.0.1:4174',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

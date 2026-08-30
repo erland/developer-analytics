@@ -846,3 +846,13 @@ published GHCR candidate-image clean-install/runtime verification and the v1
 documentation gate before it may be tagged.
 
 Next: **Step 91 – Version 1 Release**.
+
+## CI correction after Step 90
+
+The first full v1 acceptance run exposed three CI integration issues rather than product failures:
+
+- frontend/backend layer-check scripts were resolved relative to the job default working directory; they now use the correct repository-relative `../scripts/...` path,
+- production TypeScript compilation now excludes Vitest/Playwright test sources while those files remain validated by their dedicated test runners,
+- the mobile Playwright profile now explicitly selects Chromium because the iPhone device descriptor otherwise defaults to WebKit.
+
+The responsive shell fixture was also aligned with the current `SessionUser` contract.

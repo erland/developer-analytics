@@ -43,7 +43,7 @@ describe('responsive layer: authenticated shell navigation', () => {
     render(
       <AuthenticatedShell
         user={{
-          id: 'user-1',
+          authenticated: true,
           provider: 'github',
           login: 'developer',
           displayName: 'Developer',
