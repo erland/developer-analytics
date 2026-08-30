@@ -156,3 +156,10 @@ The live application database is not replaced by this test.
 This is deliberately an actual PostgreSQL dump/restore test rather than a
 serialization/unit test, because backup correctness depends on PostgreSQL schema,
 foreign keys, JSONB values and migration history.
+
+## CI workflow placement
+
+The `backup-restore` verification is a normal GitHub Actions job and must remain
+nested under the top-level `jobs:` mapping in `.github/workflows/ci.yml`.
+A malformed top-level `backup-restore:` key causes GitHub to reject the workflow
+before any jobs are created.
