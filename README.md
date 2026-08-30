@@ -234,3 +234,14 @@ Two CI-only configuration problems were corrected:
 - Docker Compose validation receives a deterministic CI-only credential encryption key.
 
 No real GitHub App client secret or production credential-encryption key is required for pull-request validation. Real values are only required when running/deploying the application with GitHub sign-in and repository access enabled.
+
+
+## CI correction – Hibernate JSON mapping
+
+Backend CI reached Flyway successfully but Quarkus stopped while building the Hibernate SessionFactory because REST/Jackson formatting was being reused for JSON database columns.
+
+The backend now sets:
+
+`quarkus.hibernate-orm.mapping.format.global=ignore`
+
+This follows Quarkus' recommended behavior when the application does not need REST-specific JSON customization for Hibernate JSON columns, keeping persistence serialization independent from the REST ObjectMapper.
