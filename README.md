@@ -224,3 +224,13 @@ Next: **Step 31 – Contribution discovery orchestration across repositories**.
 Step 31 is complete: contribution discovery can now be orchestrated across the repository inventory in bounded, deduplicated batches, and repository discovery automatically seeds the first batch.
 
 Next: **Step 32 – Contribution sync progress and completion state**.
+
+
+## CI correction after Step 31
+
+Two CI-only configuration problems were corrected:
+
+- backend tests now use non-production GitHub OAuth test values so Quarkus can boot without repository secrets,
+- Docker Compose validation receives a deterministic CI-only credential encryption key.
+
+No real GitHub App client secret or production credential-encryption key is required for pull-request validation. Real values are only required when running/deploying the application with GitHub sign-in and repository access enabled.

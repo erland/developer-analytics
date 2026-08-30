@@ -85,6 +85,8 @@ jobs:
       - name: Validate Docker Compose configuration
         env:
           DB_PASSWORD: ci-validation-password
+      CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+      CREDENTIAL_KEY_VERSION: ci-v1
         run: docker compose -f deploy/compose.yaml config --quiet
 
       - name: Build web image
