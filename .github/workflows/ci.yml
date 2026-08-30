@@ -130,7 +130,7 @@ jobs:
           DB_PASSWORD: ci-backup-restore-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: ./scripts/test-postgres-backup-restore.sh
+        run: bash ./scripts/test-postgres-backup-restore.sh
 
       - name: Show service logs on failure
         if: failure()

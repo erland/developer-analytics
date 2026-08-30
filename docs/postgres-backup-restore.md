@@ -29,7 +29,7 @@ PostgreSQL client tools installed.
 From the repository root, with `deploy/.env` configured:
 
 ```bash
-./scripts/postgres-backup.sh
+bash ./scripts/postgres-backup.sh
 ```
 
 By default this writes:
@@ -67,7 +67,7 @@ the key in the database dump.
 Restoring replaces the current Developer Analytics database.
 
 ```bash
-./scripts/postgres-restore.sh   backups/developer-analytics-20260830T120000Z.dump
+bash ./scripts/postgres-restore.sh   backups/developer-analytics-20260830T120000Z.dump
 ```
 
 The restore script:
@@ -127,7 +127,7 @@ unverified backups should not be treated as a complete recovery strategy.
 Run:
 
 ```bash
-./scripts/test-postgres-backup-restore.sh
+bash ./scripts/test-postgres-backup-restore.sh
 ```
 
 against a running, migrated Compose database.
