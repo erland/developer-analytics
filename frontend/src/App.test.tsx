@@ -343,7 +343,7 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Project types', level: 1 })).toBeInTheDocument()
     expect(await screen.findByText('Project category')).toBeInTheDocument()
     expect(screen.getByText('Category activity over time')).toBeInTheDocument()
-    expect(screen.getByText('120')).toBeInTheDocument()
+    expect(screen.getAllByText('120').length).toBeGreaterThanOrEqual(2)
 
     await waitFor(() =>
       expect(screen.getAllByText('No completed sync yet').length).toBeGreaterThan(0),
