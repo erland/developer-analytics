@@ -9,7 +9,7 @@ RUN npm install --no-audit --no-fund
 COPY frontend/ ./
 RUN npm run build
 
-FROM nginx:1.27-alpine AS runtime
+FROM nginx:1.31-alpine AS runtime
 
 # Keep runtime OS packages patched even when the pinned upstream image digest is older.
 RUN apk upgrade --no-cache
