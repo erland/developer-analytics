@@ -16,7 +16,33 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
+      - name: Check whether Dependency graph is available
+        id: dependency-graph
+        shell: bash
+        run: |
+          status="$({ curl --silent --show-error \
+            --output /dev/null \
+            --write-out '%{http_code}' \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/dependency-graph/sbom"; } || true)"
+          if [[ "${status}" == "200" ]]; then
+            echo "available=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "available=false" >> "${GITHUB_OUTPUT}"
+            echo "Dependency graph availability check returned HTTP ${status}."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Review dependency changes
+        if: steps.dependency-graph.outputs.available == 'true'
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high
+
+      - name: Explain unavailable dependency review
+        if: steps.dependency-graph.outputs.available != 'true'
+        run: |
+          echo "::warning::Dependency review is skipped because GitHub Dependency graph is unavailable. Enable it under Settings > Security > Code security and analysis; once enabled, high-severity dependency changes remain an enforcing CI failure."

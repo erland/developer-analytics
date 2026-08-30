@@ -28,7 +28,17 @@ compose() {
 cleanup() {
   compose down -v --remove-orphans >/dev/null 2>&1 || true
 }
-trap cleanup EXIT
+
+on_exit() {
+  local status=$?
+  if [[ ${status} -ne 0 ]]; then
+    echo "Large-account acceptance stack logs after failure:" >&2
+    compose logs --no-color db backend worker web >&2 || true
+  fi
+  cleanup
+  exit ${status}
+}
+trap on_exit EXIT
 
 fail() {
   echo "Large-account acceptance test failed: $*" >&2
@@ -134,7 +144,7 @@ SELECT
   'large-owner',
   CASE WHEN n % 5 = 0 THEN 'external-org' ELSE 'large-account' END,
   CASE WHEN n % 5 = 0 THEN 'ORGANIZATION' ELSE 'USER' END,
-  CASE WHEN n % 5 = 0 THEN 'CONTRIBUTED_TO' ELSE 'OWNED_BY_USER' END,
+  CASE WHEN n % 5 = 0 THEN 'EXTERNAL' ELSE 'OWNED_BY_USER' END,
   CASE
     WHEN n % 20 = 0 THEN 'search-target-' || lpad(n::text,3,'0')
     ELSE 'repository-' || lpad(n::text,3,'0')
