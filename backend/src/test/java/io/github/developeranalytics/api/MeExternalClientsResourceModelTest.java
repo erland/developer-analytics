@@ -1,12 +1,14 @@
 package io.github.developeranalytics.api;
 
 import io.github.developeranalytics.domain.external.ExternalClientToken;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("unit")
 class MeExternalClientsResourceModelTest {
 
     @Test

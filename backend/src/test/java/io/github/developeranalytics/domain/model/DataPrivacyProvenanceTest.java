@@ -1,8 +1,11 @@
 package io.github.developeranalytics.domain.model;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("privacy")
+@Tag("unit")
 class DataPrivacyProvenanceTest {
     @Test void publicOnly() { assertEquals(DataPrivacyProvenance.PUBLIC_ONLY, DataPrivacyProvenance.fromRepositoryCounts(4,0)); }
     @Test void includesPrivate() { assertEquals(DataPrivacyProvenance.INCLUDES_PRIVATE, DataPrivacyProvenance.fromRepositoryCounts(4,2)); }

@@ -6,6 +6,7 @@ on:
     branches:
       - main
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -34,6 +35,13 @@ jobs:
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+
+      - name: Check frontend test layers
+        working-directory: ..
+        run: python3 scripts/check-frontend-test-layers.py
+
+      - name: Audit production frontend dependencies
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Lint
         run: npm run lint
@@ -66,6 +74,10 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Check backend test layers
+        working-directory: ..
+        run: python3 scripts/check-backend-test-layers.py
+
       - name: Verify backend
         run: mvn --batch-mode --no-transfer-progress verify
 
@@ -95,6 +107,7 @@ jobs:
           context: .
           file: frontend/Dockerfile
           push: false
+          load: true
           tags: developer-analytics-web:ci
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
@@ -105,9 +118,55 @@ jobs:
           context: .
           file: backend/Dockerfile
           push: false
+          load: true
           tags: developer-analytics-backend:ci
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
+
+      - name: Scan web image for critical vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: developer-analytics-web:ci
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: CRITICAL
+
+      - name: Scan backend image for critical vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: developer-analytics-backend:ci
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: CRITICAL
+
+      - name: Verify built images at runtime
+        env:
+          WEB_PORT: '18081'
+          RUNTIME_BASE_URL: http://localhost:18081
+          DB_PASSWORD: ci-runtime-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+        run: bash ./scripts/test-container-runtime.sh
+
+      - name: Show runtime stack logs on failure
+        if: failure()
+        env:
+          WEB_PORT: '18081'
+          DB_PASSWORD: ci-runtime-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+        run: docker compose -p developer-analytics-runtime-smoke -f deploy/compose.yaml -f deploy/compose.ci-runtime.yaml logs --no-color db backend worker web || true
+
+      - name: Ensure runtime stack is stopped
+        if: always()
+        env:
+          WEB_PORT: '18081'
+          DB_PASSWORD: ci-runtime-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+        run: docker compose -p developer-analytics-runtime-smoke -f deploy/compose.yaml -f deploy/compose.ci-runtime.yaml down -v --remove-orphans || true
 
   backup-restore:
     name: PostgreSQL backup/restore verification
@@ -123,7 +182,7 @@ jobs:
           DB_PASSWORD: ci-backup-restore-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: docker compose -f deploy/compose.yaml up -d --build db backend
+        run: docker compose -f deploy/compose.yaml -f deploy/compose.local-build.yaml up -d --build db backend
 
       - name: Verify PostgreSQL backup and restore
         env:
@@ -138,7 +197,7 @@ jobs:
           DB_PASSWORD: ci-backup-restore-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: docker compose -f deploy/compose.yaml logs --no-color db backend
+        run: docker compose -f deploy/compose.yaml -f deploy/compose.local-build.yaml logs --no-color db backend
 
       - name: Stop verification stack
         if: always()
@@ -146,4 +205,184 @@ jobs:
           DB_PASSWORD: ci-backup-restore-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: docker compose -f deploy/compose.yaml down -v
+        run: docker compose -f deploy/compose.yaml -f deploy/compose.local-build.yaml down -v
+
+  e2e-smoke:
+    name: End-to-end smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Start application smoke stack
+        env:
+          WEB_PORT: '18080'
+          DB_PASSWORD: ci-e2e-smoke-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+        run: docker compose -f deploy/compose.yaml -f deploy/compose.local-build.yaml up -d --build db backend web
+
+      - name: Verify web, API, migrations and authenticated flow
+        env:
+          WEB_PORT: '18080'
+          E2E_BASE_URL: http://localhost:18080
+          DB_PASSWORD: ci-e2e-smoke-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+        run: bash ./scripts/test-e2e-smoke.sh
+
+      - name: Show smoke-stack logs on failure
+        if: failure()
+        env:
+          WEB_PORT: '18080'
+          DB_PASSWORD: ci-e2e-smoke-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+        run: docker compose -f deploy/compose.yaml -f deploy/compose.local-build.yaml logs --no-color db backend web
+
+      - name: Stop smoke stack
+        if: always()
+        env:
+          WEB_PORT: '18080'
+          DB_PASSWORD: ci-e2e-smoke-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+        run: docker compose -f deploy/compose.yaml -f deploy/compose.local-build.yaml down -v
+
+  migration-verification:
+    name: Migration verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Check Flyway migration sequence
+        run: python3 scripts/check-flyway-migrations.py
+
+      - name: Verify migrations on fresh PostgreSQL
+        env:
+          DB_PASSWORD: ci-migration-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+        run: bash ./scripts/test-fresh-database-migrations.sh
+
+      - name: Show migration-stack logs on failure
+        if: failure()
+        env:
+          DB_PASSWORD: ci-migration-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+        run: docker compose -p developer-analytics-migration-test -f deploy/compose.yaml logs --no-color db backend || true
+
+      - name: Stop migration stack
+        if: always()
+        env:
+          DB_PASSWORD: ci-migration-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+        run: docker compose -p developer-analytics-migration-test -f deploy/compose.yaml down -v || true
+
+  large-account-acceptance:
+    name: Large-account acceptance test
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Run 200+ repository acceptance scenario
+        env:
+          WEB_PORT: '18087'
+          LARGE_ACCOUNT_BASE_URL: http://localhost:18087
+          LARGE_ACCOUNT_REPOSITORY_COUNT: '240'
+          WORKER_POLL_INTERVAL: 2s
+          DB_PASSWORD: ci-large-account-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+        run: bash ./scripts/test-large-account-acceptance.sh
+
+      - name: Show large-account logs on failure
+        if: failure()
+        env:
+          WEB_PORT: '18087'
+          DB_PASSWORD: ci-large-account-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+        run: docker compose -p developer-analytics-large-account -f deploy/compose.yaml -f deploy/compose.local-build.yaml logs --no-color db backend worker web || true
+
+      - name: Stop large-account stack
+        if: always()
+        env:
+          WEB_PORT: '18087'
+          DB_PASSWORD: ci-large-account-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+        run: docker compose -p developer-analytics-large-account -f deploy/compose.yaml -f deploy/compose.local-build.yaml down -v --remove-orphans || true
+
+  privacy-acceptance:
+    name: Privacy acceptance test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Run privacy boundary acceptance matrix
+        env:
+          WEB_PORT: '18088'
+          PRIVACY_BASE_URL: http://localhost:18088
+          DB_PASSWORD: ci-privacy-acceptance-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+          AI_PROVIDER: disabled
+        run: bash ./scripts/test-privacy-acceptance.sh
+
+      - name: Show privacy acceptance logs on failure
+        if: failure()
+        env:
+          WEB_PORT: '18088'
+          DB_PASSWORD: ci-privacy-acceptance-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+        run: docker compose -p developer-analytics-privacy-acceptance -f deploy/compose.yaml -f deploy/compose.local-build.yaml logs --no-color db backend worker web || true
+
+      - name: Stop privacy acceptance stack
+        if: always()
+        env:
+          WEB_PORT: '18088'
+          DB_PASSWORD: ci-privacy-acceptance-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          CREDENTIAL_KEY_VERSION: ci-v1
+        run: docker compose -p developer-analytics-privacy-acceptance -f deploy/compose.yaml -f deploy/compose.local-build.yaml down -v --remove-orphans || true
+
+  mobile-acceptance:
+    name: Mobile acceptance test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Install frontend dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Run phone-sized primary-flow acceptance test
+        run: npm run test:mobile

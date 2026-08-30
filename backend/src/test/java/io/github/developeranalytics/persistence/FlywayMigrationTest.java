@@ -2,6 +2,7 @@ package io.github.developeranalytics.persistence;
 
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
@@ -13,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
+@Tag("persistence")
 class FlywayMigrationTest {
 
     @Inject
@@ -36,4 +38,19 @@ class FlywayMigrationTest {
             assertEquals("1", valueResult.getString(1));
         }
     }
+
+@Test
+void flywayHistoryContainsOnlySuccessfulMigrations() throws Exception {
+    try (Connection connection = dataSource.getConnection();
+         Statement statement = connection.createStatement();
+         ResultSet result = statement.executeQuery(
+                 "SELECT count(*) FILTER (WHERE success = false), " +
+                 "count(*) FILTER (WHERE version IS NOT NULL) " +
+                 "FROM flyway_schema_history")) {
+        assertTrue(result.next());
+        assertEquals(0, result.getInt(1));
+        assertEquals(28, result.getInt(2));
+    }
+}
+
 }

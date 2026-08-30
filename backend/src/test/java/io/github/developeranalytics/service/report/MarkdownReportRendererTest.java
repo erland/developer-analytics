@@ -1,6 +1,7 @@
 package io.github.developeranalytics.service.report;
 
 import io.github.developeranalytics.domain.report.CanonicalReport;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -9,6 +10,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("unit")
 class MarkdownReportRendererTest {
 
     @Test

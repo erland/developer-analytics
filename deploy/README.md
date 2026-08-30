@@ -1,77 +1,142 @@
-# Reference Docker Compose deployment
 
-The reference deployment runs the current version 1 baseline as three services:
+> For the complete v1 installation procedure, see
+> [`../docs/installation-v1.md`](../docs/installation-v1.md).
 
-- `web` — the built React application served by Nginx and the only service exposed to the host;
-- `backend` — the Quarkus API, reachable from Nginx on the internal `web` network;
-- `db` — PostgreSQL with persistent storage on an internal-only `data` network.
+# Deployment
 
-The background `worker` service is introduced later in the development plan.
+`deploy/compose.yaml` is the reference **release deployment**. It runs published
+container images and does not require application source code to be built on the
+target host.
 
-## Start the stack
+## Release topology
 
-From the repository root:
+```text
+ghcr.io/erland/developer-analytics-web:<version>
+                  |
+                Nginx
+                  |
+ghcr.io/erland/developer-analytics-backend:<version>   (API)
+                  |
+ghcr.io/erland/developer-analytics-backend:<version>   (worker)
+                  |
+            postgres:17-alpine
+```
+
+The backend and worker intentionally use the same published backend image with
+different runtime roles.
+
+## Select a release version
+
+Copy the example environment file:
 
 ```bash
 cp deploy/env.example deploy/.env
-# Edit deploy/.env and replace DB_PASSWORD.
-docker compose --env-file deploy/.env -f deploy/compose.yaml up --build
 ```
 
-Then open:
+Set a version explicitly:
 
 ```text
-http://localhost:8080/
+APP_VERSION=1.2.3
 ```
 
-The backend is intentionally not published on a host port. API traffic is routed through Nginx under `/api/`.
-
-## Stop the stack
+Then start the release deployment:
 
 ```bash
-docker compose --env-file deploy/.env -f deploy/compose.yaml down
+docker compose --env-file deploy/.env -f deploy/compose.yaml pull
+docker compose --env-file deploy/.env -f deploy/compose.yaml up -d
 ```
 
-To also remove the PostgreSQL volume and all local database data:
-
-```bash
-docker compose --env-file deploy/.env -f deploy/compose.yaml down -v
-```
-
-## Network model
+By default the image repositories are:
 
 ```text
-host -> web/nginx -> backend -> PostgreSQL
-                    |          ^
-                    +----------+
+WEB_IMAGE=ghcr.io/erland/developer-analytics-web
+BACKEND_IMAGE=ghcr.io/erland/developer-analytics-backend
 ```
 
-`db` is attached only to the internal `data` network. `backend` bridges the `web` and `data` networks. `web` has no direct database access.
+The defaults can be overridden for forks, mirrors or another registry without
+editing the Compose file.
 
+`APP_VERSION=latest` is supported, but pinning an explicit release version is
+recommended for reproducible production deployments and rollbacks.
 
-## GitHub authentication setup
+## Upgrade
 
-Create/configure a GitHub App and enable user authorization. Configure its callback URL to match:
-
-`http://localhost:8080/api/auth/github/callback`
-
-for local development, then set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` in `deploy/.env`.
-
-For HTTPS production deployments set `SESSION_COOKIE_SECURE=true` and configure production callback/frontend URLs.
-
-
-## Credential encryption key
-
-Before starting the stack, generate a random 32-byte encryption key and Base64 encode it. Store it as `CREDENTIAL_ENCRYPTION_KEY` in the protected deployment environment, not in Git.
-
-Example on macOS/Linux:
+To deploy a new release:
 
 ```bash
-openssl rand -base64 32
+# edit APP_VERSION in deploy/.env
+docker compose --env-file deploy/.env -f deploy/compose.yaml pull
+docker compose --env-file deploy/.env -f deploy/compose.yaml up -d
 ```
 
-Keep the key stable across restarts. Changing `CREDENTIAL_KEY_VERSION` without migrating/re-encrypting stored credentials intentionally makes old credentials unreadable.
+Flyway migrations run when the backend starts. Follow the backup/restore guide
+before schema-changing upgrades:
 
-## Backup and restore
+- [`../docs/postgres-backup-restore.md`](../docs/postgres-backup-restore.md)
 
-See [`../docs/postgres-backup-restore.md`](../docs/postgres-backup-restore.md) for PostgreSQL backup, restore, retention, and restore-verification procedures.
+## Rollback
+
+For an application-only rollback, restore the previous `APP_VERSION` and run
+`pull` + `up -d` again.
+
+Do not assume a database migration is reversible. If a newer release has changed
+the schema incompatibly, use the documented database backup/restore procedure.
+
+## Local source builds
+
+The production Compose file intentionally contains no source-build requirement.
+For local development or CI scenarios that need to build current source, apply
+the local override:
+
+```bash
+docker compose   --env-file deploy/.env   -f deploy/compose.yaml   -f deploy/compose.local-build.yaml   up --build
+```
+
+This builds:
+
+- `developer-analytics-web:local`
+- `developer-analytics-backend:local`
+
+while retaining the same networking, PostgreSQL, environment and runtime-role
+configuration as the release topology.
+
+## GHCR authentication
+
+Public GHCR packages can be pulled without registry credentials. If package
+visibility is private, authenticate Docker with a GitHub credential that has
+`read:packages` before `docker compose pull`.
+
+## Required deployment secrets
+
+At minimum configure a non-example:
+
+- `DB_PASSWORD`
+- `CREDENTIAL_ENCRYPTION_KEY`
+
+Real GitHub sign-in also requires the GitHub OAuth/App configuration described
+in the project documentation.
+
+Do not store production secret values in `deploy/.env` in source control.
+
+
+## End-user release example
+
+For a copy-and-configure deployment intended for end users, see:
+
+- `compose.release.example.yaml`
+- `release.env.example`
+- [`../docs/release-compose-quickstart.md`](../docs/release-compose-quickstart.md)
+
+That mode requires Docker/Compose plus GitHub application configuration and the
+documented environment values. Java, Node.js, PostgreSQL and Nginx are supplied
+by containers.
+
+
+## Operator guide
+
+For ongoing operation after installation, see:
+
+- [`../docs/operator-v1.md`](../docs/operator-v1.md)
+
+It covers container state, volumes, ports, health checks, logs, worker/jobs,
+synchronisation recovery, backups, Flyway migration behavior and image upgrades.

@@ -2,11 +2,15 @@ package io.github.developeranalytics.security;
 
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
+@Tag("authorization")
+@Tag("privacy")
+@Tag("unit")
 class CredentialCipherTest {
 
     @Inject

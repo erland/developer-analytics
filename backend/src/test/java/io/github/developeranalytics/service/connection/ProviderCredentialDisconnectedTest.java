@@ -2,10 +2,13 @@ package io.github.developeranalytics.service.connection;
 
 import io.github.developeranalytics.domain.model.AppUser;
 import io.github.developeranalytics.domain.model.ProviderConnection;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("privacy")
+@Tag("unit")
 class ProviderCredentialDisconnectedTest {
 
     @Test

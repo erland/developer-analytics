@@ -1,11 +1,13 @@
 package io.github.developeranalytics.ai;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("unit")
 class DisabledAiProviderTest {
 
     private final DisabledAiProvider provider =

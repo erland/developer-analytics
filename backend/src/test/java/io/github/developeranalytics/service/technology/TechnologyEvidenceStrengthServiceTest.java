@@ -1,12 +1,14 @@
 package io.github.developeranalytics.service.technology;
 
 import io.github.developeranalytics.domain.technology.TechnologyEvidenceStrength;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Tag("unit")
 class TechnologyEvidenceStrengthServiceTest {
 
     private final TechnologyEvidenceStrengthService service =

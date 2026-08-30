@@ -20,9 +20,7 @@ services:
       start_period: 5s
 
   backend:
-    build:
-      context: ..
-      dockerfile: backend/Dockerfile
+    image: ${BACKEND_IMAGE:-ghcr.io/erland/developer-analytics-backend}:${APP_VERSION:-latest}
     restart: unless-stopped
     environment:
       APP_RUNTIME_ROLE: api
@@ -53,9 +51,7 @@ services:
       start_period: 20s
 
   worker:
-    build:
-      context: ..
-      dockerfile: backend/Dockerfile
+    image: ${BACKEND_IMAGE:-ghcr.io/erland/developer-analytics-backend}:${APP_VERSION:-latest}
     restart: unless-stopped
     environment:
       APP_RUNTIME_ROLE: worker
@@ -73,9 +69,7 @@ services:
       - data
 
   web:
-    build:
-      context: ..
-      dockerfile: frontend/Dockerfile
+    image: ${WEB_IMAGE:-ghcr.io/erland/developer-analytics-web}:${APP_VERSION:-latest}
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-8080}:80"

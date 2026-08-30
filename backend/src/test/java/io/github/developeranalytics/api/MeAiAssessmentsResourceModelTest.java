@@ -1,11 +1,13 @@
 package io.github.developeranalytics.api;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("unit")
 class MeAiAssessmentsResourceModelTest {
 
     @Test

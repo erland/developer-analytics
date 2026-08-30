@@ -2,6 +2,7 @@
 set -euo pipefail
 
 COMPOSE_FILE="${COMPOSE_FILE:-deploy/compose.yaml}"
+LOCAL_BUILD_COMPOSE="${LOCAL_BUILD_COMPOSE:-deploy/compose.local-build.yaml}"
 DB_NAME="${DB_NAME:-developer_analytics}"
 DB_USERNAME="${DB_USERNAME:-developer_analytics}"
 RESTORE_DB="${RESTORE_DB:-developer_analytics_restore_test}"
@@ -11,7 +12,7 @@ trap 'rm -rf "${tmp}"' EXIT
 
 echo "Waiting for migrated source database..."
 for _ in $(seq 1 90); do
-  if docker compose -f "${COMPOSE_FILE}" exec -T db \
+  if docker compose -f "${COMPOSE_FILE}" -f "${LOCAL_BUILD_COMPOSE}" exec -T db \
        psql --username="${DB_USERNAME}" --dbname="${DB_NAME}" \
        --tuples-only --no-align \
        --command="SELECT to_regclass('public.user_ai_insight') IS NOT NULL;" \
@@ -21,7 +22,7 @@ for _ in $(seq 1 90); do
   sleep 2
 done
 
-docker compose -f "${COMPOSE_FILE}" exec -T db \
+docker compose -f "${COMPOSE_FILE}" -f "${LOCAL_BUILD_COMPOSE}" exec -T db \
   psql --username="${DB_USERNAME}" --dbname="${DB_NAME}" \
   --set=ON_ERROR_STOP=1 <<'SQL'
 DO $$
@@ -86,7 +87,7 @@ END $$;
 SQL
 
 backup="${tmp}/backup.dump"
-docker compose -f "${COMPOSE_FILE}" exec -T db \
+docker compose -f "${COMPOSE_FILE}" -f "${LOCAL_BUILD_COMPOSE}" exec -T db \
   pg_dump \
     --username="${DB_USERNAME}" \
     --dbname="${DB_NAME}" \
@@ -94,12 +95,12 @@ docker compose -f "${COMPOSE_FILE}" exec -T db \
     --no-owner \
     --no-privileges > "${backup}"
 
-docker compose -f "${COMPOSE_FILE}" exec -T db \
+docker compose -f "${COMPOSE_FILE}" -f "${LOCAL_BUILD_COMPOSE}" exec -T db \
   dropdb --username="${DB_USERNAME}" --if-exists "${RESTORE_DB}"
-docker compose -f "${COMPOSE_FILE}" exec -T db \
+docker compose -f "${COMPOSE_FILE}" -f "${LOCAL_BUILD_COMPOSE}" exec -T db \
   createdb --username="${DB_USERNAME}" "${RESTORE_DB}"
 
-cat "${backup}" | docker compose -f "${COMPOSE_FILE}" exec -T db \
+cat "${backup}" | docker compose -f "${COMPOSE_FILE}" -f "${LOCAL_BUILD_COMPOSE}" exec -T db \
   pg_restore \
     --username="${DB_USERNAME}" \
     --dbname="${RESTORE_DB}" \
@@ -111,7 +112,7 @@ assert_sql() {
   local sql="$1"
   local expected="$2"
   local actual
-  actual="$(docker compose -f "${COMPOSE_FILE}" exec -T db \
+  actual="$(docker compose -f "${COMPOSE_FILE}" -f "${LOCAL_BUILD_COMPOSE}" exec -T db \
     psql --username="${DB_USERNAME}" --dbname="${RESTORE_DB}" \
     --tuples-only --no-align --set=ON_ERROR_STOP=1 --command="${sql}")"
   if [[ "${actual}" != "${expected}" ]]; then
@@ -131,9 +132,9 @@ assert_sql "SELECT name FROM source_repository WHERE id=${repo};" "backup-reposi
 assert_sql "SELECT commit_count FROM user_activity_month WHERE user_id=${user} AND year_month=DATE '2026-08-01';" "17"
 assert_sql "SELECT technical_focus FROM user_ai_insight WHERE user_id=${user};" "Java and backend systems"
 assert_sql "SELECT count(*) FROM flyway_schema_history WHERE success=true;" \
-  "$(docker compose -f "${COMPOSE_FILE}" exec -T db psql --username="${DB_USERNAME}" --dbname="${DB_NAME}" --tuples-only --no-align --command="SELECT count(*) FROM flyway_schema_history WHERE success=true;")"
+  "$(docker compose -f "${COMPOSE_FILE}" -f "${LOCAL_BUILD_COMPOSE}" exec -T db psql --username="${DB_USERNAME}" --dbname="${DB_NAME}" --tuples-only --no-align --command="SELECT count(*) FROM flyway_schema_history WHERE success=true;")"
 
-docker compose -f "${COMPOSE_FILE}" exec -T db \
+docker compose -f "${COMPOSE_FILE}" -f "${LOCAL_BUILD_COMPOSE}" exec -T db \
   dropdb --username="${DB_USERNAME}" --if-exists "${RESTORE_DB}"
 
 echo "Backup/restore verification passed:"

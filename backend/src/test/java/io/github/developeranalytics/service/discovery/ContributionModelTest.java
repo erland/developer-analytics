@@ -1,12 +1,14 @@
 package io.github.developeranalytics.service.discovery;
 
 import io.github.developeranalytics.domain.model.*;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("unit")
 class ContributionModelTest {
 
     @Test

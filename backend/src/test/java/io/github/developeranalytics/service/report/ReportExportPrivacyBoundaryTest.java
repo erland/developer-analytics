@@ -3,10 +3,13 @@ package io.github.developeranalytics.service.report;
 import io.github.developeranalytics.domain.model.RepositoryVisibility;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.domain.report.CanonicalReport;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("privacy")
+@Tag("unit")
 class ReportExportPrivacyBoundaryTest {
 
     private final ReportPrivacyPolicy policy = new ReportPrivacyPolicy();

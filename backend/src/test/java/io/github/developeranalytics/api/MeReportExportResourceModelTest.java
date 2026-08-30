@@ -2,10 +2,12 @@ package io.github.developeranalytics.api;
 
 import io.github.developeranalytics.service.report.ReportExportService;
 import io.github.developeranalytics.service.report.MarkdownReportType;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("unit")
 class MeReportExportResourceModelTest {
 
     @Test

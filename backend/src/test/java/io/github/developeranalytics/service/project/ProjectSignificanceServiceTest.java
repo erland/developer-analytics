@@ -3,12 +3,14 @@ package io.github.developeranalytics.service.project;
 import io.github.developeranalytics.domain.model.AppUser;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.persistence.project.ProjectSignificanceRepository;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("unit")
 class ProjectSignificanceServiceTest {
 
     private final ProjectSignificanceService service =

@@ -74,3 +74,62 @@ jobs:
           sbom: true
           cache-from: type=gha,scope=${{ matrix.cache_scope }}
           cache-to: type=gha,mode=max,scope=${{ matrix.cache_scope }}
+
+  verify-release:
+    name: Verify clean GHCR installation
+    if: github.event_name == 'release'
+    needs:
+      - publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Verify clean GHCR pull, tags and image hygiene
+        env:
+          GHCR_OWNER: ${{ github.repository_owner }}
+        run: bash ./scripts/verify-ghcr-release.sh "${{ github.event.release.tag_name }}"
+
+      - name: Start and smoke-test published release images
+        env:
+          GHCR_OWNER: ${{ github.repository_owner }}
+          WEB_PORT: '18082'
+          RELEASE_VERIFY_BASE_URL: http://localhost:18082
+        run: bash ./scripts/test-published-release-runtime.sh "${{ github.event.release.tag_name }}"
+
+      - name: Show release verification logs on failure
+        if: failure()
+        env:
+          APP_VERSION: ${{ github.event.release.tag_name }}
+          WEB_IMAGE: ghcr.io/${{ github.repository_owner }}/developer-analytics-web
+          BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/developer-analytics-backend
+          WEB_PORT: '18082'
+          DB_PASSWORD: release-verify-db-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          GITHUB_CLIENT_ID: release-verify-client-id
+          GITHUB_CLIENT_SECRET: release-verify-client-secret
+          GITHUB_CALLBACK_URL: http://localhost:18082/api/auth/github/callback
+          FRONTEND_URL: http://localhost:18082/
+          SESSION_COOKIE_SECURE: 'false'
+        run: docker compose -p developer-analytics-release-verify -f deploy/compose.release.example.yaml logs --no-color db backend worker web || true
+
+      - name: Ensure release verification stack is stopped
+        if: always()
+        env:
+          APP_VERSION: ${{ github.event.release.tag_name }}
+          WEB_IMAGE: ghcr.io/${{ github.repository_owner }}/developer-analytics-web
+          BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/developer-analytics-backend
+          WEB_PORT: '18082'
+          DB_PASSWORD: release-verify-db-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          GITHUB_CLIENT_ID: release-verify-client-id
+          GITHUB_CLIENT_SECRET: release-verify-client-secret
+          GITHUB_CALLBACK_URL: http://localhost:18082/api/auth/github/callback
+          FRONTEND_URL: http://localhost:18082/
+          SESSION_COOKIE_SECURE: 'false'
+        run: docker compose -p developer-analytics-release-verify -f deploy/compose.release.example.yaml down -v --remove-orphans || true

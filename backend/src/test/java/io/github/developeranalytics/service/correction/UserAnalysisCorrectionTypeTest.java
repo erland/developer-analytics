@@ -1,10 +1,12 @@
 package io.github.developeranalytics.service.correction;
 
 import io.github.developeranalytics.domain.correction.UserAnalysisCorrection;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("unit")
 class UserAnalysisCorrectionTypeTest {
 
     @Test

@@ -2,6 +2,7 @@ package io.github.developeranalytics.domain.technology;
 
 import io.github.developeranalytics.domain.model.AppUser;
 import io.github.developeranalytics.domain.model.SourceRepository;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -9,6 +10,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("unit")
 class RepositoryTechnologyEvidenceTest {
 
     @Test

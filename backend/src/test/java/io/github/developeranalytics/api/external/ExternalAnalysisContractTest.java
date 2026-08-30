@@ -2,6 +2,7 @@ package io.github.developeranalytics.api.external;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
@@ -10,6 +11,8 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("authorization")
+@Tag("privacy")
 class ExternalAnalysisContractTest {
 
     @Test

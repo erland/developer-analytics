@@ -1,5 +1,6 @@
 package io.github.developeranalytics.api;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -10,6 +11,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("unit")
 class MeTechnologiesResourceModelTest {
 
     @Test

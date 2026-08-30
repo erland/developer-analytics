@@ -1,9 +1,12 @@
 package io.github.developeranalytics.api;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("privacy")
+@Tag("unit")
 class MeDataDeletionModelTest {
 
     @Test

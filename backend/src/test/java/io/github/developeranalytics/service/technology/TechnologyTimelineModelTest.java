@@ -1,5 +1,6 @@
 package io.github.developeranalytics.service.technology;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -7,6 +8,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("unit")
 class TechnologyTimelineModelTest {
 
     @Test

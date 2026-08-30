@@ -1,10 +1,13 @@
 package io.github.developeranalytics.service.job;
 
 import io.github.developeranalytics.provider.ProviderException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("worker-job")
+@Tag("unit")
 class JobFailureClassifierTest {
 
     private final JobFailureClassifier classifier =

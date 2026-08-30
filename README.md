@@ -15,6 +15,25 @@ The service is intended to provide a private, evidence-based view of:
 
 Version 1 is focused on self-analysis rather than public profiling of other people.
 
+
+## Install Developer Analytics v1
+
+The supported v1 self-hosted installation uses published GHCR images and Docker
+Compose. The host only needs Docker/Compose plus GitHub application
+configuration and deployment secrets; Java, Node.js, PostgreSQL and Nginx run
+inside containers.
+
+Start here:
+
+- [`docs/installation-v1.md`](docs/installation-v1.md) — complete installation,
+  first-login, private-repository, backup, upgrade and troubleshooting guide.
+- [`docs/operator-v1.md`](docs/operator-v1.md) — container, health, logs,
+  jobs, recovery, backup, migrations and upgrade operations.
+- [`deploy/compose.release.example.yaml`](deploy/compose.release.example.yaml) —
+  end-user release stack.
+- [`deploy/release.env.example`](deploy/release.env.example) — deployment
+  environment template.
+
 ## Planned architecture
 
 The current architecture direction is:
@@ -150,7 +169,8 @@ The current stack can be started from the repository root with:
 
 ```bash
 cp deploy/env.example deploy/.env
-docker compose --env-file deploy/.env -f deploy/compose.yaml up --build
+docker compose --env-file deploy/.env -f deploy/compose.yaml pull
+docker compose --env-file deploy/.env -f deploy/compose.yaml up -d
 ```
 
 Replace the example database password before starting the stack. The application is then exposed through Nginx on `http://localhost:8080` by default. PostgreSQL and the backend are not published directly to the host. See [`deploy/README.md`](deploy/README.md) for details.
@@ -623,3 +643,206 @@ restore, and a real restore verification that checks account data, repository
 inventory, aggregates, AI analysis metadata and Flyway history.
 
 Next: **Step 75** according to the development plan.
+
+
+## Development status – Step 75
+
+Step 75 is complete: backend tests are now explicitly classified with JUnit 5
+tags into unit, persistence, GitHub-adapter, authorization, worker/job and
+privacy layers. Maven profiles can run each layer independently, while the
+default `mvn verify` still runs the complete suite. CI also rejects new untagged
+backend tests or an accidentally empty required layer.
+
+Next: **Step 76** according to the development plan.
+
+
+## Development status – Step 76
+
+Step 76 is complete: frontend tests now have explicit component, feature/page,
+responsive, API-error-state and privacy layers. Each layer has focused tests and
+can be run independently, while the existing `npm test` command remains the
+authoritative complete frontend suite. CI verifies that every required layer
+continues to contain tests.
+
+Next: **Step 77** according to the development plan.
+
+
+## Development status – Step 77
+
+Step 77 is complete: CI now runs a Compose end-to-end smoke path across the
+built frontend, Nginx, backend and PostgreSQL. It verifies frontend delivery,
+proxied API health, successful Flyway migrations and a representative
+authenticated session flow without requiring live GitHub OAuth.
+
+Next: **Step 78** according to the development plan.
+
+
+## Development status – Step 78
+
+Step 78 is complete: CI now has dedicated Flyway migration verification. It
+checks migration naming/order/continuity, verifies the full migration history in
+the backend persistence test, and boots the real backend against an isolated
+fresh PostgreSQL volume so broken migrations and fresh-database startup failures
+fail explicitly.
+
+Next: **Step 79** according to the development plan.
+
+
+## Development status – Step 79
+
+Step 79 is complete: the container CI job now loads the exact frontend/backend
+images it builds, starts the full Compose runtime with `--no-build`, waits for
+health, verifies the proxied application API and static frontend, confirms
+db/backend/worker/web are running, and shuts the stack down cleanly.
+
+Next: **Step 80** according to the development plan.
+
+
+## Development status – Step 80
+
+Step 80 is complete: the project now has a pragmatic automated security
+baseline with GitHub dependency review, production npm auditing, Trivy scanning
+of the exact CI-built container images, weekly Dependabot updates for npm,
+Maven, Docker and GitHub Actions, plus documented GitHub-native secret-scanning
+and push-protection settings.
+
+Next: **Step 81** according to the development plan.
+
+
+## Development status – Step 81
+
+Step 81 is complete: `deploy/compose.yaml` is now the production reference and
+uses version-selectable GHCR images for web/backend/worker rather than requiring
+source builds on the deployment host. A separate
+`deploy/compose.local-build.yaml` override preserves source-build workflows for
+development and CI.
+
+Next: **Step 82** according to the development plan.
+
+
+## Development status – Step 82
+
+Step 82 is complete: the repository now includes a copy-and-configure release
+Compose example plus an end-user environment template and quickstart. A release
+host only needs Docker/Compose, GitHub application configuration, required
+secrets and optional Gemini configuration; Java, Node.js, PostgreSQL and Nginx
+remain containerized.
+
+Next: **Step 83** according to the development plan.
+
+
+## Development status – Step 83
+
+Step 83 is complete: every published release now has a post-publication GHCR
+verification job that removes cached images, logs out of GHCR, performs
+anonymous clean pulls, checks semantic version tags, confirms the worker uses
+the backend image, and inspects image configuration/history for accidentally
+embedded runtime secrets. The intended GHCR package visibility is explicitly
+documented as public.
+
+Next: **Step 84** according to the development plan.
+
+
+## Development status – Step 84
+
+Step 84 is complete: after GHCR publication and clean-pull verification, the
+release workflow now starts the actual published versioned images using the
+end-user release Compose file with `--no-build`. It waits for health, verifies
+the frontend, proxied backend/API, PostgreSQL/Flyway state and worker image, then
+requires a clean shutdown. A release now fails if its published images cannot
+actually run together.
+
+Next: **Step 85** according to the development plan.
+
+## Development status – Step 85
+
+Step 85 is complete: Developer Analytics v1 now has a single installation guide
+covering prerequisites, GitHub application setup, environment and optional AI
+configuration, Compose startup, first login, private repository authorisation,
+backup, upgrades and troubleshooting. The root README points new installers
+directly to this v1 path.
+
+Next: **Step 86** according to the development plan.
+
+
+## Development status – Step 86
+
+Step 86 is complete: Developer Analytics v1 now has a dedicated operator guide
+covering containers, volumes, ports, health checks, logs, persistent jobs,
+synchronisation recovery, database backup, Flyway migration behaviour and image
+upgrades/rollback considerations.
+
+Next: **Step 87** according to the development plan.
+
+
+## Version 1 large-account acceptance
+
+The v1 release gate includes a deterministic 240-repository acceptance scenario
+covering incremental enrichment, API responsiveness, paged/filterable project
+inventory, worker restart recovery and rate-limit presentation. See
+[`docs/large-account-acceptance-v1.md`](docs/large-account-acceptance-v1.md).
+
+
+## Development status – Step 87
+
+Step 87 is complete: v1 now has a mandatory Docker/Compose acceptance scenario
+with 240 repositories, partial enrichment, bounded API response checks,
+pagination/filtering, frontend availability before enrichment completion,
+worker-restart recovery and explicit rate-limit state verification.
+
+Next: **Step 88** according to the development plan.
+
+
+## Version 1 privacy acceptance
+
+The v1 release gate includes an end-to-end privacy matrix covering cross-user
+isolation, public/private/excluded repositories, private-provenance AI,
+public/private reports and three external GPT privacy scopes. See
+[`docs/privacy-acceptance-v1.md`](docs/privacy-acceptance-v1.md).
+
+
+## Development status – Step 88
+
+Step 88 is complete: v1 now has a mandatory Compose privacy acceptance scenario
+that verifies no private information crosses into another user's view, public
+exports, unauthenticated APIs or insufficiently scoped GPT clients, while still
+allowing explicitly authorised private report/GPT paths.
+
+Next: **Step 89** according to the development plan.
+
+
+## Version 1 mobile acceptance
+
+The v1 release gate includes a real Chromium/iPhone-sized acceptance scenario
+covering login, dashboard navigation, activity charts, projects and filters,
+technologies, AI insights, report privacy configuration, privacy/data sources
+and account controls. See
+[`docs/mobile-acceptance-v1.md`](docs/mobile-acceptance-v1.md).
+
+
+## Development status – Step 89
+
+Step 89 is complete: v1 now has a Playwright/Chromium phone-sized acceptance
+test that exercises every primary mobile flow and checks that essential
+functionality does not depend on wide tables or page-level horizontal scrolling.
+
+Next: **Step 90** according to the development plan.
+
+
+## Version 1 release candidate gate
+
+Before tagging a v1 release candidate, run the GitHub Actions workflow
+**Version 1 Release Candidate Readiness**. It reuses the complete CI/acceptance
+suite, publishes immutable SHA-based candidate images, verifies a clean
+anonymous GHCR installation from those images and checks the v1 documentation
+set. See [`docs/release-candidate-v1.md`](docs/release-candidate-v1.md).
+
+
+## Development status – Step 90
+
+Step 90 is complete: Version 1 now has an executable release-candidate gate.
+The exact candidate commit must pass the complete CI/acceptance workflow,
+published GHCR candidate-image clean-install/runtime verification and the v1
+documentation gate before it may be tagged.
+
+Next: **Step 91 – Version 1 Release**.

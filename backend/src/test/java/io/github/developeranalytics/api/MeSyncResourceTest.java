@@ -6,6 +6,7 @@ import io.github.developeranalytics.support.TestFixtureService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.Cookie;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 
@@ -14,6 +15,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 @QuarkusTest
+@Tag("authorization")
+@Tag("worker-job")
+@Tag("persistence")
 class MeSyncResourceTest {
     @Inject
     TestFixtureService fixtures;

@@ -1,6 +1,7 @@
 package io.github.developeranalytics.domain.external;
 
 import io.github.developeranalytics.domain.model.AppUser;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -8,6 +9,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("unit")
 class ReturnedAiAssessmentTest {
 
     @Test

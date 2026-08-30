@@ -1,0 +1,9 @@
+services:
+  backend:
+    image: developer-analytics-backend:ci
+
+  worker:
+    image: developer-analytics-backend:ci
+
+  web:
+    image: developer-analytics-web:ci

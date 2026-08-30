@@ -1,6 +1,7 @@
 package io.github.developeranalytics.service.report;
 
 import io.github.developeranalytics.domain.report.CanonicalReport;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -12,6 +13,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("unit")
 class PdfReportRendererTest {
 
     @Test

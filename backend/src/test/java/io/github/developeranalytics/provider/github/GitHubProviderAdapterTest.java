@@ -3,10 +3,12 @@ package io.github.developeranalytics.provider.github;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.developeranalytics.provider.ProviderRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("github-adapter")
 class GitHubProviderAdapterTest {
 
     private GitHubProviderAdapter adapter;
