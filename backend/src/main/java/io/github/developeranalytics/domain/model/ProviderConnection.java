@@ -11,6 +11,7 @@ import java.util.UUID;
 @Table(name = "provider_connection")
 public class ProviderConnection {
     public enum Status { CONNECTED, DISCONNECTED, ERROR }
+    public enum PrivateRepositoryAccess { NOT_AUTHORISED, AUTHORISED }
 
     @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -53,6 +54,14 @@ public class ProviderConnection {
     @Column(name = "credential_updated_at")
     private OffsetDateTime credentialUpdatedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "private_repository_access", nullable = false, length = 30)
+    private PrivateRepositoryAccess privateRepositoryAccess =
+            PrivateRepositoryAccess.NOT_AUTHORISED;
+
+    @Column(name = "private_repository_authorised_at")
+    private OffsetDateTime privateRepositoryAuthorisedAt;
+
     protected ProviderConnection() {}
 
     public ProviderConnection(AppUser user, ProviderIdentity identity, String provider) {
@@ -85,6 +94,21 @@ public class ProviderConnection {
         this.credentialUpdatedAt = null;
     }
 
+    public void authorisePrivateRepositoryAccess() {
+        this.privateRepositoryAccess = PrivateRepositoryAccess.AUTHORISED;
+        this.privateRepositoryAuthorisedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    }
+
+    public void removePrivateRepositoryAccess() {
+        this.privateRepositoryAccess = PrivateRepositoryAccess.NOT_AUTHORISED;
+        this.privateRepositoryAuthorisedAt = null;
+    }
+
+    public boolean isPrivateRepositoryAccessAuthorised() {
+        return this.privateRepositoryAccess ==
+                PrivateRepositoryAccess.AUTHORISED;
+    }
+
     @PrePersist
     void onCreate() {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
@@ -105,4 +129,6 @@ public class ProviderConnection {
     public String getCredentialCiphertext() { return credentialCiphertext; }
     public String getCredentialKeyVersion() { return credentialKeyVersion; }
     public OffsetDateTime getCredentialUpdatedAt() { return credentialUpdatedAt; }
+    public PrivateRepositoryAccess getPrivateRepositoryAccess() { return privateRepositoryAccess; }
+    public OffsetDateTime getPrivateRepositoryAuthorisedAt() { return privateRepositoryAuthorisedAt; }
 }

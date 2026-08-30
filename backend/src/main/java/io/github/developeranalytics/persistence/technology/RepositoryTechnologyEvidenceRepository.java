@@ -68,7 +68,9 @@ public List<TechnologyEvidenceSummaryRow> summarizeForUser(
             "count(distinct e.evidenceType), " +
             "min(e.observedAt), " +
             "max(e.observedAt), " +
-            "sum(case when e.repository.lastActivityAt >= :recentThreshold then 1 else 0 end) " +
+            "sum(case when e.repository.lastActivityAt >= :recentThreshold then 1 else 0 end), " +
+            "count(distinct case when e.repository.visibility = io.github.developeranalytics.domain.model.RepositoryVisibility.PUBLIC then e.repository.id else null end), " +
+            "count(distinct case when e.repository.visibility = io.github.developeranalytics.domain.model.RepositoryVisibility.PRIVATE then e.repository.id else null end) " +
             "from RepositoryTechnologyEvidence e " +
             "where e.user.id=:userId " +
             "group by e.technology.id",
@@ -85,7 +87,9 @@ public List<TechnologyEvidenceSummaryRow> summarizeForUser(
                     ((Number) row[3]).intValue(),
                     (java.time.OffsetDateTime) row[4],
                     (java.time.OffsetDateTime) row[5],
-                    ((Number) row[6]).intValue()
+                    ((Number) row[6]).intValue(),
+                    ((Number) row[7]).intValue(),
+                    ((Number) row[8]).intValue()
             ))
             .toList();
 }
@@ -101,7 +105,7 @@ public List<RepresentativeProjectRow> findRepresentativeProjects(
             "e.repository.visibility, e.repository.ownershipRelation, " +
             "max(e.repository.lastActivityAt), count(e.id) " +
             "from RepositoryTechnologyEvidence e " +
-            "where e.user.id=:userId and e.technology.id=:technologyId " +
+            "where e.user.id=:userId and e.technology.id=:technologyId and e.repository.includedInAnalysis=true " +
             "group by e.repository.id, e.repository.name, e.repository.htmlUrl, " +
             "e.repository.visibility, e.repository.ownershipRelation " +
             "order by max(e.repository.lastActivityAt) desc nulls last, count(e.id) desc",
@@ -140,7 +144,9 @@ public record TechnologyEvidenceSummaryRow(
         int independentEvidenceTypes,
         java.time.OffsetDateTime firstObservedAt,
         java.time.OffsetDateTime lastObservedAt,
-        int recentRepositoryCount
+        int recentRepositoryCount,
+        int publicRepositoryCount,
+        int privateRepositoryCount
 ) {}
 
 }

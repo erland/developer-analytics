@@ -1,0 +1,3 @@
+ALTER TABLE app_user
+    ADD COLUMN ai_privacy_policy VARCHAR(40)
+    NOT NULL DEFAULT 'PRIVATE_AI_DISABLED';

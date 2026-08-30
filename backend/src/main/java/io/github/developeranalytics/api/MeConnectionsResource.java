@@ -6,6 +6,7 @@ import io.github.developeranalytics.auth.CurrentUserService;
 import io.github.developeranalytics.domain.model.ProviderConnection;
 import io.github.developeranalytics.domain.model.ProviderIdentity;
 import io.github.developeranalytics.service.connection.ProviderConnectionService;
+import io.github.developeranalytics.service.connection.DisconnectDataDisposition;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.GET;
@@ -13,6 +14,8 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.core.MediaType;
 
 import java.time.OffsetDateTime;
@@ -21,6 +24,7 @@ import java.util.UUID;
 
 @Path("/api/me/connections")
 @Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class MeConnectionsResource {
 
     @Inject
@@ -51,13 +55,45 @@ public class MeConnectionsResource {
 
     @POST
     @Path("/{provider}/disconnect")
-    public ConnectionSummary disconnect(
+    public DisconnectResponse disconnect(
             @CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken,
-            @PathParam("provider") String provider
+            @PathParam("provider") String provider,
+            DisconnectRequest request
     ) {
-        CurrentUser current = currentUserService.requireCurrentUser(sessionToken);
-        return ConnectionSummary.from(connections.disconnect(current.user().getId(), provider));
+        CurrentUser current =
+                currentUserService.requireCurrentUser(sessionToken);
+
+        if (request == null || request.dataDisposition() == null) {
+            throw new BadRequestException(
+                    "Disconnect data disposition must be explicitly supplied"
+            );
+        }
+
+        ProviderConnectionService.DisconnectResult result =
+                connections.disconnect(
+                        current.user().getId(),
+                        provider,
+                        request.dataDisposition()
+                );
+
+        return new DisconnectResponse(
+                ConnectionSummary.from(result.connection()),
+                result.dataDisposition(),
+                result.cancelledBackgroundJobs(),
+                result.analysedDataRemoved()
+        );
     }
+
+    public record DisconnectRequest(
+            DisconnectDataDisposition dataDisposition
+    ) {}
+
+    public record DisconnectResponse(
+            ConnectionSummary connection,
+            DisconnectDataDisposition dataDisposition,
+            int cancelledBackgroundJobs,
+            boolean analysedDataRemoved
+    ) {}
 
     @POST
     @Path("/{provider}/validate")

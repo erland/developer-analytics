@@ -12,6 +12,7 @@ export type TechnologyView = {
   firstObservedAt: string | null
   lastObservedAt: string | null
   recentProjectCount: number
+  privacyProvenance: 'PUBLIC_ONLY' | 'INCLUDES_PRIVATE' | 'PRIVATE_AGGREGATE'
   rationale: Record<string, unknown>
   timeline: Array<{
     month: string

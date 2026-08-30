@@ -64,5 +64,34 @@ public class BackgroundJob {
     public int getAttemptCount(){return attemptCount;} public int getMaxAttempts(){return maxAttempts;}
     public void markRunning(String worker, OffsetDateTime now){status=BackgroundJobStatus.RUNNING; lockedBy=worker; lockedAt=now; attemptCount++;}
     public void complete(){status=BackgroundJobStatus.COMPLETED; progressPercent=100; completedAt=OffsetDateTime.now(); lockedAt=null; lockedBy=null;}
-    public void retryOrFail(String error, OffsetDateTime next){lastError=error; lockedAt=null; lockedBy=null; if(attemptCount>=maxAttempts) status=BackgroundJobStatus.FAILED; else {status=BackgroundJobStatus.WAITING; nextExecutionAt=next;}}
+    public void retryOrFail(String error, OffsetDateTime next){
+        lastError=error;
+        lockedAt=null;
+        lockedBy=null;
+        if(attemptCount>=maxAttempts) {
+            status=BackgroundJobStatus.FAILED;
+        } else {
+            status=BackgroundJobStatus.WAITING;
+            nextExecutionAt=next;
+        }
+    }
+
+    public void failPermanently(String error){
+        lastError=error;
+        lockedAt=null;
+        lockedBy=null;
+        status=BackgroundJobStatus.FAILED;
+        completedAt=OffsetDateTime.now();
+    }
+
+    public void recoverInterrupted(OffsetDateTime nextExecution){
+        if(status!=BackgroundJobStatus.RUNNING) return;
+        status=BackgroundJobStatus.WAITING;
+        lockedAt=null;
+        lockedBy=null;
+        lastError="Recovered after interrupted worker execution";
+        nextExecutionAt=nextExecution;
+    }
+
+    public OffsetDateTime getLockedAt(){return lockedAt;}
 }

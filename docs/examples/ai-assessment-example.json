@@ -1,0 +1,17 @@
+{
+  "analysisType": "developer-profile",
+  "content": {
+    "summary": "Predominantly backend and platform-oriented activity.",
+    "likelyRoles": [
+      {
+        "role": "Backend developer",
+        "confidence": 0.84
+      }
+    ],
+    "observations": [
+      "Strong Java and Quarkus evidence",
+      "Increasing infrastructure and automation activity"
+    ]
+  },
+  "containsPrivateData": false
+}

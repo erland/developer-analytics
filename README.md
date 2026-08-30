@@ -380,3 +380,246 @@ Next: **Step 48** according to the development plan.
 Step 48 is complete: Project types now shows project counts per category, contribution activity, category evolution over time and representative projects through a responsive category view.
 
 Next: **Phase 11 – Private Repository Support**, beginning with Step 49.
+
+
+## Development status – Step 49
+
+Step 49 is complete: private GitHub repository access is opt-in, separately authorised, recorded as an explicit provider-connection permission and enforced server-side during repository discovery. Normal sign-in remains public-data-only.
+
+Next: **Step 50** according to the development plan.
+
+## Development status – Step 50
+
+Step 50 is complete: derived statistics and assessments retain privacy provenance with propagation tests and API/UI exposure.
+
+Next: **Step 51** according to the development plan.
+
+## Development status – Step 51
+
+Step 51 is complete: authorised private repositories are inspectable and individually opt-in for analysis, with refresh and remove-from-analysis controls. Newly discovered private repositories default to excluded.
+
+Next: **Step 52** according to the development plan.
+
+
+## Development status – Step 52
+
+Step 52 is complete: report export now requires explicit per-export controls for excluding private data, including private aggregates, including full private project detail, and hiding or showing private repository names. The backend rejects requests that omit either privacy setting.
+
+Next: **Phase 12 – AI-Assisted Analysis**, beginning with Step 53.
+
+
+## Development status – Step 53
+
+Step 53 is complete: a vendor-independent AI provider abstraction and application gateway now exist for project classification, project summaries, technology normalisation, role inference and technology-history summaries. The default provider is disabled and returns no AI result, preserving all core deterministic functionality without external AI configuration.
+
+Next: **Step 54** according to the development plan.
+
+
+## Development status – Step 54
+
+Step 54 is complete: Gemini is available as the first optional `AiProvider` implementation. It is enabled only through environment configuration, uses structured JSON outputs for all five AI operations, records request type/result/token usage without logging prompt content, and degrades to the disabled provider when no Gemini secret is configured.
+
+Next: **Step 55** according to the development plan.
+
+
+## Development status – Step 55
+
+Step 55 is complete: every AI request now requires explicit sensitivity metadata and passes a three-way privacy decision using source sensitivity, per-user consent and deployment-level provider policy. Private repository content is never automatically sent to Gemini; private metadata requires explicit user consent plus provider permission.
+
+Next: **Step 56** according to the development plan.
+
+
+## Development status – Step 56
+
+Step 56 is complete: AI project classification now complements deterministic classification, persists classification/confidence/explanation/version/provider/model/privacy metadata, fingerprints its inputs and reuses unchanged results rather than repeating AI calls.
+
+Next: **Step 57** according to the development plan.
+
+
+## Development status – Step 57
+
+Step 57 is complete: Developer Analytics can now generate optional user-level AI insights covering likely roles, technical focus, breadth/depth, technology evolution and open-source engagement. Insights are persisted, fingerprinted/reused when unchanged, privacy-gated and clearly labelled as AI-generated rather than measured facts.
+
+Next: **Step 58** according to the development plan.
+
+
+## Development status – Step 58
+
+Step 58 is complete: user corrections are stored as a separate reversible layer, allowing incorrect project categories to be rejected, technology inferences to be suppressed and projects to be excluded from AI profile conclusions without altering source facts.
+
+Next: **Phase 13 – External GPT Integration**, beginning with Step 59.
+
+
+## Development status – Step 59
+
+Step 59 is complete: the External Analysis API v1 contract defines compact LLM-oriented `/api/me/profile`, `/projects`, `/activity`, `/technologies`, `/project-types`, `/contributions` and `/evidence` representations. The contract uses an explicit versioned media type so dashboard payloads remain independent.
+
+Next: **Step 60** according to the development plan.
+
+
+## Development status – Step 60
+
+Step 60 is complete: users can create scoped external-client bearer tokens, see their metadata, revoke them, and use them independently of browser sessions and GitHub credentials. External Analysis API v1 now requires a dedicated token with the endpoint-specific read scope.
+
+Next: **Step 61** according to the development plan.
+
+
+## Development status – Step 61
+
+Step 61 is complete: external GPT/API tokens now carry an explicit server-enforced privacy scope (`PUBLIC_ONLY`, `PUBLIC_PLUS_PRIVATE_AGGREGATES` or `FULL_AUTHORISED_ANALYSIS`) in addition to endpoint read scopes. Public-only is the default and private project detail requires the full authorised scope.
+
+Next: **Step 62** according to the development plan.
+
+
+## Development status – Step 62
+
+Step 62 is complete: external clients can return structured AI assessments through a dedicated scoped write permission. Assessments retain analysis type, authenticated source/client, server timestamp, token data/privacy scope, structured content and an explicit private-data indication. Users can list and delete returned assessments without changing source facts.
+
+Next: **Step 63 – Publish GPT/API Documentation**.
+
+
+## GPT/API documentation
+
+Phase 13 integration documentation is published in-repository:
+
+- [`docs/external-analysis-api.md`](docs/external-analysis-api.md) — compact API contract and privacy semantics.
+- [`docs/openapi/external-analysis-v1.yaml`](docs/openapi/external-analysis-v1.yaml) — machine-readable OpenAPI 3.1 contract.
+- [`docs/gpt-api-integration.md`](docs/gpt-api-integration.md) — authentication, scopes, privacy rules and integration workflow.
+- [`docs/openapi/custom-gpt-action-example.yaml`](docs/openapi/custom-gpt-action-example.yaml) — sample Custom GPT Action schema.
+- [`docs/examples/external-analysis-calls.sh`](docs/examples/external-analysis-calls.sh) — runnable curl examples.
+- [`docs/examples/ai-assessment-example.json`](docs/examples/ai-assessment-example.json) — example returned assessment payload.
+
+## Development status – Step 63
+
+Step 63 is complete: the External Analysis API now has published OpenAPI 3.1 documentation, authentication and privacy-scope instructions, copyable API examples and a sample Custom GPT Action schema.
+
+Next: **Phase 14 – Reports and Export**, beginning with Step 64.
+
+
+## Canonical report model
+
+Report content is now defined independently of output format. See
+[`docs/canonical-report-model.md`](docs/canonical-report-model.md).
+
+## Development status – Step 64
+
+Step 64 is complete: report content now flows through the versioned
+`CanonicalReport` model containing summary, period, coverage, project
+categories, technology analysis, activity, significant projects, role/AI
+assessment, methodology and privacy scope. Markdown is a renderer of that model
+rather than an independent report implementation.
+
+Next: **Step 65** according to the development plan.
+
+
+## Markdown report exports
+
+The first canonical output format now supports public OSS, full developer,
+technology-profile and activity reports. See
+[`docs/markdown-reports.md`](docs/markdown-reports.md).
+
+## Development status – Step 65
+
+Step 65 is complete: Markdown export now offers four canonical report variants,
+all rendered from `CanonicalReport`, with methodology and data-coverage sections
+in every variant. The public OSS report is forced to public-only data server-side.
+
+Next: **Step 66** according to the development plan.
+
+
+## Development status – Step 66
+
+Step 66 is complete: report generation now uses a mandatory privacy-preview
+stage showing private repository inclusion, private-name inclusion, AI
+assessment inclusion, effective privacy scope, analysed time range and coverage.
+The preview creates no file; export requires a separate explicit generation
+action and server-side `generationConfirmed=true`.
+
+Next: **Step 67** according to the development plan.
+
+
+## Development status – Step 67
+
+Step 67 is complete: PDF export now renders from the same `CanonicalReport` and
+shared section plan as Markdown. The A4 renderer uses wrapping card layouts for
+wide analytical tables, a print-native activity chart, independent print layout
+rather than dashboard CSS, and persistent privacy markings on every page.
+
+Next: **Step 68** according to the development plan.
+
+
+## Development status – Step 68
+
+Step 68 is complete: export tests now verify public-only private-name isolation,
+aggregate-private masking/no-detail behavior, full-private inclusion only for
+repositories explicitly included in analysis, and core-content parity between
+Markdown and rendered PDF including PDF privacy markings.
+
+Next: **Phase 15 – Data Lifecycle and Operational Hardening**, beginning with
+Step 69.
+
+
+## Development status – Step 69
+
+Step 69 is complete: GitHub disconnect now cancels queued provider jobs, removes
+the stored provider credential and private-repository authorisation, blocks
+future credential retrieval, and requires an explicit choice to preserve or
+remove previously analysed GitHub data.
+
+Next: **Step 70** according to the development plan.
+
+
+## Development status – Step 70
+
+Step 70 is complete: users can permanently delete all Developer Analytics
+account data through one explicit, transactional deletion boundary rooted at
+`app_user`. Database cascades remove provider connections, sessions,
+repositories, contributions, aggregates, evidence, classifications, AI data,
+external-client tokens and background jobs. A realistic relational integration
+test verifies the cascade graph.
+
+Next: **Step 71** according to the development plan.
+
+
+## Development status – Step 71
+
+Step 71 is complete: persistent jobs now recover stale `RUNNING` locks after
+worker/backend interruption, transient GitHub/network failures retry with bounded
+exponential backoff, lost provider permission becomes an explicit
+`ACCESS_REVOKED`/connection-error state, and optional AI outages degrade to no AI
+result instead of breaking deterministic analysis. Manual recovery/retry actions
+are also available.
+
+Next: **Step 72** according to the development plan.
+
+
+## Development status – Step 72
+
+Step 72 is complete: HTTP requests now have propagated correlation IDs,
+background-worker logs carry job IDs, repository/contribution sync logs carry
+persisted sync IDs, and operational failures use sanitized structured
+`key=value` events. Tokens, credentials, authorization values, private source
+content, prompts and diffs are explicitly excluded from the structured log
+contract.
+
+Next: **Step 73** according to the development plan.
+
+
+## Development status – Step 73
+
+Step 73 is complete: SmallRye liveness/readiness now covers the backend process,
+database connectivity and Flyway migration state. Worker processes persist a
+heartbeat for operational status, while optional Gemini availability is
+reported separately and never makes the service unhealthy by itself.
+
+Next: **Step 74** according to the development plan.
+
+
+## Development status – Step 74
+
+Step 74 is complete: self-hosted PostgreSQL backup/restore is documented and
+supported by repository scripts for custom-format `pg_dump`, checksum-verified
+restore, and a real restore verification that checks account data, repository
+inventory, aggregates, AI analysis metadata and Flyway history.
+
+Next: **Step 75** according to the development plan.

@@ -75,3 +75,36 @@ Step 47 implements the Technologies section with a selectable technology list an
 ## Project-type views
 
 Step 48 implements the Project types section with a selectable category list. Category details show project count, observed activity, evolution over time and representative projects. The same responsive master/detail pattern as the Technologies view is reused for desktop, tablet and phone layouts.
+
+
+## Private repository authorisation
+
+Step 49 adds the private-repository permission under Privacy/data sources rather than making data acquisition a primary dashboard workflow. The user must explicitly choose `Authorise private repositories`, review the GitHub OAuth permission request, and approve it before private repositories can enter analysis.
+
+## Privacy provenance
+
+Analysis views now surface privacy provenance as secondary metadata so users can see when a result contains private evidence without shifting the UI focus away from analysis.
+
+## Private repository selection
+
+Step 51 adds repository-level private-data selection under Privacy/data sources. Users can inspect discovered private repositories, include/exclude each repository, refresh GitHub permissions/discovery and remove a repository from analysis. This remains secondary configuration rather than a primary dashboard workflow.
+
+
+## Reports and export privacy
+
+Step 52 activates the Reports section. No export option is preselected. The user must explicitly choose both the private-data level and private-repository name handling before `Export Markdown` becomes available. These choices are made again for each export rather than being silently reused.
+
+
+## AI insights availability
+
+Step 53 activates the AI insights section only as an availability surface. With the default disabled provider it explicitly states that deterministic analytics remain available. No AI configuration is required for the core dashboard.
+
+
+## AI privacy controls
+
+Step 55 adds explicit AI privacy choices to AI insights. Private AI usage defaults to disabled. Users may select public-only or allow private metadata, but private repository content remains blocked and provider deployment policy can further restrict the user's choice.
+
+
+## Correction feedback
+
+Step 58 adds lightweight correction controls in project and technology views. Users can reject a category, suppress a technology inference or exclude a project from AI-profile conclusions. The UI explicitly explains that these controls do not remove underlying facts.

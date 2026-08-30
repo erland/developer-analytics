@@ -3,12 +3,15 @@ package io.github.developeranalytics.service.discovery;
 import io.github.developeranalytics.domain.model.*;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
 import io.github.developeranalytics.persistence.repository.RepositorySyncRunRepository;
+import io.github.developeranalytics.persistence.auth.ProviderConnectionRepository;
 import io.github.developeranalytics.provider.*;
 import io.github.developeranalytics.provider.github.GitHubProviderAdapter;
 import io.github.developeranalytics.service.connection.ProviderCredentialService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import io.github.developeranalytics.observability.StructuredLog;
+import org.jboss.logging.Logger;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -16,6 +19,8 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class GitHubRepositoryDiscoveryService {
+    private static final Logger LOG =
+            Logger.getLogger(GitHubRepositoryDiscoveryService.class);
 
     @Inject
     GitHubProviderAdapter github;
@@ -29,16 +34,32 @@ public class GitHubRepositoryDiscoveryService {
     @Inject
     RepositorySyncRunRepository syncRuns;
 
+    @Inject
+    ProviderConnectionRepository connections;
+
 
 @Transactional
 public DiscoveryResult discover(AppUser user) throws ProviderException {
     ProviderAccessToken token = credentials.requireAccessToken(user.getId(), "github");
     ProviderUser providerUser = github.fetchCurrentUser(token);
 
+    boolean privateRepositoriesAuthorised = connections
+            .findForUserAndProvider(user.getId(), "github")
+            .map(ProviderConnection::isPrivateRepositoryAccessAuthorised)
+            .orElse(false);
+
     OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
     RepositorySyncRun run = new RepositorySyncRun(user, "github");
     syncRuns.persist(run);
     run.start(now);
+    StructuredLog.info(
+            LOG,
+            "repository_sync_started",
+            StructuredLog.fields(
+                    "syncId", run.getId(),
+                    "provider", "github"
+            )
+    );
 
     int seen = 0;
     int created = 0;
@@ -52,6 +73,15 @@ public DiscoveryResult discover(AppUser user) throws ProviderException {
             pages++;
 
             for (ProviderRepository providerRepository : page.items()) {
+                if (providerRepository.visibility() ==
+                        ProviderRepository.Visibility.PRIVATE &&
+                        !privateRepositoriesAuthorised) {
+                    // Never infer consent from token capabilities.
+                    // Private repositories are ignored until the user
+                    // explicitly authorises them in Developer Analytics.
+                    continue;
+                }
+
                 SourceRepository repository = repositories
                         .findByExternalIdForUser(
                                 user.getId(),
@@ -108,8 +138,30 @@ public DiscoveryResult discover(AppUser user) throws ProviderException {
         } while (cursor != null);
 
         run.complete(OffsetDateTime.now(ZoneOffset.UTC));
+        StructuredLog.info(
+                LOG,
+                "repository_sync_completed",
+                StructuredLog.fields(
+                        "syncId", run.getId(),
+                        "provider", "github",
+                        "seen", seen,
+                        "created", created,
+                        "updated", updated,
+                        "pages", pages
+                )
+        );
         return new DiscoveryResult(run.getId(), seen, created, updated, pages);
     } catch (ProviderException e) {
+        StructuredLog.warn(
+                LOG,
+                "repository_sync_provider_error",
+                e,
+                StructuredLog.fields(
+                        "syncId", run.getId(),
+                        "provider", "github",
+                        "httpStatus", e.getStatusCode()
+                )
+        );
         OffsetDateTime failedAt = OffsetDateTime.now(ZoneOffset.UTC);
         if (e.getStatusCode() == 403 || e.getStatusCode() == 429) {
             run.rateLimited(e.getMessage(), run.getRateLimitResetAt(), failedAt);
@@ -118,6 +170,15 @@ public DiscoveryResult discover(AppUser user) throws ProviderException {
         }
         throw e;
     } catch (RuntimeException e) {
+        StructuredLog.warn(
+                LOG,
+                "repository_sync_runtime_error",
+                e,
+                StructuredLog.fields(
+                        "syncId", run.getId(),
+                        "provider", "github"
+                )
+        );
         run.fail(e.getMessage(), OffsetDateTime.now(ZoneOffset.UTC));
         throw e;
     }

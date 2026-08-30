@@ -20,6 +20,10 @@ public class UserActivityMonth {
     @Column(name="issue_count", nullable=false) private int issueCount;
     @Column(name="release_count", nullable=false) private int releaseCount;
     @Column(name="maintenance_count", nullable=false) private int maintenanceCount;
+    @Enumerated(EnumType.STRING)
+    @Column(name="privacy_provenance", nullable=false, length=32)
+    private DataPrivacyProvenance privacyProvenance = DataPrivacyProvenance.PUBLIC_ONLY;
     protected UserActivityMonth() {}
     public UserActivityMonth(AppUser user, LocalDate yearMonth) { this.user=user; this.yearMonth=yearMonth; }
+    public DataPrivacyProvenance getPrivacyProvenance() { return privacyProvenance; }
 }

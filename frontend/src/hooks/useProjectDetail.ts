@@ -15,6 +15,7 @@ export type ProjectDetail = {
     archived: boolean
     topics: string[]
     lastActivityAt: string | null
+    excludedFromAiProfile: boolean
   }
   activity: {
     commits: number
@@ -25,6 +26,7 @@ export type ProjectDetail = {
     deletions: number
     firstActivityAt: string | null
     lastActivityAt: string | null
+    excludedFromAiProfile: boolean
     timeline: Array<{ month: string; commits: number }>
   }
   technologies: Array<{
@@ -35,6 +37,7 @@ export type ProjectDetail = {
     sourceValue: string | null
     measuredValue: number | null
     observedAt: string
+    privacyProvenance: string
   }>
   categories: Array<{
     categoryKey: string
@@ -42,6 +45,8 @@ export type ProjectDetail = {
     source: string
     confidence: string
     rationale: Record<string, unknown>
+    privacyProvenance: string
+    rejectedByUser: boolean
   }>
   assessment: null | {
     significanceLevel: string
@@ -51,6 +56,7 @@ export type ProjectDetail = {
     involvementScore: number
     involvementRationale: Record<string, unknown>
     calculatedAt: string
+    privacyProvenance: string
   }
   synchronisation: {
     status: string

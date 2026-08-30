@@ -6,6 +6,10 @@ import { ActivityView } from './ActivityView'
 import { ProjectInventoryView } from './ProjectInventoryView'
 import { TechnologyViews } from './TechnologyViews'
 import { ProjectTypeViews } from './ProjectTypeViews'
+import { PrivacyDataSourcesView } from './PrivacyDataSourcesView'
+import { ReportsView } from './ReportsView'
+import { AiInsightsView } from './AiInsightsView'
+import { AccountView } from './AccountView'
 
 const sections = [
   'Overview',
@@ -124,6 +128,14 @@ export function AuthenticatedShell({ user }: Props) {
             <TechnologyViews />
           ) : section === 'Project types' ? (
             <ProjectTypeViews />
+          ) : section === 'AI insights' ? (
+            <AiInsightsView />
+          ) : section === 'Reports' ? (
+            <ReportsView />
+          ) : section === 'Privacy/data sources' ? (
+            <PrivacyDataSourcesView />
+          ) : section === 'Account' ? (
+            <AccountView />
           ) : (
             <section className="placeholder-panel" aria-labelledby="section-heading">
               <h2 id="section-heading">{section}</h2>

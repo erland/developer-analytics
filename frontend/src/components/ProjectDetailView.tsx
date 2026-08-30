@@ -1,4 +1,5 @@
 import { type ProjectDetail, useProjectDetail } from '../hooks/useProjectDetail'
+import { setCategoryRejected, setProjectExcludedFromAiProfile } from '../hooks/useCorrections'
 
 export function ProjectDetailView({
   repositoryId,
@@ -29,13 +30,27 @@ export function ProjectDetailView({
         </section>
       ) : null}
 
-      {detail.status === 'ready' ? <Detail data={detail.data} /> : null}
+      {detail.status === 'ready' ? <Detail data={detail.data} repositoryId={repositoryId} /> : null}
     </>
   )
 }
 
-function Detail({ data }: { data: ProjectDetail }) {
+function Detail({ data, repositoryId }: { data: ProjectDetail; repositoryId: string }) {
   const maxCommits = Math.max(1, ...data.activity.timeline.map((point) => point.commits))
+
+
+async function toggleCategory(categoryKey: string, rejected: boolean) {
+  await setCategoryRejected(repositoryId, categoryKey, !rejected)
+  window.location.reload()
+}
+
+async function toggleAiProfileExclusion() {
+  await setProjectExcludedFromAiProfile(
+    repositoryId,
+    !data.metadata.excludedFromAiProfile,
+  )
+  window.location.reload()
+}
 
   return (
     <>
@@ -130,9 +145,22 @@ function Detail({ data }: { data: ProjectDetail }) {
         {data.categories.length ? (
           <div className="chip-list">
             {data.categories.map((category) => (
-              <div className="evidence-chip" key={`${category.categoryKey}-${category.source}`}>
+              <div
+                className={`evidence-chip ${category.rejectedByUser ? 'correction-muted' : ''}`}
+                key={`${category.categoryKey}-${category.source}`}
+              >
                 <strong>{category.categoryName}</strong>
                 <span>{category.confidence} · {category.source}</span>
+                <button
+                  type="button"
+                  className="correction-action"
+                  onClick={() => void toggleCategory(
+                    category.categoryKey,
+                    category.rejectedByUser,
+                  )}
+                >
+                  {category.rejectedByUser ? 'Restore category' : 'Reject category'}
+                </button>
               </div>
             ))}
           </div>
@@ -143,6 +171,7 @@ function Detail({ data }: { data: ProjectDetail }) {
         <article className="dashboard-section">
           <span className="card-kicker">Project significance</span>
           <h2>{data.assessment?.significanceLevel ?? 'Not calculated'}</h2>
+          {data.assessment ? <span className="privacy-provenance">{data.assessment.privacyProvenance === 'PUBLIC_ONLY' ? 'Public data only' : 'Contains private data'}</span> : null}
           <div className="detail-score">{data.assessment?.significanceScore ?? '—'}</div>
           <Rationale value={data.assessment?.significanceRationale} />
         </article>
@@ -154,6 +183,25 @@ function Detail({ data }: { data: ProjectDetail }) {
           <Rationale value={data.assessment?.involvementRationale} />
         </article>
       </section>
+
+
+<section className="dashboard-section">
+  <span className="card-kicker">AI profile correction</span>
+  <h2>Project use in AI conclusions</h2>
+  <p className="settings-intro">
+    This does not remove repository facts or measured statistics. It only
+    controls whether this project contributes to user-level AI conclusions.
+  </p>
+  <button
+    type="button"
+    className="secondary-action"
+    onClick={() => void toggleAiProfileExclusion()}
+  >
+    {data.metadata.excludedFromAiProfile
+      ? 'Include project in AI profile'
+      : 'Exclude project from AI profile'}
+  </button>
+</section>
 
       <section className="dashboard-section">
         <span className="card-kicker">Synchronisation</span>

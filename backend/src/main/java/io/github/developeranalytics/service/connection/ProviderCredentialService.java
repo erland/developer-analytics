@@ -40,6 +40,12 @@ public class ProviderCredentialService {
                 .findForUserAndProvider(userId, normalize(provider))
                 .orElseThrow(NotFoundException::new);
 
+        if (!ProviderConnection.Status.CONNECTED.name()
+                .equals(connection.getStatus())) {
+            throw new IllegalStateException(
+                    "Provider connection is disconnected: " + provider);
+        }
+
         if (connection.getCredentialCiphertext() == null ||
                 connection.getCredentialKeyVersion() == null) {
             throw new IllegalStateException(

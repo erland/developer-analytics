@@ -86,6 +86,10 @@ public class ProjectSignificanceAssessment {
     @Column(name = "calculated_at", nullable = false)
     private OffsetDateTime calculatedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "privacy_provenance", nullable = false, length = 32)
+    private io.github.developeranalytics.domain.model.DataPrivacyProvenance privacyProvenance = io.github.developeranalytics.domain.model.DataPrivacyProvenance.PUBLIC_ONLY;
+
     protected ProjectSignificanceAssessment() {}
 
     public ProjectSignificanceAssessment(
@@ -132,6 +136,7 @@ public class ProjectSignificanceAssessment {
         this.involvementRationale = new LinkedHashMap<>(involvementRationale);
 
         this.calculatedAt = calculatedAt;
+        this.privacyProvenance = io.github.developeranalytics.domain.model.DataPrivacyProvenance.fromVisibility(repository.getVisibility());
     }
 
     public UUID getId() { return id; }
@@ -157,4 +162,5 @@ public class ProjectSignificanceAssessment {
         return Map.copyOf(involvementRationale);
     }
     public OffsetDateTime getCalculatedAt() { return calculatedAt; }
+    public io.github.developeranalytics.domain.model.DataPrivacyProvenance getPrivacyProvenance() { return privacyProvenance; }
 }

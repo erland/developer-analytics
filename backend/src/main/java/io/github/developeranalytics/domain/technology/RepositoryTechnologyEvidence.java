@@ -44,6 +44,10 @@ public class RepositoryTechnologyEvidence {
     @Column(name = "observed_at", nullable = false)
     private OffsetDateTime observedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "privacy_provenance", nullable = false, length = 32)
+    private io.github.developeranalytics.domain.model.DataPrivacyProvenance privacyProvenance = io.github.developeranalytics.domain.model.DataPrivacyProvenance.PUBLIC_ONLY;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -70,6 +74,7 @@ public class RepositoryTechnologyEvidence {
         this.sourceValue = sourceValue;
         this.measuredValue = measuredValue;
         this.observedAt = observedAt;
+        this.privacyProvenance = io.github.developeranalytics.domain.model.DataPrivacyProvenance.fromVisibility(repository.getVisibility());
     }
 
     public void refresh(Long measuredValue, OffsetDateTime observedAt) {
@@ -87,4 +92,5 @@ public class RepositoryTechnologyEvidence {
     public String getSourceValue() { return sourceValue; }
     public Long getMeasuredValue() { return measuredValue; }
     public OffsetDateTime getObservedAt() { return observedAt; }
+    public io.github.developeranalytics.domain.model.DataPrivacyProvenance getPrivacyProvenance() { return privacyProvenance; }
 }

@@ -30,6 +30,10 @@ public class TechnologyActivityMonth {
     @Column(name = "activity_count", nullable = false)
     private int activityCount;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "privacy_provenance", nullable = false, length = 32)
+    private io.github.developeranalytics.domain.model.DataPrivacyProvenance privacyProvenance = io.github.developeranalytics.domain.model.DataPrivacyProvenance.PUBLIC_ONLY;
+
     protected TechnologyActivityMonth() {}
 
     public TechnologyActivityMonth(
@@ -42,9 +46,10 @@ public class TechnologyActivityMonth {
         this.yearMonth = yearMonth;
     }
 
-    public void update(int repositoryCount, int activityCount) {
+    public void update(int repositoryCount, int activityCount, io.github.developeranalytics.domain.model.DataPrivacyProvenance privacyProvenance) {
         this.repositoryCount = repositoryCount;
         this.activityCount = activityCount;
+        this.privacyProvenance = privacyProvenance;
     }
 
     public UUID getId() { return id; }
@@ -53,4 +58,5 @@ public class TechnologyActivityMonth {
     public LocalDate getYearMonth() { return yearMonth; }
     public int getRepositoryCount() { return repositoryCount; }
     public int getActivityCount() { return activityCount; }
+    public io.github.developeranalytics.domain.model.DataPrivacyProvenance getPrivacyProvenance() { return privacyProvenance; }
 }

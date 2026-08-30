@@ -41,6 +41,7 @@ public class SourceRepository {
     @Column(name = "discovered_at") private OffsetDateTime discoveredAt;
     @Column(name = "last_seen_at") private OffsetDateTime lastSeenAt;
     @Column(name = "sync_error") private String syncError;
+    @Column(name = "included_in_analysis", nullable = false) private boolean includedInAnalysis = true;
 
     protected SourceRepository() {}
 
@@ -58,6 +59,7 @@ public class SourceRepository {
     public RepositoryOwnershipRelation getOwnershipRelation() { return ownershipRelation; }
     public RepositorySyncStatus getSyncStatus() { return syncStatus; }
     public OffsetDateTime getLastActivityAt() { return lastActivityAt; }
+    public boolean isIncludedInAnalysis() { return includedInAnalysis; }
 
 public String getOwnerExternalId() { return ownerExternalId; }
 public String getOwnerLogin() { return ownerLogin; }
@@ -76,6 +78,8 @@ public OffsetDateTime getLastSeenAt() { return lastSeenAt; }
     public void setLastActivityAt(OffsetDateTime v) { lastActivityAt = v; }
     public void setFork(boolean v) { fork = v; }
     public void setArchived(boolean v) { archived = v; }
+    public void includeInAnalysis() { includedInAnalysis = true; }
+    public void excludeFromAnalysis() { includedInAnalysis = false; }
 
     public void markSyncing() {
         syncStatus = RepositorySyncStatus.SYNCING;
@@ -120,7 +124,11 @@ public OffsetDateTime getLastSeenAt() { return lastSeenAt; }
         this.topics = topics == null ? new ArrayList<>() : new ArrayList<>(topics);
         this.ownerType = ownerType;
         this.ownershipRelation = ownershipRelation;
+        boolean firstDiscovery = this.discoveredAt == null;
         this.visibility = visibility;
+        if (firstDiscovery && visibility == RepositoryVisibility.PRIVATE) {
+            this.includedInAnalysis = false;
+        }
         this.fork = fork;
         this.archived = archived;
         this.lastActivityAt = lastActivityAt;

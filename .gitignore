@@ -97,3 +97,6 @@ pnpm-debug.log*
 # Do not ignore placeholder files used to keep empty project directories
 # -----------------------------------------------------------------------------
 !.gitkeep
+
+# Local PostgreSQL backups
+backups/

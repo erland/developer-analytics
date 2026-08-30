@@ -26,6 +26,7 @@ class MeTechnologiesResourceModelTest {
                 OffsetDateTime.parse("2024-01-01T00:00:00Z"),
                 OffsetDateTime.parse("2026-08-20T08:00:00Z"),
                 4,
+                "INCLUDES_PRIVATE",
                 Map.of("score", 88),
                 List.of(
                         new MeTechnologiesResource.TimelinePoint(

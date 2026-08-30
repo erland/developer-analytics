@@ -52,6 +52,10 @@ public class RepositoryProjectCategory {
     @Column(name = "observed_at", nullable = false)
     private OffsetDateTime observedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "privacy_provenance", nullable = false, length = 32)
+    private io.github.developeranalytics.domain.model.DataPrivacyProvenance privacyProvenance = io.github.developeranalytics.domain.model.DataPrivacyProvenance.PUBLIC_ONLY;
+
     protected RepositoryProjectCategory() {}
 
     public RepositoryProjectCategory(
@@ -70,6 +74,7 @@ public class RepositoryProjectCategory {
                 ? new LinkedHashMap<>()
                 : new LinkedHashMap<>(rationale);
         this.observedAt = observedAt;
+        this.privacyProvenance = io.github.developeranalytics.domain.model.DataPrivacyProvenance.fromVisibility(repository.getVisibility());
     }
 
     public SourceRepository getRepository() { return repository; }
@@ -78,4 +83,5 @@ public class RepositoryProjectCategory {
     public Confidence getConfidence() { return confidence; }
     public Map<String, Object> getRationale() { return Map.copyOf(rationale); }
     public OffsetDateTime getObservedAt() { return observedAt; }
+    public io.github.developeranalytics.domain.model.DataPrivacyProvenance getPrivacyProvenance() { return privacyProvenance; }
 }

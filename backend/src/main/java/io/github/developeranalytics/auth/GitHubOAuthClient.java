@@ -21,8 +21,19 @@ public class GitHubOAuthClient {
     private final HttpClient http=HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
 
     public URI authorizationUri(String state,String challenge){
+        return authorizationUri(state, challenge, null);
+    }
+
+    public URI authorizationUri(
+            String state,
+            String challenge,
+            String scope
+    ){
         String q="client_id="+enc(clientId)+"&redirect_uri="+enc(callbackUrl)+"&state="+enc(state)+
             "&code_challenge="+enc(challenge)+"&code_challenge_method=S256";
+        if(scope != null && !scope.isBlank()) {
+            q += "&scope=" + enc(scope);
+        }
         return URI.create("https://github.com/login/oauth/authorize?"+q);
     }
 

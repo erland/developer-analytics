@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { type TechnologyView, useTechnologyViews } from '../hooks/useTechnologyViews'
+import { setTechnologySuppressed } from '../hooks/useCorrections'
 
 export function TechnologyViews() {
   const technologies = useTechnologyViews()
@@ -93,12 +94,33 @@ function TechnologyDetail({ technology }: { technology: TechnologyView }) {
             Evidence level {technology.evidenceLevel.toLowerCase()} based on observed
             repository signals. This is not a formal proficiency rating.
           </p>
+          <span className="privacy-provenance">{privacyLabel(technology.privacyProvenance)}</span>
         </div>
         <div className="technology-score">
           <strong>{technology.evidenceScore}</strong>
           <span>evidence score</span>
         </div>
       </section>
+
+
+<section className="dashboard-section correction-panel">
+  <span className="card-kicker">Correction</span>
+  <h2>Technology inference</h2>
+  <p className="settings-intro">
+    Suppressing this inference hides it from analysis views and AI profile
+    conclusions while retaining the underlying repository evidence.
+  </p>
+  <button
+    className="secondary-action"
+    type="button"
+    onClick={async () => {
+      await setTechnologySuppressed(technology.technologyKey, true)
+      window.location.reload()
+    }}
+  >
+    Suppress technology inference
+  </button>
+</section>
 
       <section className="metric-grid">
         <Metric label="Projects" value={technology.projectCount} />
@@ -216,4 +238,10 @@ function formatMonth(value: string) {
     month: 'short',
     year: '2-digit',
   }).format(new Date(`${normalized}T00:00:00Z`))
+}
+
+function privacyLabel(value: TechnologyView['privacyProvenance']) {
+  if (value === 'PRIVATE_AGGREGATE') return 'Private aggregate'
+  if (value === 'INCLUDES_PRIVATE') return 'Includes private data'
+  return 'Public data only'
 }

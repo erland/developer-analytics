@@ -44,7 +44,8 @@ class MeProjectDetailResourceModelTest {
                         "VERY_HIGH",
                         85,
                         Map.of("contributionScore", 35),
-                        OffsetDateTime.parse("2026-08-20T08:00:00Z")
+                        OffsetDateTime.parse("2026-08-20T08:00:00Z"),
+                        "PUBLIC_ONLY"
                 ),
                 new MeProjectDetailResource.Synchronisation(
                         "SYNCED",

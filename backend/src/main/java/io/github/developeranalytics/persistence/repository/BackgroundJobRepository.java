@@ -51,4 +51,54 @@ public class BackgroundJobRepository {
         em.flush();
         return Optional.of(job);
     }
+
+@Transactional
+public int cancelProviderJobs(
+        UUID userId,
+        String provider,
+        OffsetDateTime now
+) {
+    return em.createNativeQuery(
+            "UPDATE background_job SET status='CANCELLED', " +
+            "completed_at=:now, locked_at=NULL, locked_by=NULL, " +
+            "last_error='Cancelled because provider was disconnected' " +
+            "WHERE user_id=:userId " +
+            "AND status IN ('QUEUED','WAITING') " +
+            "AND (payload->>'provider'=:provider " +
+            "OR deduplication_key LIKE :providerPrefix)"
+    )
+    .setParameter("now", now)
+    .setParameter("userId", userId)
+    .setParameter("provider", provider)
+    .setParameter("providerPrefix", provider + ":%")
+    .executeUpdate();
+}
+
+
+@Transactional
+public int recoverStaleRunningJobs(
+        OffsetDateTime lockedBefore,
+        OffsetDateTime nextExecutionAt
+) {
+    @SuppressWarnings("unchecked")
+    List<UUID> ids = em.createNativeQuery(
+            "SELECT id FROM background_job " +
+            "WHERE status='RUNNING' AND locked_at < :lockedBefore " +
+            "FOR UPDATE SKIP LOCKED"
+    )
+    .setParameter("lockedBefore", lockedBefore)
+    .getResultList();
+
+    int recovered = 0;
+    for (UUID id : ids) {
+        BackgroundJob job = em.find(BackgroundJob.class, id);
+        if (job != null && job.getStatus() == BackgroundJobStatus.RUNNING) {
+            job.recoverInterrupted(nextExecutionAt);
+            recovered++;
+        }
+    }
+    em.flush();
+    return recovered;
+}
+
 }

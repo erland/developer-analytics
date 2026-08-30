@@ -29,7 +29,7 @@ public class ProjectInventoryRepository {
             String categoryKey,
             String technologyKey
     ) {
-        StringBuilder where = new StringBuilder(" where r.user.id=:userId ");
+        StringBuilder where = new StringBuilder(" where r.user.id=:userId and r.includedInAnalysis=true ");
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("userId", userId);
 

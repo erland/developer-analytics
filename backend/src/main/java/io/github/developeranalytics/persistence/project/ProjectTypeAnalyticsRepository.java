@@ -19,7 +19,7 @@ public class ProjectTypeAnalyticsRepository {
                 "select c.category.categoryKey, c.category.displayName, " +
                 "count(distinct c.repository.id) " +
                 "from RepositoryProjectCategory c " +
-                "where c.repository.user.id=:userId " +
+                "where c.repository.user.id=:userId and c.repository.includedInAnalysis=true " +
                 "group by c.category.categoryKey, c.category.displayName " +
                 "order by count(distinct c.repository.id) desc, c.category.displayName",
                 Object[].class)
@@ -38,7 +38,7 @@ public class ProjectTypeAnalyticsRepository {
         List<Object[]> rows = entityManager.createQuery(
                 "select c.category.categoryKey, co.occurredAt, co.repository.id " +
                 "from RepositoryProjectCategory c, Contribution co " +
-                "where c.repository.user.id=:userId " +
+                "where c.repository.user.id=:userId and c.repository.includedInAnalysis=true " +
                 "and co.user.id=:userId " +
                 "and co.repository.id=c.repository.id " +
                 "order by co.occurredAt",
@@ -94,7 +94,7 @@ public class ProjectTypeAnalyticsRepository {
                 "from RepositoryProjectCategory c " +
                 "left join Contribution co on co.repository.id=c.repository.id " +
                 "and co.user.id=:userId " +
-                "where c.repository.user.id=:userId " +
+                "where c.repository.user.id=:userId and c.repository.includedInAnalysis=true " +
                 "and c.category.categoryKey=:categoryKey " +
                 "group by c.repository.id, c.repository.name, c.repository.htmlUrl, " +
                 "c.repository.visibility, c.repository.ownershipRelation, " +

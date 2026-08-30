@@ -70,6 +70,7 @@ public class TechnologyEvidenceStrengthService {
                     row.recentRepositoryCount(),
                     score.score(),
                     score.rationale(),
+                    io.github.developeranalytics.domain.model.DataPrivacyProvenance.fromRepositoryCounts(row.publicRepositoryCount(), row.privateRepositoryCount()),
                     now
             );
             updated++;

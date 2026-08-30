@@ -44,6 +44,7 @@ public class SourceRepositoryRepository {
         return entityManager.createQuery(
                 "select r from SourceRepository r " +
                 "where r.user.id=:userId " +
+                "and r.includedInAnalysis = true " +
                 "and r.syncStatus <> :accessRevoked " +
                 "order by r.lastActivityAt desc nulls last, r.name",
                 SourceRepository.class)
@@ -68,6 +69,21 @@ public class SourceRepositoryRepository {
             .setParameter("userId", userId)
             .getResultList();
     }
+
+
+public List<SourceRepository> findPrivateForUser(UUID userId) {
+    return entityManager.createQuery(
+            "select r from SourceRepository r " +
+            "where r.user.id=:userId and r.visibility=:visibility " +
+            "order by r.name",
+            SourceRepository.class)
+        .setParameter("userId", userId)
+        .setParameter(
+                "visibility",
+                io.github.developeranalytics.domain.model.RepositoryVisibility.PRIVATE
+        )
+        .getResultList();
+}
 
     public Optional<SourceRepository> findByIdForUser(UUID repositoryId, UUID userId) {
         return entityManager.createQuery(

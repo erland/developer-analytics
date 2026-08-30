@@ -61,6 +61,7 @@ describe('App', () => {
             visibility: 'PUBLIC',
             ownershipRelation: 'OWNED_BY_USER',
             lastActivityAt: '2026-08-20T08:00:00Z',
+            excludedFromAiProfile: false,
           },
           {
             id: 'repo-2',
@@ -69,6 +70,82 @@ describe('App', () => {
             lastActivityAt: '2026-07-15T08:00:00Z',
           },
         ])
+      }
+      if (url === '/api/me/private-repositories') {
+        return jsonResponse([
+          { id: 'private-1', name: 'private-app', fullName: 'alice/private-app', htmlUrl: null, includedInAnalysis: true, syncStatus: 'SYNCED' },
+        ])
+      }
+      if (url === '/api/me/private-repositories/refresh') {
+        return jsonResponse({ jobId: 'job-1' })
+      }
+      if (url.startsWith('/api/me/corrections/')) {
+        return new Response(null, { status: 204 })
+      }
+
+if (url === '/api/me/reports/preview') {
+  return jsonResponse({
+    reportType: 'FULL_DEVELOPER_REPORT',
+    privateDataMode: 'EXCLUDE_PRIVATE',
+    privacyScope: 'PUBLIC_ONLY',
+    privateRepositoriesIncluded: false,
+    privateNamesIncluded: false,
+    aiAssessmentsIncluded: false,
+    firstActivityAt: '2025-01-01T00:00:00Z',
+    lastActivityAt: '2026-08-30T00:00:00Z',
+    repositoryCount: 12,
+    publicRepositoryCount: 12,
+    privateRepositoryCount: 0,
+    contributionCount: 1000,
+    reportModelVersion: 'report-v1',
+  })
+}
+
+      if (url === '/api/me/external-clients') {
+        return jsonResponse([])
+      }
+      if (url === '/api/me/ai/insights') {
+        return jsonResponse({
+          status: 'REUSED',
+          aiGenerated: true,
+          likelyRoles: [
+            {
+              role: 'Backend developer',
+              confidence: 0.82,
+              rationale: 'Strong backend and API signals',
+            },
+          ],
+          technicalFocus: 'Backend services and developer tooling.',
+          breadthDepthObservation: 'Broad technology exposure with deeper backend evidence.',
+          technologyEvolutionSummary: 'Recent activity increasingly includes container tooling.',
+          openSourceEngagementSummary: 'Regular activity across owned and external repositories.',
+          analysisVersion: 'user-ai-v1',
+          providerId: 'gemini',
+          modelId: 'test-model',
+          privacyProvenance: 'PUBLIC_ONLY',
+          createdAt: '2026-08-30T09:00:00Z',
+        })
+      }
+      if (url === '/api/me/ai/privacy') {
+        return jsonResponse({
+          policy: 'PRIVATE_AI_DISABLED',
+          privateMetadataAllowed: false,
+          privateContentAllowed: false,
+        })
+      }
+      if (url === '/api/me/ai/status') {
+        return jsonResponse({
+          configured: false,
+          providerId: 'disabled',
+          message: 'AI is not configured. Deterministic analytics remain fully available.',
+        })
+      }
+      if (url === '/api/me/data-sources/github') {
+        return jsonResponse({
+          status: 'CONNECTED',
+          privateRepositoriesAuthorised: true,
+          privateRepositoriesAuthorisedAt: '2026-08-30T08:00:00Z',
+        })
       }
       if (url === '/api/me/project-types') {
         return jsonResponse([
@@ -92,6 +169,7 @@ describe('App', () => {
                 visibility: 'PUBLIC',
                 ownershipRelation: 'OWNED_BY_USER',
                 lastActivityAt: '2026-08-20T08:00:00Z',
+            excludedFromAiProfile: false,
                 contributionCount: 42,
               },
             ],
@@ -112,6 +190,7 @@ describe('App', () => {
             firstObservedAt: '2024-01-01T00:00:00Z',
             lastObservedAt: '2026-08-20T08:00:00Z',
             recentProjectCount: 4,
+            privacyProvenance: 'INCLUDES_PRIVATE',
             rationale: { score: 88 },
             timeline: [
               { month: '2026-08-01', projectCount: 3, activityCount: 12 },
@@ -124,6 +203,7 @@ describe('App', () => {
                 visibility: 'PUBLIC',
                 ownershipRelation: 'OWNED_BY_USER',
                 lastActivityAt: '2026-08-20T08:00:00Z',
+            excludedFromAiProfile: false,
                 evidenceCount: 3,
               },
             ],
@@ -193,6 +273,7 @@ describe('App', () => {
             archived: false,
             topics: ['api', 'quarkus'],
             lastActivityAt: '2026-08-20T08:00:00Z',
+            excludedFromAiProfile: false,
           },
           activity: {
             commits: 42,
@@ -203,6 +284,7 @@ describe('App', () => {
             deletions: 210,
             firstActivityAt: '2026-01-01T08:00:00Z',
             lastActivityAt: '2026-08-20T08:00:00Z',
+            excludedFromAiProfile: false,
             timeline: [{ month: '2026-08', commits: 12 }],
           },
           technologies: [
@@ -214,6 +296,8 @@ describe('App', () => {
               sourceValue: 'pom.xml:io.quarkus',
               measuredValue: null,
               observedAt: '2026-08-20T08:00:00Z',
+              privacyProvenance: 'PUBLIC_ONLY',
+              rejectedByUser: false,
             },
           ],
           categories: [
@@ -223,6 +307,7 @@ describe('App', () => {
               source: 'DETERMINISTIC',
               confidence: 'HIGH',
               rationale: { score: 9 },
+              privacyProvenance: 'PUBLIC_ONLY',
             },
           ],
           assessment: {
@@ -233,6 +318,7 @@ describe('App', () => {
             involvementScore: 84,
             involvementRationale: { contributionScore: 35 },
             calculatedAt: '2026-08-20T08:00:00Z',
+            privacyProvenance: 'PUBLIC_ONLY',
           },
           synchronisation: {
             status: 'SYNCED',
@@ -252,6 +338,7 @@ describe('App', () => {
               ownershipRelation: 'OWNED_BY_USER',
               visibility: 'PUBLIC',
               lastActivityAt: '2026-08-20T08:00:00Z',
+            excludedFromAiProfile: false,
               categories: [
                 { key: 'backend-service', name: 'Backend service' },
               ],
@@ -338,6 +425,61 @@ describe('App', () => {
     expect(await screen.findByText('Technology evidence')).toBeInTheDocument()
     expect(screen.getByText('Representative projects')).toBeInTheDocument()
     expect(screen.getByText('evidence score')).toBeInTheDocument()
+
+
+    fireEvent.click(screen.getByRole('button', { name: 'AI insights' }))
+    expect(
+      screen.getByRole('heading', { name: 'AI insights', level: 1 }),
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByText('Deterministic analytics remain primary'),
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByText('User-level insights'),
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByText('AI-generated interpretation', { exact: false }),
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByRole('radio', { name: /Disable AI for private data/ }),
+    ).toBeChecked()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }))
+    expect(
+      screen.getByRole('heading', { name: 'Account', level: 1 }),
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByText('GPT/API access tokens'),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reports' }))
+    expect(
+      screen.getByRole('heading', { name: 'Reports', level: 1 }),
+    ).toBeInTheDocument()
+    const exportButton = screen.getByRole('button', { name: 'Export Markdown' })
+    expect(exportButton).toBeDisabled()
+
+    fireEvent.click(
+      screen.getByRole('radio', { name: /Full developer report/ }),
+    )
+    fireEvent.click(
+      screen.getByRole('radio', { name: /Exclude private data/ }),
+    )
+    fireEvent.click(
+      screen.getByRole('radio', { name: /Hide private repository names/ }),
+    )
+    expect(exportButton).toBeEnabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Privacy/data sources' }))
+    expect(
+      screen.getByRole('heading', { name: 'Privacy/data sources', level: 1 }),
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByText('Private repositories'),
+    ).toBeInTheDocument()
+    expect(await screen.findByText('alice/private-app')).toBeInTheDocument()
+    expect(screen.getByLabelText('Include in analysis')).toBeChecked()
+    expect(screen.getByRole('button', { name: 'Refresh permissions' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Project types' }))
     expect(screen.getByRole('heading', { name: 'Project types', level: 1 })).toBeInTheDocument()

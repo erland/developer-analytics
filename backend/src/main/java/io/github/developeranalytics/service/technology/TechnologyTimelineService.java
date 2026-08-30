@@ -40,7 +40,8 @@ public class TechnologyTimelineService {
 
             month.update(
                     row.repositoryCount(),
-                    row.activityCount()
+                    row.activityCount(),
+                    io.github.developeranalytics.domain.model.DataPrivacyProvenance.fromRepositoryCounts(row.publicRepositoryCount(), row.privateRepositoryCount())
             );
             updated++;
         }

@@ -526,3 +526,149 @@ Step 48 adds an authenticated project-type analytics endpoint:
 - `GET /api/me/project-types`
 
 Each category returns the number of classified projects, total observed contribution activity, monthly category evolution with active-project counts, and up to five representative projects. Repositories may appear in multiple categories by design.
+
+
+## Explicit private repository authorisation
+
+Step 49 keeps normal GitHub sign-in public-data-only. Private repository analysis requires a separate authenticated OAuth authorisation flow that explicitly requests GitHub's `repo` scope.
+
+The provider connection stores an application-level `private_repository_access` flag. Repository discovery checks this flag before accepting any private repository, so a token with broader permissions is never treated as implicit consent.
+
+## Privacy provenance
+
+Step 50 adds `PUBLIC_ONLY`, `INCLUDES_PRIVATE`, and `PRIVATE_AGGREGATE` provenance to derived statistics and assessments. Repository-level evidence inherits repository visibility; cross-repository technology aggregates calculate provenance from contributing public/private repositories.
+
+## Private repository selection
+
+Step 51 adds `source_repository.included_in_analysis`. Newly discovered private repositories default to excluded. The authenticated `/api/me/private-repositories` API lists authorised private repositories, changes per-repository selection, queues a GitHub discovery refresh, and removes a private repository from analysis by excluding it without revoking GitHub permission. Contribution sync candidates and primary analysis inventory queries respect the selection flag.
+
+
+## Private export controls
+
+Step 52 adds `POST /api/me/reports/export`. The request must explicitly contain both `privateDataMode` and `hidePrivateRepositoryNames`; missing values are rejected with HTTP 400.
+
+Supported modes are:
+
+- `EXCLUDE_PRIVATE`
+- `INCLUDE_PRIVATE_AGGREGATES`
+- `INCLUDE_FULL_PRIVATE_DETAIL`
+
+Aggregate mode never emits private repository names or per-project private detail. Full-private mode can independently hide private repository names. The current export format is Markdown.
+
+
+## AI provider abstraction
+
+Step 53 introduces the vendor-neutral `AiProvider` interface with the initial operations `classifyProject`, `summariseProject`, `normaliseTechnologies`, `inferRoles`, and `summariseTechnologyHistory`.
+
+`AiAnalysisGateway` is the application-facing boundary. The default `DisabledAiProvider` is a Quarkus `@DefaultBean`, so the application starts and all deterministic analytics remain available without any AI credentials or vendor configuration. A future vendor integration can replace the default bean without changing core domain services.
+
+
+## Gemini provider
+
+Step 54 adds Gemini behind `AiProvider`. Enable it with:
+
+- `AI_PROVIDER=gemini`
+- `GEMINI_API_KEY=<secret>`
+- optional `GEMINI_MODEL` (default `gemini-2.5-flash-lite`)
+- optional `GEMINI_BASE_URL`
+
+The API key is never committed and has no non-secret fallback. If the provider is disabled or the key is missing, `DisabledAiProvider` is selected and deterministic analytics continue normally.
+
+Gemini requests use structured JSON output schemas. Logging records only the operation type, success/failure, HTTP status when relevant, exception class, and available token usage metadata. Prompt/request content is deliberately not logged.
+
+
+## AI privacy policy enforcement
+
+Step 55 requires every external AI call to carry an `AiRequestContext` with explicit data sensitivity. The gateway evaluates that context before invoking the configured provider.
+
+Supported user/provider policies are:
+
+- `PUBLIC_ONLY`
+- `PRIVATE_METADATA_ALLOWED`
+- `PRIVATE_AI_DISABLED`
+
+Private source/content is blocked unconditionally in this phase. Private metadata is permitted only when both the user has explicitly selected `PRIVATE_METADATA_ALLOWED` and the deployment-level provider policy (`AI_PRIVATE_DATA_POLICY`) allows it. User consent can restrict provider policy but never widen it.
+
+The per-user default is `PRIVATE_AI_DISABLED`. Blocked requests are logged by operation type, sensitivity and denial reason, without prompt data.
+
+
+## AI project classification
+
+Step 56 adds persisted AI-assisted project classification as a complement to deterministic project classification.
+
+Each result stores:
+
+- classification labels,
+- confidence,
+- explanation,
+- analysis version,
+- creation time,
+- provider and model metadata,
+- privacy provenance,
+- a SHA-256 fingerprint of the repository metadata, observed technologies and deterministic classifications used as input.
+
+`POST /api/me/projects/{repositoryId}/ai-classification` generates a result only when the configured provider and AI privacy policy permit the request. An unchanged repository with the same analysis version/provider/model reuses the existing result instead of making another external AI request. `GET` returns the latest persisted result.
+
+Private repositories are sent only as `PRIVATE_METADATA` requests and therefore remain subject to the Step 55 consent/provider-policy gate. No source file content is included.
+
+
+## User-level AI insights
+
+Step 57 adds optional, persisted user-level AI insights. The AI receives aggregate technology, project-category, repository and contribution signals and returns:
+
+- likely roles with confidence/rationale,
+- technical focus,
+- breadth/depth observation,
+- technology evolution summary,
+- open-source engagement summary.
+
+Results are stored separately from measured/deterministic analytics and are explicitly marked AI-generated in the API/UI. The input is SHA-256 fingerprinted; unchanged data with the same analysis version/provider/model reuses the stored result.
+
+Privacy remains enforced by Step 55. With private-metadata consent disabled, the service builds the AI input from public evidence only. With private metadata allowed, private repository metadata may contribute, but source content is never included.
+
+
+## User correction feedback
+
+Step 58 introduces a separate `user_analysis_correction` layer. Corrections never delete or rewrite source facts, contribution records, technology evidence or project-category assignments.
+
+Supported corrections are:
+
+- reject a project category for a repository,
+- suppress a technology inference for the user,
+- exclude a repository from user-level AI profile conclusions.
+
+Technology suppression filters the inferred technology from analysis/UI and AI profile input while retaining its evidence rows. Category rejection is stored separately and is excluded from user-level AI category signals. Project exclusion removes that repository only from user-level AI profile aggregation; measured project/activity data remains intact.
+
+Corrections can be reversed by disabling the corresponding correction.
+
+
+## External Analysis API contract
+
+Step 59 introduces a versioned compact representation for external GPT/LLM clients. Clients request `application/vnd.developer-analytics.analysis.v1+json` on the standard `/api/me/...` URLs. This leaves the dashboard's existing `application/json` resources unchanged while providing an independent contract that avoids frontend-specific payloads.
+
+The v1 endpoints are documented in `docs/external-analysis-api.md`.
+
+
+## External client authentication
+
+Step 60 adds user-controlled `da_ext_...` bearer tokens for the versioned External Analysis API. Raw tokens are returned once and only their SHA-256 hashes are persisted. Tokens are user-specific, explicitly scoped, revocable and independent of both browser sessions and GitHub OAuth/provider credentials.
+
+Management uses the authenticated browser API at `/api/me/external-clients`. The external analysis resources require the dedicated bearer token and enforce a scope per endpoint.
+
+
+## External client privacy scopes
+
+Step 61 adds a second, independent permission dimension to external-client tokens:
+
+- `PUBLIC_ONLY`
+- `PUBLIC_PLUS_PRIVATE_AGGREGATES`
+- `FULL_AUTHORISED_ANALYSIS`
+
+The backend enforces the privacy scope on every compact external analysis endpoint. `PUBLIC_ONLY` excludes private evidence. Aggregate scope permits private data only in aggregate analytical forms, while `/projects` still returns public repositories only. Full scope permits private project detail only for repositories already authorised and included in analysis.
+
+
+## Returned AI assessment API
+
+Step 62 adds a write-back channel for external GPT/API clients. A token with `AI_ASSESSMENTS_WRITE` may `POST /api/me/ai-assessments`. The source client name, timestamp and privacy/data scope are derived server-side from the authenticated external token; only analysis type, structured content and the private-data indication come from the caller.
+
+The signed-in user can list assessments with `GET /api/me/ai-assessments` and delete one with `DELETE /api/me/ai-assessments/{id}`. Returned assessments are stored separately from measured source facts.

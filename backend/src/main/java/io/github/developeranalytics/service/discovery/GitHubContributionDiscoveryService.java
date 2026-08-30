@@ -9,12 +9,16 @@ import io.github.developeranalytics.service.connection.ProviderCredentialService
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import io.github.developeranalytics.observability.StructuredLog;
+import org.jboss.logging.Logger;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @ApplicationScoped
 public class GitHubContributionDiscoveryService {
+    private static final Logger LOG =
+            Logger.getLogger(GitHubContributionDiscoveryService.class);
 
     @Inject
     GitHubProviderAdapter github;
@@ -56,6 +60,14 @@ public DiscoveryResult discover(AppUser user, SourceRepository repository, Offse
     ContributionSyncRun run = new ContributionSyncRun(user, repository, "github");
     syncRuns.persist(run);
     run.start(startedAt);
+    StructuredLog.info(
+            LOG,
+            "contribution_sync_started",
+            StructuredLog.fields(
+                    "syncId", run.getId(),
+                    "provider", "github", "repositoryId", repository.getId()
+            )
+    );
 
     int seen = 0;
     int created = 0;
@@ -120,6 +132,19 @@ public DiscoveryResult discover(AppUser user, SourceRepository repository, Offse
         } while (cursor != null);
 
         run.complete(OffsetDateTime.now(java.time.ZoneOffset.UTC));
+        StructuredLog.info(
+                LOG,
+                "contribution_sync_completed",
+                StructuredLog.fields(
+                        "syncId", run.getId(),
+                        "repositoryId", repository.getId(),
+                        "provider", "github",
+                        "seen", seen,
+                        "created", created,
+                        "updated", updated,
+                        "pages", pages
+                )
+        );
         return new DiscoveryResult(
                 run.getId(),
                 repository.getId(),
@@ -129,6 +154,16 @@ public DiscoveryResult discover(AppUser user, SourceRepository repository, Offse
                 pages
         );
     } catch (ProviderException e) {
+        StructuredLog.warn(
+                LOG,
+                "contribution_sync_provider_error",
+                e,
+                StructuredLog.fields(
+                        "syncId", run.getId(),
+                        "provider", "github", "repositoryId", repository.getId(),
+                        "httpStatus", e.getStatusCode()
+                )
+        );
         OffsetDateTime failedAt = OffsetDateTime.now(java.time.ZoneOffset.UTC);
         if (e.getStatusCode() == 403 || e.getStatusCode() == 429) {
             run.rateLimited(e.getMessage(), run.getRateLimitResetAt(), failedAt);
@@ -137,6 +172,15 @@ public DiscoveryResult discover(AppUser user, SourceRepository repository, Offse
         }
         throw e;
     } catch (RuntimeException e) {
+        StructuredLog.warn(
+                LOG,
+                "contribution_sync_runtime_error",
+                e,
+                StructuredLog.fields(
+                        "syncId", run.getId(),
+                        "provider", "github", "repositoryId", repository.getId()
+                )
+        );
         run.fail(e.getMessage(), OffsetDateTime.now(java.time.ZoneOffset.UTC));
         throw e;
     }

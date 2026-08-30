@@ -71,3 +71,7 @@ openssl rand -base64 32
 ```
 
 Keep the key stable across restarts. Changing `CREDENTIAL_KEY_VERSION` without migrating/re-encrypting stored credentials intentionally makes old credentials unreadable.
+
+## Backup and restore
+
+See [`../docs/postgres-backup-restore.md`](../docs/postgres-backup-restore.md) for PostgreSQL backup, restore, retention, and restore-verification procedures.

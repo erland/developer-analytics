@@ -8,6 +8,7 @@ import io.github.developeranalytics.domain.technology.UserTechnologyAssessment;
 import io.github.developeranalytics.persistence.technology.RepositoryTechnologyEvidenceRepository;
 import io.github.developeranalytics.persistence.technology.TechnologyTimelineRepository;
 import io.github.developeranalytics.persistence.technology.UserTechnologyAssessmentRepository;
+import io.github.developeranalytics.service.correction.UserCorrectionService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.GET;
@@ -36,6 +37,9 @@ public class MeTechnologiesResource {
     @Inject
     RepositoryTechnologyEvidenceRepository evidence;
 
+    @Inject
+    UserCorrectionService corrections;
+
     @GET
     public List<Entry> list(
             @CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken
@@ -52,6 +56,10 @@ public class MeTechnologiesResource {
 
         return assessments.findForUser(current.user().getId())
                 .stream()
+                .filter(assessment -> !corrections.isTechnologySuppressed(
+                        current.user().getId(),
+                        assessment.getTechnology().getTechnologyKey()
+                ))
                 .map(assessment -> toEntry(
                         current.user().getId(),
                         assessment,
@@ -107,6 +115,7 @@ public class MeTechnologiesResource {
                 assessment.getFirstObservedAt(),
                 assessment.getLastObservedAt(),
                 assessment.getRecentRepositoryCount(),
+                assessment.getPrivacyProvenance().name(),
                 assessment.getRationale(),
                 timeline,
                 projects
@@ -125,6 +134,7 @@ public class MeTechnologiesResource {
             OffsetDateTime firstObservedAt,
             OffsetDateTime lastObservedAt,
             int recentProjectCount,
+            String privacyProvenance,
             Map<String, Object> rationale,
             List<TimelinePoint> timeline,
             List<RepresentativeProject> representativeProjects

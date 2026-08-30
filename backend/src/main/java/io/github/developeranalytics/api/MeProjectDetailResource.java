@@ -10,6 +10,7 @@ import io.github.developeranalytics.persistence.project.RepositoryProjectCategor
 import io.github.developeranalytics.persistence.repository.ContributionRepository;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
 import io.github.developeranalytics.persistence.technology.RepositoryTechnologyEvidenceRepository;
+import io.github.developeranalytics.service.correction.UserCorrectionService;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -53,7 +54,8 @@ public class MeProjectDetailResource {
                         evidence.getStrength().name(),
                         evidence.getSourceValue(),
                         evidence.getMeasuredValue(),
-                        evidence.getObservedAt()
+                        evidence.getObservedAt(),
+                        evidence.getPrivacyProvenance().name()
                 ))
                 .toList();
 
@@ -64,7 +66,13 @@ public class MeProjectDetailResource {
                         assignment.getCategory().getDisplayName(),
                         assignment.getSource().name(),
                         assignment.getConfidence().name(),
-                        assignment.getRationale()
+                        assignment.getRationale(),
+                        assignment.getPrivacyProvenance().name(),
+                        corrections.isProjectCategoryRejected(
+                                current.user().getId(),
+                                repository.getId(),
+                                assignment.getCategory().getCategoryKey()
+                        )
                 ))
                 .toList();
 
@@ -100,7 +108,8 @@ public class MeProjectDetailResource {
                         assessment.getInvolvementLevel().name(),
                         assessment.getInvolvementScore(),
                         assessment.getInvolvementRationale(),
-                        assessment.getCalculatedAt()
+                        assessment.getCalculatedAt(),
+                        assessment.getPrivacyProvenance().name()
                 ),
                 new Synchronisation(
                         repository.getSyncStatus().name(),
@@ -196,7 +205,8 @@ public class MeProjectDetailResource {
             boolean fork,
             boolean archived,
             List<String> topics,
-            OffsetDateTime lastActivityAt
+            OffsetDateTime lastActivityAt,
+            boolean excludedFromAiProfile
     ) {}
 
     public record Activity(
@@ -220,7 +230,8 @@ public class MeProjectDetailResource {
             String strength,
             String sourceValue,
             Long measuredValue,
-            OffsetDateTime observedAt
+            OffsetDateTime observedAt,
+            String privacyProvenance
     ) {}
 
     public record Category(
@@ -228,7 +239,9 @@ public class MeProjectDetailResource {
             String categoryName,
             String source,
             String confidence,
-            Map<String, Object> rationale
+            Map<String, Object> rationale,
+            String privacyProvenance,
+            boolean rejectedByUser
     ) {}
 
     public record Assessment(
@@ -238,7 +251,8 @@ public class MeProjectDetailResource {
             String involvementLevel,
             int involvementScore,
             Map<String, Object> involvementRationale,
-            OffsetDateTime calculatedAt
+            OffsetDateTime calculatedAt,
+            String privacyProvenance
     ) {}
 
     public record Synchronisation(

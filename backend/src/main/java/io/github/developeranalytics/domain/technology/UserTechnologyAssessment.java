@@ -58,6 +58,10 @@ public class UserTechnologyAssessment {
     @Column(name = "calculated_at", nullable = false)
     private OffsetDateTime calculatedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "privacy_provenance", nullable = false, length = 32)
+    private io.github.developeranalytics.domain.model.DataPrivacyProvenance privacyProvenance = io.github.developeranalytics.domain.model.DataPrivacyProvenance.PUBLIC_ONLY;
+
     protected UserTechnologyAssessment() {}
 
     public UserTechnologyAssessment(
@@ -78,6 +82,7 @@ public class UserTechnologyAssessment {
             int recentRepositoryCount,
             int score,
             Map<String, Object> rationale,
+            io.github.developeranalytics.domain.model.DataPrivacyProvenance privacyProvenance,
             OffsetDateTime calculatedAt
     ) {
         this.strength = strength;
@@ -89,6 +94,7 @@ public class UserTechnologyAssessment {
         this.recentRepositoryCount = recentRepositoryCount;
         this.score = score;
         this.rationale = new LinkedHashMap<>(rationale);
+        this.privacyProvenance = privacyProvenance;
         this.calculatedAt = calculatedAt;
     }
 
@@ -105,4 +111,5 @@ public class UserTechnologyAssessment {
     public int getScore() { return score; }
     public Map<String, Object> getRationale() { return Map.copyOf(rationale); }
     public OffsetDateTime getCalculatedAt() { return calculatedAt; }
+    public io.github.developeranalytics.domain.model.DataPrivacyProvenance getPrivacyProvenance() { return privacyProvenance; }
 }

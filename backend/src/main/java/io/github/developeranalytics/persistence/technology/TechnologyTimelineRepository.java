@@ -45,7 +45,9 @@ public class TechnologyTimelineRepository {
         return entityManager.createQuery(
                 "select e.technology.technologyKey, " +
                 "function('date_trunc', 'month', c.occurredAt), " +
-                "count(distinct c.repository.id), count(c.id) " +
+                "count(distinct c.repository.id), count(c.id), " +
+                "count(distinct case when c.repository.visibility = io.github.developeranalytics.domain.model.RepositoryVisibility.PUBLIC then c.repository.id else null end), " +
+                "count(distinct case when c.repository.visibility = io.github.developeranalytics.domain.model.RepositoryVisibility.PRIVATE then c.repository.id else null end) " +
                 "from RepositoryTechnologyEvidence e, " +
                 "Contribution c " +
                 "where e.user.id=:userId " +
@@ -61,7 +63,9 @@ public class TechnologyTimelineRepository {
                     (String) row[0],
                     toLocalDate(row[1]),
                     ((Number) row[2]).intValue(),
-                    ((Number) row[3]).intValue()
+                    ((Number) row[3]).intValue(),
+                    ((Number) row[4]).intValue(),
+                    ((Number) row[5]).intValue()
             ))
             .toList();
     }
@@ -137,7 +141,9 @@ public class TechnologyTimelineRepository {
             String technologyKey,
             LocalDate yearMonth,
             int repositoryCount,
-            int activityCount
+            int activityCount,
+            int publicRepositoryCount,
+            int privateRepositoryCount
     ) {}
 
     public record EvidenceBoundsRow(
