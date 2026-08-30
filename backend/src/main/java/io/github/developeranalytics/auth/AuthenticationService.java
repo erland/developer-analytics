@@ -2,6 +2,7 @@ package io.github.developeranalytics.auth;
 
 import io.github.developeranalytics.domain.auth.*;
 import io.github.developeranalytics.domain.model.ProviderIdentity;
+import io.github.developeranalytics.domain.model.ProviderConnection;
 import io.github.developeranalytics.persistence.auth.AuthenticationRepository;
 import io.github.developeranalytics.persistence.auth.ProviderConnectionRepository;
 import io.github.developeranalytics.service.connection.ProviderCredentialService;

@@ -30,7 +30,7 @@ public class AiPrivacyPolicyService {
         if (context.sensitivity() == AiDataSensitivity.PUBLIC_DATA) {
             return providerPolicy == AiPrivacyPolicy.PRIVATE_AI_DISABLED
                     ? Decision.denied("provider-policy-disables-ai-for-private-mode")
-                    : Decision.allowed();
+                    : Decision.permit();
         }
 
         if (context.sensitivity() == AiDataSensitivity.PRIVATE_CONTENT) {
@@ -52,14 +52,14 @@ public class AiPrivacyPolicyService {
             );
         }
 
-        return Decision.allowed();
+        return Decision.permit();
     }
 
     public record Decision(
             boolean allowed,
             String reason
     ) {
-        public static Decision allowed() {
+        public static Decision permit() {
             return new Decision(true, "allowed");
         }
 

@@ -136,6 +136,37 @@ export function PrivacyDataSourcesView() {
 ) : null}
 
 
+
+<section className="dashboard-section">
+  <span className="card-kicker">Operational recovery</span>
+  <h2>Synchronisation recovery</h2>
+  <p className="settings-intro">
+    Interrupted worker jobs recover automatically. You can also request
+    recovery or queue a fresh GitHub synchronisation after a temporary error.
+  </p>
+  <div className="recovery-actions">
+    <button
+      className="secondary-action"
+      type="button"
+      disabled={recovery.status !== 'idle'}
+      onClick={() => void recovery.recoverInterrupted()}
+    >
+      Recover interrupted jobs
+    </button>
+    <button
+      className="secondary-action"
+      type="button"
+      disabled={recovery.status !== 'idle'}
+      onClick={() => void recovery.retryGitHub()}
+    >
+      Retry GitHub synchronisation
+    </button>
+  </div>
+  {recovery.message ? (
+    <p className="settings-intro" role="status">{recovery.message}</p>
+  ) : null}
+</section>
+
 <section className="dashboard-section disconnect-zone">
   <span className="card-kicker">Connection lifecycle</span>
   <h2>Disconnect GitHub</h2>

@@ -1,6 +1,7 @@
 package io.github.developeranalytics.domain.aggregate;
 
 import io.github.developeranalytics.domain.model.AppUser;
+import io.github.developeranalytics.domain.model.DataPrivacyProvenance;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.UUID;

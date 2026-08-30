@@ -80,7 +80,7 @@ describe('App', () => {
         return jsonResponse({ jobId: 'job-1' })
       }
       if (url.startsWith('/api/me/corrections/')) {
-        return new Response(null, { status: 204 })
+        return Promise.resolve(new Response(null, { status: 204 }))
       }
 
 if (url === '/api/me/reports/preview') {
@@ -456,8 +456,10 @@ if (url === '/api/me/reports/preview') {
     expect(
       screen.getByRole('heading', { name: 'Reports', level: 1 }),
     ).toBeInTheDocument()
-    const exportButton = screen.getByRole('button', { name: 'Export Markdown' })
-    expect(exportButton).toBeDisabled()
+    const previewButton = screen.getByRole('button', {
+      name: 'Preview report privacy',
+    })
+    expect(previewButton).toBeDisabled()
 
     fireEvent.click(
       screen.getByRole('radio', { name: /Full developer report/ }),
@@ -468,7 +470,12 @@ if (url === '/api/me/reports/preview') {
     fireEvent.click(
       screen.getByRole('radio', { name: /Hide private repository names/ }),
     )
-    expect(exportButton).toBeEnabled()
+    expect(previewButton).toBeEnabled()
+
+    fireEvent.click(previewButton)
+    expect(
+      await screen.findByRole('button', { name: 'Generate Markdown report' }),
+    ).toBeEnabled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Privacy/data sources' }))
     expect(

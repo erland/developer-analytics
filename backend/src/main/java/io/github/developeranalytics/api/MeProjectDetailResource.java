@@ -31,6 +31,7 @@ public class MeProjectDetailResource {
     @Inject RepositoryProjectCategoryRepository categoryAssignments;
     @Inject ProjectSignificanceRepository significance;
     @Inject EntityManager entityManager;
+    @Inject UserCorrectionService corrections;
 
     @GET
     @Transactional
@@ -96,7 +97,11 @@ public class MeProjectDetailResource {
                         repository.isFork(),
                         repository.isArchived(),
                         repository.getTopics(),
-                        repository.getLastActivityAt()
+                        repository.getLastActivityAt(),
+                        corrections.isProjectExcludedFromAiProfile(
+                                current.user().getId(),
+                                repository.getId()
+                        )
                 ),
                 activity,
                 technologies,
