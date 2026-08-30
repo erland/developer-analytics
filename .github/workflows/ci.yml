@@ -33,6 +33,9 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Use npm 11
+        run: npm install --global npm@11.6.0
+
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
@@ -78,7 +81,6 @@ jobs:
 
       - name: Verify backend
         run: mvn --batch-mode --no-transfer-progress verify
-
 
   containers:
     name: Container build validation
@@ -375,6 +377,9 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '22'
+
+      - name: Use npm 11
+        run: npm install --global npm@11.6.0
 
       - name: Install frontend dependencies
         run: npm install --no-audit --no-fund
