@@ -128,9 +128,7 @@ async function installApiFixtures(page: Page) {
       providerId: 'gemini',
       message: 'AI-assisted analysis is configured.',
     })
-    if (path === '/api/me/ai/privacy') {
-      return json(route, { policy: 'PUBLIC_ONLY' })
-    }
+    if (path === '/api/me/ai/privacy') return json(route, { policy: 'PUBLIC_ONLY' })
     if (path === '/api/me/ai/insights') return json(route, {
       status: 'AVAILABLE',
       aiGenerated: true,
@@ -213,7 +211,6 @@ test.beforeEach(async ({ page }) => {
 test('primary v1 flows remain usable at phone width without wide-table dependency', async ({ page }) => {
   await page.goto('/')
 
-  // Login surface is reachable and actionable on a phone.
   const signIn = page.getByRole('link', { name: 'Sign in with GitHub' }).first()
   await expect(signIn).toBeVisible()
   await expect(signIn).toHaveAttribute('href', '/api/auth/github/login')
@@ -222,16 +219,14 @@ test('primary v1 flows remain usable at phone width without wide-table dependenc
   authenticated = true
   await page.reload()
   await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible()
-  await expect(page.getByText('Mobile Developer')).toBeVisible()
+  await expect(page.getByText('Mobile Developer', { exact: true })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
-  // Activity charts remain compact and visible.
   await openSection(page, 'Activity')
   await expect(page.locator('.bar-chart').first()).toBeVisible()
   await expect(page.getByText('126').first()).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
-  // Projects and all essential filters are controls/cards, not a wide table.
   await openSection(page, 'Projects')
   await expect(page.locator('.inventory-filters')).toBeVisible()
   await expect(page.getByRole('textbox').first()).toBeVisible()
@@ -239,20 +234,17 @@ test('primary v1 flows remain usable at phone width without wide-table dependenc
   await expect(page.locator('table')).toHaveCount(0)
   await expectNoHorizontalOverflow(page)
 
-  // Technologies collapse to a phone-friendly list/detail flow.
   await openSection(page, 'Technologies')
   await expect(page.getByRole('button', { name: /React/ })).toBeVisible()
   await expect(page.getByText('STRONG', { exact: true }).first()).toBeVisible()
   await expect(page.locator('table')).toHaveCount(0)
   await expectNoHorizontalOverflow(page)
 
-  // AI insights and privacy choices remain accessible.
   await openSection(page, 'AI insights')
   await expect(page.getByText('Full-stack developer')).toBeVisible()
   await expect(page.getByText('Public data only')).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
-  // Report configuration can be completed and previewed without a desktop table.
   await openSection(page, 'Reports')
   await page.getByText('Public OSS report', { exact: true }).click()
   await page.getByText('Exclude private data', { exact: true }).click()
@@ -263,14 +255,12 @@ test('primary v1 flows remain usable at phone width without wide-table dependenc
   await expect(page.getByRole('heading', { name: 'Review before generation' })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
-  // Privacy/data-source controls remain usable on phone.
   await openSection(page, 'Privacy/data sources')
   await expect(page.getByText('mobile-developer/private-mobile')).toBeVisible()
   await expect(page.getByRole('checkbox', { name: 'Include in analysis' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Recover interrupted jobs' })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
-  // Account/GPT controls and destructive confirmation are also phone-accessible.
   await openSection(page, 'Account')
   await expect(page.getByText('GPT/API access tokens')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Create external client token' })).toBeVisible()
