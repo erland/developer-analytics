@@ -252,3 +252,10 @@ This follows Quarkus' recommended behavior when the application does not need RE
 After the Hibernate JSON fix, Quarkus started correctly and all Flyway migrations succeeded. Three REST tests still returned `401` because their session fixtures were created in an uncommitted test transaction while the HTTP request executed in a separate transaction.
 
 A dedicated `TestFixtureService` now creates authentication/repository/connection fixtures in `REQUIRES_NEW` transactions, committing them before RestAssured calls the API. This matches real request visibility and preserves the intended `/me` authentication tests.
+
+
+## CI correction – provider identity fixture reuse
+
+The final failing backend test created two GitHub `ProviderIdentity` rows for the same application user, conflicting with the model's unique `(user_id, provider)` constraint.
+
+The connection test fixture now reuses the user's existing GitHub identity and only creates one when none exists. This matches the production identity model.

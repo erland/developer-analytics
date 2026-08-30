@@ -69,9 +69,20 @@ public class TestFixtureService {
     ) {
         AppUser managedUser = entityManager.getReference(AppUser.class, user.getId());
 
-        ProviderIdentity identity = new ProviderIdentity(
-                managedUser, "github", externalId, login, displayName);
-        entityManager.persist(identity);
+        ProviderIdentity identity = entityManager.createQuery(
+                "select i from ProviderIdentity i " +
+                "where i.user.id = :userId and i.provider = :provider",
+                ProviderIdentity.class)
+            .setParameter("userId", user.getId())
+            .setParameter("provider", "github")
+            .getResultStream()
+            .findFirst()
+            .orElseGet(() -> {
+                ProviderIdentity created = new ProviderIdentity(
+                        managedUser, "github", externalId, login, displayName);
+                entityManager.persist(created);
+                return created;
+            });
 
         ProviderConnection connection = new ProviderConnection(
                 managedUser, identity, "github");
