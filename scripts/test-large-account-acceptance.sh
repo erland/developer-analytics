@@ -71,7 +71,7 @@ done
 curl --fail --silent "${BASE_URL}/api/health/application" >/dev/null \
   || fail "application did not become ready"
 
-token_hash="$(printf '%s' "${SESSION_TOKEN}" | sha256sum | awk '{print $1}')"
+token_hash="$(python3 scripts/hash-auth-token.py "${SESSION_TOKEN}")"
 
 echo "Seeding ${REPOSITORY_COUNT} realistic repositories with partial enrichment..."
 compose exec -T db psql \
@@ -127,7 +127,7 @@ INSERT INTO source_repository(
   included_in_analysis
 )
 SELECT
-  ('87000000-0000-0001-' || lpad(to_hex(n),12,'0'))::uuid,
+  ('87000000-0000-0001-0000-' || lpad(to_hex(n),12,'0'))::uuid,
   '${USER_ID}'::uuid,
   'github',
   'large-' || n,

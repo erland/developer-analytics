@@ -866,3 +866,8 @@ The remaining v1 acceptance failures shared three concrete causes and are correc
 - the Projects search control is exposed as an accessible textbox (`Search projects`) while retaining search-oriented mobile keyboard hints.
 
 Step 91 remains blocked until this corrected Step 90 candidate passes the complete CI/release-candidate gate.
+
+
+## CI correction after Step 90 – fix 6
+
+The next full acceptance run exposed five remaining CI integration issues. The frontend Vitest suite is now scoped to `src/**/*.test.{ts,tsx}` so Playwright specifications stay in their dedicated mobile job. Acceptance-test session fixtures now hash tokens with the same SHA-256 + unpadded Base64URL representation as the backend, the generated large-account repository UUIDs use the canonical 8-4-4-4-12 format, and the Nginx runtime upgrades Alpine packages during image construction so fixable critical OS vulnerabilities are removed before Trivy scans the image.

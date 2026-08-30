@@ -73,8 +73,8 @@ done
 curl --fail --silent "${BASE_URL}/api/health/application" >/dev/null \
   || fail "application did not become ready"
 
-HASH_A="$(printf '%s' "${SESSION_A}" | sha256sum | awk '{print $1}')"
-HASH_B="$(printf '%s' "${SESSION_B}" | sha256sum | awk '{print $1}')"
+HASH_A="$(python3 scripts/hash-auth-token.py "${SESSION_A}")"
+HASH_B="$(python3 scripts/hash-auth-token.py "${SESSION_B}")"
 
 echo "Seeding two users, public/private/excluded repositories and private AI analysis..."
 compose exec -T db psql \

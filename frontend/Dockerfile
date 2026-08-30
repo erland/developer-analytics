@@ -11,6 +11,9 @@ RUN npm run build
 
 FROM nginx:1.27-alpine AS runtime
 
+# Keep runtime OS packages patched even when the pinned upstream image digest is older.
+RUN apk upgrade --no-cache
+
 COPY deploy/nginx/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /workspace/frontend/dist /usr/share/nginx/html
 

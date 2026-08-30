@@ -66,7 +66,7 @@ failed_count="$(
   || fail "Flyway contains failed migrations"
 
 echo "Creating deterministic authenticated smoke-test session..."
-token_hash="$(printf '%s' "${SESSION_TOKEN}" | sha256sum | awk '{print $1}')"
+token_hash="$(python3 scripts/hash-auth-token.py "${SESSION_TOKEN}")"
 
 docker compose -f "${COMPOSE_FILE}" -f "${LOCAL_BUILD_COMPOSE}" exec -T db \
   psql --username="${DB_USERNAME}" --dbname="${DB_NAME}" \
