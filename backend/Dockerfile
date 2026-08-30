@@ -9,7 +9,7 @@ RUN mvn -B -ntp dependency:go-offline
 COPY backend/src ./src
 RUN mvn -B -ntp -DskipTests package
 
-FROM eclipse-temurin:21-jre AS runtime
+FROM eclipse-temurin:25-jre AS runtime
 WORKDIR /app
 
 RUN groupadd --system app && useradd --system --gid app --home-dir /app app
