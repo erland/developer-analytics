@@ -11,7 +11,7 @@ RUN npm run build
 
 FROM nginx:1.27-alpine AS runtime
 
-COPY deploy/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY deploy/nginx/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /workspace/frontend/dist /usr/share/nginx/html
 
 EXPOSE 80

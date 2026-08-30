@@ -1,6 +1,6 @@
 # Nginx configuration
 
-`nginx.conf` is the version 1 reference web/gateway configuration.
+`nginx.conf` is the version 1 reference web/gateway server configuration. The web image installs it as `/etc/nginx/conf.d/default.conf` so the `server` block is loaded inside Nginx's `http` context.
 
 It is intended to:
 

@@ -23,7 +23,7 @@ The production web image is built from the repository root so the build can incl
 docker build -f frontend/Dockerfile -t developer-analytics-web .
 ```
 
-The Dockerfile uses a Node build stage and copies only the compiled Vite output into the final Nginx image. Nginx listens on port `8080` and proxies `/api/` according to `deploy/nginx/nginx.conf`.
+The Dockerfile uses a Node build stage and copies only the compiled Vite output into the final Nginx image. Nginx listens on port `80` and loads `deploy/nginx/nginx.conf` as `/etc/nginx/conf.d/default.conf` and proxies `/api/` through it.
 
 A dependency lock file will be introduced once npm dependency resolution can be executed in a network-enabled build environment; until then the Docker build uses the pinned direct dependency versions in `package.json`.
 

@@ -65,7 +65,10 @@ export function ProjectInventoryView() {
         <label>
           <span>Search</span>
           <input
-            type="search"
+            type="text"
+            inputMode="search"
+            enterKeyHint="search"
+            aria-label="Search projects"
             value={filters.search}
             placeholder="Project name or description"
             onChange={(event) => update('search', event.target.value)}

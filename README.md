@@ -856,3 +856,13 @@ The first full v1 acceptance run exposed three CI integration issues rather than
 - the mobile Playwright profile now explicitly selects Chromium because the iPhone device descriptor otherwise defaults to WebKit.
 
 The responsive shell fixture was also aligned with the current `SessionUser` contract.
+
+### Follow-up CI correction
+
+The remaining v1 acceptance failures shared three concrete causes and are corrected here:
+
+- the web image now installs the Nginx `server` block as `/etc/nginx/conf.d/default.conf` instead of replacing the top-level `/etc/nginx/nginx.conf`,
+- Vite is pinned to `7.3.6`, the fixed release for CVE-2026-27941 reported by both `npm audit` and the Trivy image scan,
+- the Projects search control is exposed as an accessible textbox (`Search projects`) while retaining search-oriented mobile keyboard hints.
+
+Step 91 remains blocked until this corrected Step 90 candidate passes the complete CI/release-candidate gate.
