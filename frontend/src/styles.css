@@ -46,3 +46,19 @@ h1 { margin: 0; font-size: clamp(2.25rem, 7vw, 4.75rem); line-height: 0.98; lett
   .main-content { padding-left: 1rem; padding-right: 1rem; }
   .feature-grid { grid-template-columns: 1fr; }
 }
+
+
+.sign-in-button,
+.primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-weight: 700;
+  border-radius: 0.65rem;
+  background: #111827;
+  color: #ffffff;
+  padding: 0.7rem 1rem;
+}
+
+.primary-action { margin-top: 1.25rem; }

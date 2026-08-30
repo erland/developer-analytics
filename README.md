@@ -154,3 +154,73 @@ docker compose --env-file deploy/.env -f deploy/compose.yaml up --build
 ```
 
 Replace the example database password before starting the stack. The application is then exposed through Nginx on `http://localhost:8080` by default. PostgreSQL and the backend are not published directly to the host. See [`deploy/README.md`](deploy/README.md) for details.
+
+
+## Development status – Step 22
+
+Step 22 is complete: GitHub sign-in, PKCE/state handling, service-owned browser sessions and logout are implemented. During this step the cumulative Step 16–21 backend package model and Docker Compose worker topology were also rebuilt from the last green CI baseline to remove inconsistencies discovered before authentication was added.
+
+Next: **Step 23 – Enforce `/me`-style user scoping**.
+
+
+## Development status – Step 23
+
+Step 23 is complete: `/api/me/...` is now the primary user-scoping boundary. The backend derives the internal user from the server-side session and repository lookups include the current user ID, preventing cross-user object access.
+
+Next: **Step 24 – Account connection management**.
+
+
+## Development status – Step 24
+
+Step 24 is complete: authenticated users can inspect and manage their provider connections under `/api/me/connections`, with provider-neutral lifecycle handling and cross-user isolation.
+
+Next: **Step 25 – GitHub provider adapter**.
+
+
+## Development status – Step 25
+
+Step 25 is complete: a provider-neutral source-control adapter boundary is available, with GitHub as the first implementation and normalized repository, user, pagination and rate-limit data.
+
+Next: **Step 26 – Store GitHub connection credentials securely**.
+
+
+## Development status – Step 26
+
+Step 26 is complete: provider access credentials are encrypted at rest with AES-256-GCM, keyed from deployment secrets, versioned for future rotation and cleared on provider disconnect.
+
+Next: **Step 27 – Initial GitHub repository discovery job**.
+
+
+## Development status – Step 27
+
+Step 27 is complete: GitHub repository discovery now runs as a persistent worker job, follows provider paging and upserts the authenticated user's repository inventory.
+
+Next: **Step 28 – Repository discovery progress and sync-state handling**.
+
+
+## Development status – Step 28
+
+Step 28 is complete: repository discovery now persists progress, sync status, counters, errors and provider rate-limit state, with `/api/me/sync-runs` endpoints for frontend status views.
+
+Next: **Step 29 – Initial contribution discovery**.
+
+
+## Development status – Step 29
+
+Step 29 is complete: GitHub commit and pull-request discovery can now be queued per repository and normalized into the persistent contribution model with deduplication.
+
+Next: **Step 30 – Extend contribution discovery with reviews and issues**.
+
+
+## Development status – Step 30
+
+Step 30 is complete: GitHub contribution discovery now includes pull-request reviews and issues in addition to commits and pull requests, normalized into the common contribution model.
+
+Next: **Step 31 – Contribution discovery orchestration across repositories**.
+
+
+## Development status – Step 31
+
+Step 31 is complete: contribution discovery can now be orchestrated across the repository inventory in bounded, deduplicated batches, and repository discovery automatically seeds the first batch.
+
+Next: **Step 32 – Contribution sync progress and completion state**.

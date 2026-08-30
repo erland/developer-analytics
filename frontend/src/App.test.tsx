@@ -12,5 +12,6 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Activity' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Technologies' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Projects' })).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: 'Sign in with GitHub' })).toHaveLength(2)
   })
 })

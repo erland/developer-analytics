@@ -47,3 +47,27 @@ host -> web/nginx -> backend -> PostgreSQL
 ```
 
 `db` is attached only to the internal `data` network. `backend` bridges the `web` and `data` networks. `web` has no direct database access.
+
+
+## GitHub authentication setup
+
+Create/configure a GitHub App and enable user authorization. Configure its callback URL to match:
+
+`http://localhost:8080/api/auth/github/callback`
+
+for local development, then set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` in `deploy/.env`.
+
+For HTTPS production deployments set `SESSION_COOKIE_SECURE=true` and configure production callback/frontend URLs.
+
+
+## Credential encryption key
+
+Before starting the stack, generate a random 32-byte encryption key and Base64 encode it. Store it as `CREDENTIAL_ENCRYPTION_KEY` in the protected deployment environment, not in Git.
+
+Example on macOS/Linux:
+
+```bash
+openssl rand -base64 32
+```
+
+Keep the key stable across restarts. Changing `CREDENTIAL_KEY_VERSION` without migrating/re-encrypting stored credentials intentionally makes old credentials unreadable.
