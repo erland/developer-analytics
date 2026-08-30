@@ -55,6 +55,10 @@ public class SourceRepositoryRepository {
             .getResultList();
     }
 
+    public List<SourceRepository> findByUser(UUID userId) {
+        return findAllForUser(userId);
+    }
+
     public List<SourceRepository> findAllForUser(UUID userId) {
         return entityManager.createQuery(
                 "select r from SourceRepository r " +

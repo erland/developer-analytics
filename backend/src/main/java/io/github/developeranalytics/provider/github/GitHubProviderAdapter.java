@@ -72,6 +72,151 @@ public class GitHubProviderAdapter implements SourceControlProvider {
 
 
 
+
+@Override
+public ProviderRepositorySnapshot fetchRepositorySnapshot(
+        ProviderAccessToken accessToken,
+        ProviderRepository repository
+) throws ProviderException {
+    String fullName = repository.fullName();
+    if (fullName == null || !fullName.contains("/")) {
+        throw new ProviderException("GitHub repository full name is required", 0);
+    }
+
+    HttpResponse<String> metadataResponse = sendGet(
+            URI.create(API_BASE + "/repos/" + fullName),
+            accessToken
+    );
+    JsonNode metadata = parse(metadataResponse.body());
+    String defaultBranch = metadata.hasNonNull("default_branch")
+            ? metadata.get("default_branch").asText()
+            : null;
+
+    if (defaultBranch == null || defaultBranch.isBlank()) {
+        return new ProviderRepositorySnapshot(
+                List.of(),
+                parseRateLimit(metadataResponse)
+        );
+    }
+
+    HttpResponse<String> treeResponse = sendGet(
+            URI.create(
+                    API_BASE + "/repos/" + fullName +
+                    "/git/trees/" +
+                    java.net.URLEncoder.encode(
+                            defaultBranch,
+                            java.nio.charset.StandardCharsets.UTF_8
+                    ) +
+                    "?recursive=1"
+            ),
+            accessToken
+    );
+
+    JsonNode tree = parse(treeResponse.body()).path("tree");
+    if (!tree.isArray()) {
+        throw new ProviderException(
+                "GitHub repository tree response was not an array",
+                treeResponse.statusCode()
+        );
+    }
+
+    List<String> relevantPaths = new ArrayList<>();
+    for (JsonNode item : tree) {
+        if (!"blob".equals(item.path("type").asText())) {
+            continue;
+        }
+
+        String path = item.path("path").asText("");
+        if (isRelevantTechnologyFile(path)) {
+            relevantPaths.add(path);
+            if (relevantPaths.size() >= 40) {
+                break;
+            }
+        }
+    }
+
+    List<ProviderRepositoryFile> files = new ArrayList<>();
+    for (String path : relevantPaths) {
+        URI contentUri = URI.create(
+                API_BASE + "/repos/" + fullName + "/contents/" +
+                encodePath(path) +
+                "?ref=" +
+                java.net.URLEncoder.encode(
+                        defaultBranch,
+                        java.nio.charset.StandardCharsets.UTF_8
+                )
+        );
+
+        HttpResponse<String> contentResponse = sendGet(
+                contentUri,
+                accessToken
+        );
+        JsonNode contentJson = parse(contentResponse.body());
+        String encoding = contentJson.path("encoding").asText("");
+        String content = contentJson.path("content").asText("");
+
+        if (!"base64".equalsIgnoreCase(encoding) || content.isBlank()) {
+            continue;
+        }
+
+        try {
+            byte[] decoded = Base64.getMimeDecoder().decode(content);
+            files.add(new ProviderRepositoryFile(
+                    path,
+                    new String(
+                            decoded,
+                            java.nio.charset.StandardCharsets.UTF_8
+                    )
+            ));
+        } catch (IllegalArgumentException ignored) {
+            // Skip malformed file payloads.
+        }
+    }
+
+    return new ProviderRepositorySnapshot(
+            files,
+            parseRateLimit(treeResponse)
+    );
+}
+
+private boolean isRelevantTechnologyFile(String rawPath) {
+    String path = rawPath.toLowerCase(Locale.ROOT);
+    String name = path.contains("/")
+            ? path.substring(path.lastIndexOf('/') + 1)
+            : path;
+
+    return name.equals("pom.xml")
+            || name.equals("package.json")
+            || name.equals("dockerfile")
+            || name.equals("docker-compose.yml")
+            || name.equals("docker-compose.yaml")
+            || name.equals("compose.yml")
+            || name.equals("compose.yaml")
+            || name.equals("package.swift")
+            || name.equals("pyproject.toml")
+            || name.equals("requirements.txt")
+            || name.equals(".terraform.lock.hcl")
+            || name.endsWith(".tf")
+            || name.equals("chart.yaml")
+            || name.equals("kustomization.yaml")
+            || path.startsWith(".github/workflows/")
+            || path.contains("/.github/workflows/")
+            || path.startsWith("db/migration/")
+            || path.contains("/db/migration/");
+}
+
+private String encodePath(String path) {
+    return Arrays.stream(path.split("/"))
+            .map(segment -> java.net.URLEncoder.encode(
+                    segment,
+                    java.nio.charset.StandardCharsets.UTF_8
+            ).replace("+", "%20"))
+            .collect(
+                    java.util.stream.Collectors.joining("/")
+            );
+}
+
+
 @Override
 public ProviderLanguageBreakdown fetchRepositoryLanguages(
         ProviderAccessToken accessToken,

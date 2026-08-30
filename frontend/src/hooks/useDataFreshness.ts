@@ -62,7 +62,7 @@ export function useDataFreshness(enabled: boolean): FreshnessState {
           label: fresh ? 'Data updated recently' : 'Data may be stale',
           timestamp: latest.toISOString(),
         })
-      } catch (error) {
+      } catch {
         if (controller.signal.aborted) return
         setState({
           status: 'error',
