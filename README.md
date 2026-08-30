@@ -57,6 +57,10 @@ The following documents are the current functional and architectural baseline fo
 - [Architecture specification](docs/architecture-specification.md) — target architecture, technology choices, component boundaries, persistence and deployment model.
 - [Development plan](docs/development-plan.md) — numbered implementation sequence and acceptance criteria used to build the service incrementally.
 
+## CI baseline fix after first GitHub run
+
+The first GitHub Actions run after Step 15 exposed a frontend TypeScript configuration issue: Vitest's `test` configuration was declared in `vite.config.ts` while `defineConfig` was imported from `vite`. The configuration now imports `defineConfig` from `vitest/config`, allowing TypeScript to recognise the `test` section. The backend validation and Docker Compose validation were already successful in that run.
+
 ## Development status
 
 Completed development-plan steps:
