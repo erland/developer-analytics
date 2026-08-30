@@ -1,0 +1,218 @@
+{
+  "technologies": [
+    {
+      "key": "java",
+      "name": "Java",
+      "category": "LANGUAGE",
+      "aliases": [
+        "JDK",
+        "JVM Java"
+      ],
+      "languages": [
+        "Java"
+      ],
+      "files": [
+        "pom.xml"
+      ],
+      "manifests": []
+    },
+    {
+      "key": "kotlin",
+      "name": "Kotlin",
+      "category": "LANGUAGE",
+      "aliases": [],
+      "languages": [
+        "Kotlin"
+      ],
+      "files": [],
+      "manifests": []
+    },
+    {
+      "key": "javascript",
+      "name": "JavaScript",
+      "category": "LANGUAGE",
+      "aliases": [
+        "JS"
+      ],
+      "languages": [
+        "JavaScript"
+      ],
+      "files": [],
+      "manifests": []
+    },
+    {
+      "key": "typescript",
+      "name": "TypeScript",
+      "category": "LANGUAGE",
+      "aliases": [
+        "TS"
+      ],
+      "languages": [
+        "TypeScript"
+      ],
+      "files": [
+        "tsconfig.json"
+      ],
+      "manifests": []
+    },
+    {
+      "key": "python",
+      "name": "Python",
+      "category": "LANGUAGE",
+      "aliases": [],
+      "languages": [
+        "Python"
+      ],
+      "files": [
+        "pyproject.toml",
+        "requirements.txt"
+      ],
+      "manifests": []
+    },
+    {
+      "key": "swift",
+      "name": "Swift",
+      "category": "LANGUAGE",
+      "aliases": [],
+      "languages": [
+        "Swift"
+      ],
+      "files": [
+        "Package.swift"
+      ],
+      "manifests": []
+    },
+    {
+      "key": "react",
+      "name": "React",
+      "category": "FRAMEWORK",
+      "aliases": [
+        "React.js"
+      ],
+      "languages": [],
+      "files": [
+        "package.json"
+      ],
+      "manifests": [
+        "react",
+        "\"react\""
+      ]
+    },
+    {
+      "key": "vite",
+      "name": "Vite",
+      "category": "BUILD_TOOL",
+      "aliases": [],
+      "languages": [],
+      "files": [
+        "vite.config.ts",
+        "vite.config.js"
+      ],
+      "manifests": [
+        "vite",
+        "\"vite\""
+      ]
+    },
+    {
+      "key": "quarkus",
+      "name": "Quarkus",
+      "category": "FRAMEWORK",
+      "aliases": [],
+      "languages": [],
+      "files": [
+        "pom.xml"
+      ],
+      "manifests": [
+        "io.quarkus",
+        "quarkus-"
+      ]
+    },
+    {
+      "key": "spring-boot",
+      "name": "Spring Boot",
+      "category": "FRAMEWORK",
+      "aliases": [
+        "Spring"
+      ],
+      "languages": [],
+      "files": [
+        "pom.xml"
+      ],
+      "manifests": [
+        "org.springframework.boot",
+        "spring-boot"
+      ]
+    },
+    {
+      "key": "postgresql",
+      "name": "PostgreSQL",
+      "category": "DATABASE",
+      "aliases": [
+        "Postgres"
+      ],
+      "languages": [],
+      "files": [
+        "pom.xml",
+        "package.json"
+      ],
+      "manifests": [
+        "postgresql",
+        "org.postgresql"
+      ]
+    },
+    {
+      "key": "docker",
+      "name": "Docker",
+      "category": "CONTAINER",
+      "aliases": [],
+      "languages": [],
+      "files": [
+        "Dockerfile",
+        "docker-compose.yml",
+        "compose.yaml",
+        "docker-compose.yaml",
+        "compose.yml"
+      ],
+      "manifests": []
+    },
+    {
+      "key": "github-actions",
+      "name": "GitHub Actions",
+      "category": "CI_CD",
+      "aliases": [],
+      "languages": [],
+      "files": [
+        ".github/workflows",
+        ".github/workflows/"
+      ],
+      "manifests": []
+    },
+    {
+      "key": "kubernetes",
+      "name": "Kubernetes",
+      "category": "ORCHESTRATION",
+      "aliases": [
+        "K8s"
+      ],
+      "languages": [],
+      "files": [
+        "kustomization.yaml",
+        "Chart.yaml"
+      ],
+      "manifests": []
+    },
+    {
+      "key": "terraform",
+      "name": "Terraform",
+      "category": "INFRASTRUCTURE_AS_CODE",
+      "aliases": [],
+      "languages": [
+        "HCL"
+      ],
+      "files": [
+        ".terraform.lock.hcl"
+      ],
+      "manifests": []
+    }
+  ]
+}

@@ -1,0 +1,505 @@
+openapi: 3.1.0
+info:
+  title: Developer Analytics External Analysis API
+  version: 1.0.0
+  description: |
+    Compact, user-scoped analytics API intended for external GPT/LLM clients.
+
+    Read endpoints require a Developer Analytics external-client bearer token and
+    the versioned Accept media type:
+    `application/vnd.developer-analytics.analysis.v1+json`.
+
+    Returned AI assessments use the same bearer token and require the
+    `AI_ASSESSMENTS_WRITE` endpoint scope.
+
+    Endpoint scopes and privacy scopes are independent. The server enforces both.
+servers:
+  - url: https://developer-analytics.example.com
+    description: Replace with the deployed Developer Analytics base URL
+security:
+  - externalClientBearer: []
+
+tags:
+  - name: Analysis
+  - name: AI assessment write-back
+
+paths:
+  /api/me/profile:
+    get:
+      tags: [Analysis]
+      operationId: getDeveloperProfile
+      summary: Get compact developer profile
+      description: Requires `PROFILE_READ`.
+      parameters:
+        - $ref: '#/components/parameters/AnalysisAccept'
+      responses:
+        '200':
+          description: Compact profile
+          content:
+            application/vnd.developer-analytics.analysis.v1+json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/me/projects:
+    get:
+      tags: [Analysis]
+      operationId: listDeveloperProjects
+      summary: List compact project records
+      description: |
+        Requires `PROJECTS_READ`.
+        Private project records are returned only with
+        `FULL_AUTHORISED_ANALYSIS`.
+      parameters:
+        - $ref: '#/components/parameters/AnalysisAccept'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        '200':
+          description: Projects
+          content:
+            application/vnd.developer-analytics.analysis.v1+json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/me/activity:
+    get:
+      tags: [Analysis]
+      operationId: getDeveloperActivity
+      summary: Get compact contribution activity
+      description: Requires `ACTIVITY_READ`.
+      parameters:
+        - $ref: '#/components/parameters/AnalysisAccept'
+        - name: months
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 120
+            default: 24
+      responses:
+        '200':
+          description: Activity summary
+          content:
+            application/vnd.developer-analytics.analysis.v1+json:
+              schema:
+                $ref: '#/components/schemas/Activity'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/me/technologies:
+    get:
+      tags: [Analysis]
+      operationId: listDeveloperTechnologies
+      summary: List evidence-based technology summaries
+      description: Requires `TECHNOLOGIES_READ`.
+      parameters:
+        - $ref: '#/components/parameters/AnalysisAccept'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 30
+      responses:
+        '200':
+          description: Technologies
+          content:
+            application/vnd.developer-analytics.analysis.v1+json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TechnologySummary'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/me/project-types:
+    get:
+      tags: [Analysis]
+      operationId: listDeveloperProjectTypes
+      summary: List project-type summaries
+      description: Requires `PROJECT_TYPES_READ`.
+      parameters:
+        - $ref: '#/components/parameters/AnalysisAccept'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 30
+      responses:
+        '200':
+          description: Project types
+          content:
+            application/vnd.developer-analytics.analysis.v1+json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectTypeSummary'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/me/contributions:
+    get:
+      tags: [Analysis]
+      operationId: getDeveloperContributions
+      summary: Get contribution totals by type
+      description: Requires `CONTRIBUTIONS_READ`.
+      parameters:
+        - $ref: '#/components/parameters/AnalysisAccept'
+      responses:
+        '200':
+          description: Contribution totals
+          content:
+            application/vnd.developer-analytics.analysis.v1+json:
+              schema:
+                $ref: '#/components/schemas/Contributions'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/me/evidence:
+    get:
+      tags: [Analysis]
+      operationId: getDeveloperEvidence
+      summary: Get compact aggregated evidence
+      description: Requires `EVIDENCE_READ`.
+      parameters:
+        - $ref: '#/components/parameters/AnalysisAccept'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        '200':
+          description: Evidence aggregates
+          content:
+            application/vnd.developer-analytics.analysis.v1+json:
+              schema:
+                $ref: '#/components/schemas/Evidence'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/me/ai-assessments:
+    post:
+      tags: [AI assessment write-back]
+      operationId: returnAiAssessment
+      summary: Return an external AI assessment
+      description: |
+        Requires `AI_ASSESSMENTS_WRITE`.
+        `sourceClient`, timestamp and data scope are derived from the authenticated
+        token and cannot be supplied by the caller.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAiAssessment'
+      responses:
+        '200':
+          description: Stored assessment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiAssessment'
+        '400':
+          description: Invalid assessment payload
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: |
+            Missing write scope, or `containsPrivateData=true` with a
+            `PUBLIC_ONLY` privacy scope.
+
+components:
+  securitySchemes:
+    externalClientBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: DeveloperAnalyticsExternalToken
+      description: |
+        User-created `da_ext_...` token. It is separate from browser sessions
+        and GitHub credentials.
+
+  parameters:
+    AnalysisAccept:
+      name: Accept
+      in: header
+      required: true
+      schema:
+        type: string
+        const: application/vnd.developer-analytics.analysis.v1+json
+      description: Versioned External Analysis API media type.
+
+  responses:
+    Unauthorized:
+      description: Missing, invalid or revoked external-client token.
+    Forbidden:
+      description: Token is valid but lacks the required endpoint or privacy scope.
+
+  schemas:
+    PrivacyProvenance:
+      type: string
+      enum:
+        - PUBLIC_ONLY
+        - INCLUDES_PRIVATE
+        - PRIVATE_AGGREGATE
+
+    PrivacyScope:
+      type: string
+      enum:
+        - PUBLIC_ONLY
+        - PUBLIC_PLUS_PRIVATE_AGGREGATES
+        - FULL_AUTHORISED_ANALYSIS
+
+    Profile:
+      type: object
+      required:
+        - contractVersion
+        - repositoryCount
+        - publicRepositoryCount
+        - privateRepositoryCount
+        - ownedRepositoryCount
+        - externalRepositoryCount
+        - contributionCount
+        - privacyProvenance
+        - topTechnologies
+        - topProjectTypes
+      properties:
+        contractVersion:
+          type: string
+          example: v1
+        repositoryCount: { type: integer }
+        publicRepositoryCount: { type: integer }
+        privateRepositoryCount: { type: integer }
+        ownedRepositoryCount: { type: integer }
+        externalRepositoryCount: { type: integer }
+        contributionCount: { type: integer }
+        privacyProvenance:
+          $ref: '#/components/schemas/PrivacyProvenance'
+        topTechnologies:
+          type: array
+          items:
+            $ref: '#/components/schemas/TechnologySummary'
+        topProjectTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectTypeSummary'
+
+    Project:
+      type: object
+      required:
+        - id
+        - name
+        - visibility
+        - ownership
+        - projectTypes
+        - technologies
+        - excludedFromAiProfile
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        visibility:
+          type: string
+          enum: [PUBLIC, PRIVATE]
+        ownership:
+          type: string
+        lastActivityAt:
+          type: [string, 'null']
+          format: date-time
+        projectTypes:
+          type: array
+          items: { type: string }
+        technologies:
+          type: array
+          items: { type: string }
+        excludedFromAiProfile:
+          type: boolean
+
+    Activity:
+      type: object
+      required:
+        - contributionCount
+        - activeProjectCount
+        - contributionTypes
+        - monthly
+        - privacyProvenance
+      properties:
+        contributionCount: { type: integer }
+        activeProjectCount: { type: integer }
+        contributionTypes:
+          type: object
+          additionalProperties:
+            type: integer
+        monthly:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityMonth'
+        privacyProvenance:
+          $ref: '#/components/schemas/PrivacyProvenance'
+
+    ActivityMonth:
+      type: object
+      required: [month, contributions, activeProjects]
+      properties:
+        month:
+          type: string
+          example: '2026-08'
+        contributions: { type: integer }
+        activeProjects: { type: integer }
+
+    TechnologySummary:
+      type: object
+      required:
+        - key
+        - name
+        - evidenceLevel
+        - evidenceScore
+        - projectCount
+        - privacyProvenance
+      properties:
+        key: { type: string }
+        name: { type: string }
+        evidenceLevel:
+          type: string
+          enum: [EXPOSURE, LIMITED, MODERATE, STRONG]
+        evidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        projectCount: { type: integer }
+        firstObservedAt:
+          type: [string, 'null']
+          format: date-time
+        lastObservedAt:
+          type: [string, 'null']
+          format: date-time
+        privacyProvenance:
+          $ref: '#/components/schemas/PrivacyProvenance'
+
+    ProjectTypeSummary:
+      type: object
+      required: [key, name, projectCount]
+      properties:
+        key: { type: string }
+        name: { type: string }
+        projectCount: { type: integer }
+
+    Contributions:
+      type: object
+      required: [total, byType, privacyProvenance]
+      properties:
+        total: { type: integer }
+        byType:
+          type: object
+          additionalProperties:
+            type: integer
+        privacyProvenance:
+          $ref: '#/components/schemas/PrivacyProvenance'
+
+    Evidence:
+      type: object
+      required: [technologies, projectTypes]
+      properties:
+        technologies:
+          type: array
+          items:
+            $ref: '#/components/schemas/TechnologyEvidence'
+        projectTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectTypeEvidence'
+
+    TechnologyEvidence:
+      type: object
+      required:
+        - technologyKey
+        - evidenceType
+        - strength
+        - observations
+        - privacyProvenance
+      properties:
+        technologyKey: { type: string }
+        evidenceType: { type: string }
+        strength: { type: string }
+        observations: { type: integer }
+        privacyProvenance:
+          $ref: '#/components/schemas/PrivacyProvenance'
+
+    ProjectTypeEvidence:
+      type: object
+      required:
+        - projectTypeKey
+        - source
+        - confidence
+        - observations
+        - privacyProvenance
+      properties:
+        projectTypeKey: { type: string }
+        source: { type: string }
+        confidence: { type: string }
+        observations: { type: integer }
+        privacyProvenance:
+          $ref: '#/components/schemas/PrivacyProvenance'
+
+    CreateAiAssessment:
+      type: object
+      required:
+        - analysisType
+        - content
+        - containsPrivateData
+      properties:
+        analysisType:
+          type: string
+          minLength: 1
+          maxLength: 120
+          example: developer-profile
+        content:
+          type: object
+          additionalProperties: true
+          description: Structured AI-generated assessment content.
+        containsPrivateData:
+          type: boolean
+
+    AiAssessment:
+      type: object
+      required:
+        - id
+        - analysisType
+        - sourceClient
+        - timestamp
+        - dataScope
+        - content
+        - containsPrivateData
+      properties:
+        id:
+          type: string
+          format: uuid
+        analysisType: { type: string }
+        sourceClient: { type: string }
+        timestamp:
+          type: string
+          format: date-time
+        dataScope:
+          $ref: '#/components/schemas/PrivacyScope'
+        content:
+          type: object
+          additionalProperties: true
+        containsPrivateData:
+          type: boolean

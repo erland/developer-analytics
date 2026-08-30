@@ -1,0 +1,129 @@
+name: Version 1 Release Candidate Readiness
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality-gates:
+    name: Full CI and acceptance suite
+    uses: ./.github/workflows/ci.yml
+
+  candidate-images:
+    name: Publish and verify candidate images
+    needs:
+      - quality-gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR for candidate publication
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine immutable candidate tag
+        id: candidate
+        shell: bash
+        run: echo "tag=rc-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and publish candidate web image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: frontend/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/developer-analytics-web:${{ steps.candidate.outputs.tag }}
+          provenance: mode=max
+          sbom: true
+
+      - name: Build and publish candidate backend image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/developer-analytics-backend:${{ steps.candidate.outputs.tag }}
+          provenance: mode=max
+          sbom: true
+
+      - name: Verify clean installation from published candidate images
+        env:
+          GHCR_OWNER: ${{ github.repository_owner }}
+          WEB_PORT: '18090'
+          RC_VERIFY_BASE_URL: http://localhost:18090
+        run: bash ./scripts/verify-release-candidate-images.sh "${{ steps.candidate.outputs.tag }}"
+
+      - name: Show candidate runtime logs on failure
+        if: failure()
+        env:
+          APP_VERSION: ${{ steps.candidate.outputs.tag }}
+          WEB_IMAGE: ghcr.io/${{ github.repository_owner }}/developer-analytics-web
+          BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/developer-analytics-backend
+          WEB_PORT: '18090'
+          DB_PASSWORD: rc-verify-db-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          GITHUB_CLIENT_ID: rc-client-id
+          GITHUB_CLIENT_SECRET: rc-client-secret
+          GITHUB_CALLBACK_URL: http://localhost:18090/api/auth/github/callback
+          FRONTEND_URL: http://localhost:18090/
+          SESSION_COOKIE_SECURE: 'false'
+        run: docker compose -p developer-analytics-rc-verify -f deploy/compose.release.example.yaml logs --no-color db backend worker web || true
+
+      - name: Ensure candidate stack is stopped
+        if: always()
+        env:
+          APP_VERSION: ${{ steps.candidate.outputs.tag }}
+          WEB_IMAGE: ghcr.io/${{ github.repository_owner }}/developer-analytics-web
+          BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/developer-analytics-backend
+          WEB_PORT: '18090'
+          DB_PASSWORD: rc-verify-db-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          GITHUB_CLIENT_ID: rc-client-id
+          GITHUB_CLIENT_SECRET: rc-client-secret
+          GITHUB_CALLBACK_URL: http://localhost:18090/api/auth/github/callback
+          FRONTEND_URL: http://localhost:18090/
+          SESSION_COOKIE_SECURE: 'false'
+        run: docker compose -p developer-analytics-rc-verify -f deploy/compose.release.example.yaml down -v --remove-orphans || true
+
+  documentation-gate:
+    name: Release candidate documentation gate
+    needs:
+      - quality-gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Verify required v1 documentation
+        run: python3 scripts/check-release-candidate-docs.py
+
+  ready:
+    name: Version 1 RC ready
+    needs:
+      - quality-gates
+      - candidate-images
+      - documentation-gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Confirm release-candidate gate
+        run: |
+          echo "All Version 1 release-candidate gates passed."
+          echo "The tested commit is $GITHUB_SHA."
+          echo "Create the RC tag from this exact commit only."

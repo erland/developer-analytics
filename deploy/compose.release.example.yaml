@@ -1,0 +1,114 @@
+name: developer-analytics
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-developer_analytics}
+      POSTGRES_USER: ${DB_USERNAME:-developer_analytics}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  backend:
+    image: ${BACKEND_IMAGE:-ghcr.io/erland/developer-analytics-backend}:${APP_VERSION:?Set APP_VERSION}
+    restart: unless-stopped
+    environment:
+      APP_RUNTIME_ROLE: api
+      DB_USERNAME: ${DB_USERNAME:-developer_analytics}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://db:5432/${DB_NAME:-developer_analytics}
+      QUARKUS_HTTP_HOST: 0.0.0.0
+      QUARKUS_HTTP_PORT: 8080
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:?Set GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:?Set GITHUB_CLIENT_SECRET}
+      GITHUB_CALLBACK_URL: ${GITHUB_CALLBACK_URL:?Set GITHUB_CALLBACK_URL}
+      FRONTEND_URL: ${FRONTEND_URL:?Set FRONTEND_URL}
+      SESSION_HOURS: ${SESSION_HOURS:-8}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:?Set CREDENTIAL_ENCRYPTION_KEY}
+      CREDENTIAL_KEY_VERSION: ${CREDENTIAL_KEY_VERSION:-v1}
+      AI_PROVIDER: ${AI_PROVIDER:-disabled}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
+      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
+      AI_PRIVATE_DATA_POLICY: ${AI_PRIVATE_DATA_POLICY:-PUBLIC_ONLY}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - web
+      - data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080' || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  worker:
+    image: ${BACKEND_IMAGE:-ghcr.io/erland/developer-analytics-backend}:${APP_VERSION:?Set APP_VERSION}
+    restart: unless-stopped
+    environment:
+      APP_RUNTIME_ROLE: worker
+      WORKER_ID: ${WORKER_ID:-worker-1}
+      WORKER_POLL_INTERVAL: ${WORKER_POLL_INTERVAL:-2s}
+      DB_USERNAME: ${DB_USERNAME:-developer_analytics}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://db:5432/${DB_NAME:-developer_analytics}
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:?Set CREDENTIAL_ENCRYPTION_KEY}
+      CREDENTIAL_KEY_VERSION: ${CREDENTIAL_KEY_VERSION:-v1}
+      AI_PROVIDER: ${AI_PROVIDER:-disabled}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
+      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
+      AI_PRIVATE_DATA_POLICY: ${AI_PRIVATE_DATA_POLICY:-PUBLIC_ONLY}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - data
+
+  web:
+    image: ${WEB_IMAGE:-ghcr.io/erland/developer-analytics-web}:${APP_VERSION:?Set APP_VERSION}
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - web
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1/
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  postgres-data:
+
+networks:
+  web:
+  data:
+    internal: true

@@ -1,0 +1,235 @@
+name: Version 1 Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version 1 tag to create (for example v1.0.0)
+        required: true
+        default: v1.0.0
+        type: string
+      confirmation:
+        description: Type RELEASE_V1 to publish the release
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: version-1-release
+  cancel-in-progress: false
+
+jobs:
+  validate-input:
+    name: Validate release request
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+      minor: ${{ steps.version.outputs.minor }}
+      major: ${{ steps.version.outputs.major }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Validate confirmation and version
+        id: version
+        shell: bash
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          [[ "${CONFIRMATION}" == "RELEASE_V1" ]] || {
+            echo "confirmation must be RELEASE_V1" >&2
+            exit 1
+          }
+          [[ "${REQUESTED_VERSION}" =~ ^v1\.[0-9]+\.[0-9]+$ ]] || {
+            echo "Version 1 release tag must match v1.x.y" >&2
+            exit 1
+          }
+          version="${REQUESTED_VERSION#v}"
+          IFS=. read -r major minor patch <<<"${version}"
+          echo "tag=${REQUESTED_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "minor=${major}.${minor}" >> "$GITHUB_OUTPUT"
+          echo "major=${major}" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure tag/release does not already exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists." >&2
+            exit 1
+          fi
+          if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists." >&2
+            exit 1
+          fi
+
+  quality-gates:
+    name: Full CI and acceptance suite
+    needs: validate-input
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Publish ${{ matrix.component }} ${{ needs.validate-input.outputs.version }}
+    needs:
+      - validate-input
+      - quality-gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: web
+            dockerfile: frontend/Dockerfile
+            image: developer-analytics-web
+            cache_scope: v1-release-web
+          - component: backend
+            dockerfile: backend/Dockerfile
+            image: developer-analytics-backend
+            cache_scope: v1-release-backend
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish immutable Version 1 image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ needs.validate-input.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ needs.validate-input.outputs.minor }}
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ needs.validate-input.outputs.major }}
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:latest
+          labels: |
+            org.opencontainers.image.title=Developer Analytics ${{ matrix.component }}
+            org.opencontainers.image.description=Developer Analytics ${{ matrix.component }} container image
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ needs.validate-input.outputs.version }}
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha,scope=${{ matrix.cache_scope }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.cache_scope }}
+
+  verify-published-release:
+    name: Verify published Version 1 containers
+    needs:
+      - validate-input
+      - publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Verify clean GHCR pull, tags and image hygiene
+        env:
+          GHCR_OWNER: ${{ github.repository_owner }}
+        run: bash ./scripts/verify-ghcr-release.sh "${{ needs.validate-input.outputs.tag }}"
+
+      - name: Start and smoke-test published release images
+        env:
+          GHCR_OWNER: ${{ github.repository_owner }}
+          WEB_PORT: '18091'
+          RELEASE_VERIFY_BASE_URL: http://localhost:18091
+        run: bash ./scripts/test-published-release-runtime.sh "${{ needs.validate-input.outputs.tag }}"
+
+      - name: Show release verification logs on failure
+        if: failure()
+        env:
+          APP_VERSION: ${{ needs.validate-input.outputs.version }}
+          WEB_IMAGE: ghcr.io/${{ github.repository_owner }}/developer-analytics-web
+          BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/developer-analytics-backend
+          WEB_PORT: '18091'
+          DB_PASSWORD: release-verify-db-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          GITHUB_CLIENT_ID: release-verify-client-id
+          GITHUB_CLIENT_SECRET: release-verify-client-secret
+          GITHUB_CALLBACK_URL: http://localhost:18091/api/auth/github/callback
+          FRONTEND_URL: http://localhost:18091/
+          SESSION_COOKIE_SECURE: 'false'
+        run: docker compose -p developer-analytics-release-verify -f deploy/compose.release.example.yaml logs --no-color db backend worker web || true
+
+      - name: Ensure release verification stack is stopped
+        if: always()
+        env:
+          APP_VERSION: ${{ needs.validate-input.outputs.version }}
+          WEB_IMAGE: ghcr.io/${{ github.repository_owner }}/developer-analytics-web
+          BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/developer-analytics-backend
+          WEB_PORT: '18091'
+          DB_PASSWORD: release-verify-db-password
+          CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+          GITHUB_CLIENT_ID: release-verify-client-id
+          GITHUB_CLIENT_SECRET: release-verify-client-secret
+          GITHUB_CALLBACK_URL: http://localhost:18091/api/auth/github/callback
+          FRONTEND_URL: http://localhost:18091/
+          SESSION_COOKIE_SECURE: 'false'
+        run: docker compose -p developer-analytics-release-verify -f deploy/compose.release.example.yaml down -v --remove-orphans || true
+
+  create-release:
+    name: Create Version 1 tag and GitHub release
+    needs:
+      - validate-input
+      - quality-gates
+      - publish
+      - verify-published-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Create release tag and GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.validate-input.outputs.tag }}
+          VERSION: ${{ needs.validate-input.outputs.version }}
+        run: |
+          set -euo pipefail
+          gh release create "${TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "Developer Analytics ${TAG}" \
+            --notes-file docs/release-notes-v1.0.0.md
+
+      - name: Confirm release traceability
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.validate-input.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" --json tagName,targetCommitish,url
+          git fetch --tags --force
+          test "$(git rev-list -n 1 "${TAG}")" = "${GITHUB_SHA}"
