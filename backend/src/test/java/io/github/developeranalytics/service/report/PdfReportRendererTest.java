@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.text.PDFTextStripper;
 
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class PdfReportRendererTest {
 
     @Test
-    void pdfUsesCanonicalModelAndStartsWithPdfSignature() {
+    void pdfUsesCanonicalModelAndStartsWithPdfSignature() throws IOException {
         CanonicalReport report = new CanonicalReport(
                 CanonicalReport.MODEL_VERSION,
                 OffsetDateTime.parse("2026-08-30T10:00:00Z"),
