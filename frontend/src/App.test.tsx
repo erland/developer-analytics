@@ -324,7 +324,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Projects' }))
     expect(screen.getByRole('heading', { name: 'Projects', level: 1 })).toBeInTheDocument()
     expect(await screen.findByText('demo-service')).toBeInTheDocument()
-    expect(screen.getByText('Quarkus')).toBeInTheDocument()
+    expect(screen.getAllByText('Quarkus').length).toBeGreaterThanOrEqual(2)
     expect(screen.getByLabelText('Project filters')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'demo-service' }))
