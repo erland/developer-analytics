@@ -16,6 +16,10 @@ concurrency:
 
 jobs:
   publish:
+    # Version 1 releases are published and verified by version-1-release.yml.
+    # Rebuilding them here after GitHub release publication would replace the
+    # digest that the authoritative Version 1 workflow already verified.
+    if: ${{ github.event_name != 'release' || !startsWith(github.event.release.tag_name, 'v1.') }}
     name: Publish ${{ matrix.component }} image
     runs-on: ubuntu-latest
     timeout-minutes: 30

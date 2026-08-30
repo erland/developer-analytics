@@ -884,3 +884,18 @@ The final large-account filtering assertion used search-target repositories whos
 sequence numbers also matched the excluded-private fixture rule. Search targets
 are now generated on included repository rows, and CI checks that the two fixture
 rules cannot overlap again.
+
+## Version 1 release
+
+Version 1 is released through the **Version 1 Release** GitHub Actions workflow.
+It executes the complete CI/acceptance suite, publishes versioned GHCR web/backend
+images with SBOM/provenance, verifies a clean installation from those images and
+only then creates the Version 1 GitHub tag/release. See
+[`docs/version-1-release.md`](docs/version-1-release.md) and
+[`docs/release-notes-v1.0.0.md`](docs/release-notes-v1.0.0.md).
+
+## Development status – Step 91
+
+Step 91 is complete: the repository contains the final Version 1 release workflow,
+release notes and operator procedure. This is the final numbered implementation
+step in `docs/development-plan.md`.
