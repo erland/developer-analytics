@@ -222,7 +222,7 @@ test('primary v1 flows remain usable at phone width without wide-table dependenc
   authenticated = true
   await page.reload()
   await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible()
-  await expect(page.getByText('Mobile Developer')).toBeVisible()
+  await expect(page.getByText('Mobile Developer', { exact: true })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
   // Activity charts remain compact and visible.
