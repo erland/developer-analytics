@@ -37,6 +37,11 @@ services:
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:?Set CREDENTIAL_ENCRYPTION_KEY in deploy/.env}
       CREDENTIAL_KEY_VERSION: ${CREDENTIAL_KEY_VERSION:-v1}
+      AI_PROVIDER: ${AI_PROVIDER:-disabled}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
+      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
+      AI_PRIVATE_DATA_POLICY: ${AI_PRIVATE_DATA_POLICY:-PUBLIC_ONLY}
     depends_on:
       db:
         condition: service_healthy
@@ -62,6 +67,11 @@ services:
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://db:5432/${DB_NAME:-developer_analytics}
       CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:?Set CREDENTIAL_ENCRYPTION_KEY in deploy/.env}
       CREDENTIAL_KEY_VERSION: ${CREDENTIAL_KEY_VERSION:-v1}
+      AI_PROVIDER: ${AI_PROVIDER:-disabled}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
+      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
+      AI_PRIVATE_DATA_POLICY: ${AI_PRIVATE_DATA_POLICY:-PUBLIC_ONLY}
     depends_on:
       db:
         condition: service_healthy
