@@ -1,0 +1,25 @@
+application: developer-analytics
+
+deployment:
+  type: coolify-compose
+  compose: deploy/coolify/compose.yaml
+
+domain:
+  web: developer-analytics.apps.isaksson.info
+
+database:
+  required: true
+  external: true
+  name: developer_analytics
+  user: developer_analytics
+
+images:
+  web: ghcr.io/erland/developer-analytics-web
+  backend: ghcr.io/erland/developer-analytics-backend
+
+services:
+  public:
+    - web
+  internal:
+    - backend
+    - worker
