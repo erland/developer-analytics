@@ -24,9 +24,6 @@ services:
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
       GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
       AI_PRIVATE_DATA_POLICY: ${AI_PRIVATE_DATA_POLICY:-PUBLIC_ONLY}
-    networks:
-      - app
-      - coolify
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080' || exit 1"]
       interval: 10s
@@ -51,9 +48,6 @@ services:
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
       GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta}
       AI_PRIVATE_DATA_POLICY: ${AI_PRIVATE_DATA_POLICY:-PUBLIC_ONLY}
-    networks:
-      - app
-      - coolify
 
   web:
     image: ${WEB_IMAGE:-ghcr.io/erland/developer-analytics-web}:${APP_VERSION:-latest}
@@ -61,17 +55,9 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    networks:
-      - app
-      - coolify
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 5s
-
-networks:
-  app:
-  coolify:
-    external: true
