@@ -1,0 +1,104 @@
+name: Dependabot auto-merge
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+      - Dependency Review
+    types:
+      - completed
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.pull_requests[0].number != null
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+        run: |
+          author="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.user.login')"
+          state="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.state')"
+          head_sha="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha')"
+
+          echo "number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "head_sha=${head_sha}" >> "$GITHUB_OUTPUT"
+
+          if [[ "$author" == "dependabot[bot]" && "$state" == "open" ]]; then
+            echo "eligible=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fetch Dependabot metadata
+        id: metadata
+        if: steps.pr.outputs.eligible == 'true'
+        uses: dependabot/fetch-metadata@d7267f607e9d3fb96fc2fbe83e0af444713e90b7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ steps.pr.outputs.number }}
+
+      - name: Check update policy
+        id: policy
+        if: steps.pr.outputs.eligible == 'true'
+        env:
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+        run: |
+          case "$UPDATE_TYPE" in
+            version-update:semver-patch|version-update:semver-minor)
+              echo "allowed=true" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "allowed=false" >> "$GITHUB_OUTPUT"
+              echo "Not auto-merging update type: ${UPDATE_TYPE}"
+              ;;
+          esac
+
+      - name: Verify CI and dependency review
+        id: checks
+        if: steps.policy.outputs.allowed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+        run: |
+          runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${HEAD_SHA}&event=pull_request&per_page=100")"
+
+          ci="$(jq -r '[.workflow_runs[] | select(.name == "CI")][0].conclusion // ""' <<< "$runs")"
+          dependency_review="$(jq -r '[.workflow_runs[] | select(.name == "Dependency Review")][0].conclusion // ""' <<< "$runs")"
+
+          echo "CI: ${ci}"
+          echo "Dependency Review: ${dependency_review}"
+
+          if [[ "$ci" == "success" && "$dependency_review" == "success" ]]; then
+            echo "passed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "passed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Merge Dependabot pull request
+        if: steps.checks.outputs.passed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          EXPECTED_HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+        run: |
+          current_head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha')"
+          current_state="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.state')"
+
+          if [[ "$current_state" != "open" || "$current_head" != "$EXPECTED_HEAD_SHA" ]]; then
+            echo "PR changed after validation; skipping merge."
+            exit 0
+          fi
+
+          gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --squash --delete-branch
