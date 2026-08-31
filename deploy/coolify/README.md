@@ -1,0 +1,193 @@
+# Coolify deployment
+
+This profile deploys Developer Analytics on Coolify using the published GHCR images and a shared PostgreSQL instance managed separately in Coolify.
+
+## Target topology
+
+```text
+Internet
+  |
+  v
+https://developer-analytics.apps.isaksson.info
+  |
+  v
+Coolify / Traefik
+  |
+  v
+web:80
+  |
+  +--> /api/* --> backend:8080
+
+worker ----------------------+
+backend ---------------------+--> shared PostgreSQL:5432
+```
+
+Only `web` should be exposed through the Coolify proxy. `backend`, `worker` and PostgreSQL remain internal.
+
+## 1. DNS
+
+Create a DNS record so that:
+
+```text
+developer-analytics.apps.isaksson.info
+```
+
+resolves to the Coolify server. With the current Loopia setup this can be a CNAME pointing to:
+
+```text
+apps.isaksson.info
+```
+
+## 2. Shared PostgreSQL
+
+Use the existing shared PostgreSQL resource in Coolify. Do not create a PostgreSQL service from this Compose profile.
+
+Create one dedicated database and role for Developer Analytics. Open a terminal to the PostgreSQL container and run the statements in `bootstrap-db.sql` after replacing `CHANGE_ME` with a strong unique password.
+
+The resulting database should be:
+
+```text
+database: developer_analytics
+owner:    developer_analytics
+```
+
+Flyway is responsible for the application schema and runs automatically when the backend starts.
+
+Do not expose port 5432 publicly.
+
+## 3. Create the Coolify project
+
+Create a project such as:
+
+```text
+Developer Analytics
+```
+
+with the environment:
+
+```text
+production
+```
+
+Add a Docker Compose resource backed by this Git repository and use:
+
+```text
+deploy/coolify/compose.yaml
+```
+
+as the Compose file.
+
+In the Compose resource's advanced configuration, enable:
+
+```text
+Connect To Predefined Network
+```
+
+This is required because the Compose stack must communicate with the separately managed PostgreSQL resource. On a standard Coolify installation the predefined destination network is `coolify`.
+
+Do not add the Coolify destination network manually to the Compose file; let Coolify manage that attachment.
+
+## 4. Environment variables
+
+Use `env.example` as the checklist. Configure values in Coolify rather than committing a production `.env` file.
+
+Required secrets include:
+
+- `DB_PASSWORD`
+- `GITHUB_CLIENT_ID`
+- `GITHUB_CLIENT_SECRET`
+- `CREDENTIAL_ENCRYPTION_KEY`
+
+Set `DB_HOST` to the internal hostname or alias of the shared PostgreSQL resource reachable on the predefined Coolify network.
+
+The production URLs should be:
+
+```text
+FRONTEND_URL=https://developer-analytics.apps.isaksson.info/
+GITHUB_CALLBACK_URL=https://developer-analytics.apps.isaksson.info/api/auth/github/callback
+SESSION_COOKIE_SECURE=true
+```
+
+Generate the application encryption key with, for example:
+
+```bash
+openssl rand -base64 32
+```
+
+## 5. Domain
+
+Assign this domain to the `web` service only:
+
+```text
+https://developer-analytics.apps.isaksson.info
+```
+
+The Compose profile deliberately contains no host `ports:` mapping. Coolify/Traefik should route HTTPS traffic directly to port 80 in the `web` container.
+
+Do not assign public domains to `backend` or `worker`.
+
+## 6. Release version
+
+Pin production to an explicit release version when possible:
+
+```text
+APP_VERSION=1.2.3
+```
+
+The images are:
+
+```text
+ghcr.io/erland/developer-analytics-web:<version>
+ghcr.io/erland/developer-analytics-backend:<version>
+```
+
+Both API and worker use the backend image with different runtime roles.
+
+## 7. First deployment
+
+Before pressing Deploy verify:
+
+- the database and role exist
+- `Connect To Predefined Network` is enabled
+- `DB_HOST` resolves from the Coolify predefined network
+- all required secrets are populated
+- the GitHub application's callback URL matches the production URL
+- the CNAME resolves to the Coolify server
+- the `web` service has the production domain
+
+Deploy the Compose resource.
+
+Expected runtime state:
+
+- `backend`: healthy
+- `worker`: running
+- `web`: healthy
+- Flyway migrations: successful
+
+Then verify:
+
+```text
+https://developer-analytics.apps.isaksson.info
+```
+
+and GitHub sign-in.
+
+## 8. Upgrades
+
+For a manual upgrade, change `APP_VERSION` to the new published release and redeploy the Coolify resource.
+
+The repository publishes versioned GHCR images, so rollback is performed by restoring the previous `APP_VERSION` and redeploying. Database migrations may require database restore if they are not backwards compatible.
+
+The first production deployment should be verified manually. Automatic release-to-Coolify deployment can be added later through the Coolify API once the workflow also updates the pinned `APP_VERSION`; a simple redeploy webhook alone would only redeploy the currently configured version.
+
+## 9. Backup
+
+Developer Analytics has no application-specific persistent Docker volume in this Coolify profile. Persistent application state is in the shared PostgreSQL database.
+
+Configure scheduled Coolify PostgreSQL backups for:
+
+```text
+developer_analytics
+```
+
+to the external S3/R2 backup destination before relying on the deployment for production data.
