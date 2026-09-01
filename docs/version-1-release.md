@@ -7,7 +7,7 @@ The final Version 1 release is created through the GitHub Actions workflow **Ver
 1. The exact commit intended for release has passed **Version 1 Release Candidate Readiness**.
 2. All pull-request CI jobs are green.
 3. GHCR packages are intended to be publicly pullable as documented in the installation guide.
-4. The operator has reviewed `docs/release-notes-v1.0.0.md`.
+4. The operator has reviewed `RELEASE_NOTES.md`.
 
 ## Run the release
 

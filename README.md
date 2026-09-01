@@ -892,7 +892,7 @@ It executes the complete CI/acceptance suite, publishes versioned GHCR web/backe
 images with SBOM/provenance, verifies a clean installation from those images and
 only then creates the Version 1 GitHub tag/release. See
 [`docs/version-1-release.md`](docs/version-1-release.md) and
-[`docs/release-notes-v1.0.0.md`](docs/release-notes-v1.0.0.md).
+[`RELEASE_NOTES.md`](RELEASE_NOTES.md).
 
 ## Development status – Step 91
 

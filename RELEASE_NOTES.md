@@ -1,4 +1,16 @@
-# Developer Analytics v1.0.0
+# Developer Analytics release notes
+
+This file contains the release history for Developer Analytics. The newest released version is kept first.
+
+Before publishing a new `v1.x.y` release, add an exact `## v1.x.y` section here. The **Version 1 Release** workflow validates that the section exists and publishes only that section as the GitHub Release notes.
+
+## Unreleased
+
+- Improve repository analysis orchestration so all included repositories can be processed beyond initial discovery.
+- Add per-repository refresh and bulk private-repository inclusion controls.
+- Harden GitHub access-loss handling so an inaccessible individual repository does not revoke access for every repository.
+
+## v1.0.0
 
 Developer Analytics version 1 is the first self-hosted release for analysing a developer's GitHub/open-source history while keeping measured facts, inferred conclusions and private-data handling explicitly separated.
 
@@ -83,3 +95,4 @@ Do not edit or remove historical Flyway migrations. Roll back using the document
 ## Validation performed for Version 1
 
 The release pipeline requires the complete CI and acceptance suite to pass before publication, including backend/frontend tests, migrations, container runtime smoke, end-to-end Compose, backup/restore, privacy acceptance, mobile browser acceptance and the 200+ repository large-account acceptance scenario.
+
