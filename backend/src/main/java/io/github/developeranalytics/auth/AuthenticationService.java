@@ -24,6 +24,8 @@ public class AuthenticationService {
     @Inject ProviderCredentialService credentials;
     @Inject ProviderConnectionRepository connections;
     @Inject RepositoryDiscoveryJobService discoveryJobs;
+    @Inject io.github.developeranalytics.persistence.repository.SourceRepositoryRepository sourceRepositories;
+    @Inject io.github.developeranalytics.service.sync.RepositoryAnalysisOrchestrator repositoryAnalysis;
     @ConfigProperty(name="developer-analytics.session.hours", defaultValue="8") long sessionHours;
     @ConfigProperty(name="developer-analytics.session.cookie-secure", defaultValue="true") boolean secureCookie;
 
@@ -87,6 +89,8 @@ public void removeGitHubPrivateRepositoryAuthorisation(
     // This disables private-repository use inside Developer Analytics.
     // GitHub OAuth permissions can also be revoked by the user in GitHub.
     connection.removePrivateRepositoryAccess();
+    sourceRepositories.findPrivateForUser(current.getUser().getId()).forEach(r -> r.excludeFromAnalysis());
+    repositoryAnalysis.enqueueAggregateJobs(current.getUser());
 }
 
 

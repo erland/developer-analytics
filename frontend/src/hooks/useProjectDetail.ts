@@ -29,16 +29,7 @@ export type ProjectDetail = {
     excludedFromAiProfile: boolean
     timeline: Array<{ month: string; commits: number }>
   }
-  technologies: Array<{
-    technologyKey: string
-    technologyName: string
-    evidenceType: string
-    strength: string
-    sourceValue: string | null
-    measuredValue: number | null
-    observedAt: string
-    privacyProvenance: string
-  }>
+  technologies: Array<{ technologyKey: string; technologyName: string; strength: string }>
   categories: Array<{
     categoryKey: string
     categoryName: string
@@ -58,11 +49,8 @@ export type ProjectDetail = {
     calculatedAt: string
     privacyProvenance: string
   }
-  synchronisation: {
-    status: string
-    lastSeenAt: string | null
-    error: string | null
-  }
+  synchronisation: { status: string; lastSeenAt: string | null; error: string | null }
+  contributors: { total: number | null; humans: number | null; bots: number | null; userCommits: number | null }
 }
 
 type State =
@@ -100,7 +88,8 @@ export function useProjectDetail(repositoryId: string | null): State {
           throw new Error(`Project detail request failed with HTTP ${response.status}`)
         }
 
-        const data = (await response.json()) as ProjectDetail
+        const raw = (await response.json()) as ProjectDetail
+        const data: ProjectDetail = { ...raw, contributors: raw.contributors ?? { total: null, humans: null, bots: null, userCommits: null } }
         setState({ status: 'ready', data, error: null })
       } catch (error) {
         if (controller.signal.aborted) return

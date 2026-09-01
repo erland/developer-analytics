@@ -54,7 +54,8 @@ class MeProjectDetailResourceModelTest {
                         "SYNCED",
                         OffsetDateTime.parse("2026-08-20T08:00:00Z"),
                         null
-                )
+                ),
+                new MeProjectDetailResource.Contributors(4, 3, 1, 10)
         );
 
         assertEquals(70, detail.assessment().significanceScore());

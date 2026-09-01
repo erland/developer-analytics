@@ -72,7 +72,7 @@ public List<TechnologyEvidenceSummaryRow> summarizeForUser(
             "count(distinct case when e.repository.visibility = io.github.developeranalytics.domain.model.RepositoryVisibility.PUBLIC then e.repository.id else null end), " +
             "count(distinct case when e.repository.visibility = io.github.developeranalytics.domain.model.RepositoryVisibility.PRIVATE then e.repository.id else null end) " +
             "from RepositoryTechnologyEvidence e " +
-            "where e.user.id=:userId " +
+            "where e.user.id=:userId and e.repository.includedInAnalysis=true " +
             "group by e.technology.id",
             Object[].class)
         .setParameter("userId", userId)

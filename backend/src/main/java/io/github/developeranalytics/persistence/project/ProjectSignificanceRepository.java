@@ -53,7 +53,7 @@ public List<ProjectSignificanceAssessment> findSignificantExternalProjects(
     return entityManager.createQuery(
             "select a from ProjectSignificanceAssessment a " +
             "join fetch a.repository r " +
-            "where a.user.id=:userId " +
+            "where a.user.id=:userId and r.includedInAnalysis=true " +
             "and r.ownershipRelation <> :ownedByUser " +
             "and (" +
             "a.significanceLevel in (:high, :veryHigh) " +
@@ -102,7 +102,7 @@ public List<ProjectSignificanceAssessment> findSignificantExternalProjects(
 
         Object[] repoRow = entityManager.createQuery(
                 "select r.discoveredAt, r.lastActivityAt, r.ownershipRelation, " +
-                "r.ownerType, r.fork, r.archived " +
+                "r.ownerType, r.fork, r.archived, r.repositoryCommitCount " +
                 "from SourceRepository r " +
                 "where r.id=:repositoryId and r.user.id=:userId",
                 Object[].class)
@@ -116,13 +116,9 @@ public List<ProjectSignificanceAssessment> findSignificantExternalProjects(
         Object ownerType = repoRow[3];
         boolean fork = (Boolean) repoRow[4];
         boolean archived = (Boolean) repoRow[5];
+        Integer repositoryCommitCount = (Integer) repoRow[6];
 
-        long projectContributionCount = entityManager.createQuery(
-                "select count(c.id) from Contribution c " +
-                "where c.repository.id=:repositoryId",
-                Long.class)
-            .setParameter("repositoryId", repositoryId)
-            .getSingleResult();
+        long projectContributionCount = repositoryCommitCount == null ? contributions : repositoryCommitCount.longValue();
 
         long categoryCount = entityManager.createQuery(
                 "select count(c.category.id) from RepositoryProjectCategory c " +

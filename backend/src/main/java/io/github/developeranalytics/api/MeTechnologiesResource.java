@@ -9,6 +9,8 @@ import io.github.developeranalytics.persistence.technology.RepositoryTechnologyE
 import io.github.developeranalytics.persistence.technology.TechnologyTimelineRepository;
 import io.github.developeranalytics.persistence.technology.UserTechnologyAssessmentRepository;
 import io.github.developeranalytics.service.correction.UserCorrectionService;
+import io.github.developeranalytics.service.technology.TechnologyEvidenceStrengthService;
+import io.github.developeranalytics.service.technology.TechnologyTimelineService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.GET;
@@ -40,12 +42,20 @@ public class MeTechnologiesResource {
     @Inject
     UserCorrectionService corrections;
 
+    @Inject TechnologyEvidenceStrengthService strengthService;
+    @Inject TechnologyTimelineService timelineService;
+
     @GET
     public List<Entry> list(
             @CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken
     ) {
         CurrentUser current =
                 currentUserService.requireCurrentUser(sessionToken);
+
+        if (assessments.findForUser(current.user().getId()).isEmpty()) {
+            strengthService.recalculate(current.user());
+            timelineService.recalculate(current.user());
+        }
 
         Map<String, List<TechnologyActivityMonth>> monthsByTechnology =
                 timelines.findMonthsForUser(current.user().getId())

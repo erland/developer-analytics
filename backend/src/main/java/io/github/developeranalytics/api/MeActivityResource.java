@@ -36,7 +36,7 @@ public class MeActivityResource {
         OffsetDateTime toDate = parseEnd(to);
 
         StringBuilder jpql = new StringBuilder(
-                "select c.occurredAt, c.additions, c.deletions, c.repository.id " +
+                "select c.occurredAt, c.additions, c.deletions, c.repository.id, c.repository.name " +
                 "from Contribution c " +
                 "where c.user.id=:userId and c.type=:type"
         );
@@ -64,6 +64,9 @@ public class MeActivityResource {
         Map<Integer, Integer> commitsPerYear = new TreeMap<>();
         Map<YearMonth, Integer> commitsPerMonth = new TreeMap<>();
         Map<YearMonth, Set<UUID>> activeProjectsPerMonth = new TreeMap<>();
+        Map<YearMonth, Set<String>> projectNamesPerMonth = new TreeMap<>();
+        Map<Integer, Set<String>> projectNamesPerYear = new TreeMap<>();
+        Map<UUID, Map<YearMonth, Integer>> projectMonthlyActivity = new HashMap<>();
 
         List<Integer> sizes = new ArrayList<>();
         long additions = 0;
@@ -77,13 +80,17 @@ public class MeActivityResource {
             Integer add = (Integer) row[1];
             Integer del = (Integer) row[2];
             UUID repositoryId = (UUID) row[3];
+            String repositoryName = (String) row[4];
 
             commitsPerYear.merge(occurredAt.getYear(), 1, Integer::sum);
+            projectNamesPerYear.computeIfAbsent(occurredAt.getYear(), ignored -> new TreeSet<>()).add(repositoryName);
             YearMonth month = YearMonth.from(occurredAt);
             commitsPerMonth.merge(month, 1, Integer::sum);
             activeProjectsPerMonth
                     .computeIfAbsent(month, ignored -> new HashSet<>())
                     .add(repositoryId);
+            projectNamesPerMonth.computeIfAbsent(month, ignored -> new TreeSet<>()).add(repositoryName);
+            projectMonthlyActivity.computeIfAbsent(repositoryId, ignored -> new TreeMap<>()).merge(month, 1, Integer::sum);
 
             if (add != null || del != null) {
                 int a = add == null ? 0 : add;
@@ -97,21 +104,31 @@ public class MeActivityResource {
             if (last == null || occurredAt.isAfter(last)) last = occurredAt;
         }
 
-        double average = sizes.isEmpty()
-                ? 0.0
-                : sizes.stream().mapToInt(Integer::intValue).average().orElse(0.0);
-
+        Object[] repositoryStats = entityManager.createQuery(
+                "select coalesce(sum(r.userAdditions),0), coalesce(sum(r.userDeletions),0), " +
+                "coalesce(sum(r.userCommitCount),0), count(r.id) " +
+                "from SourceRepository r where r.user.id=:userId and r.includedInAnalysis=true", Object[].class)
+                .setParameter("userId", current.user().getId()).getSingleResult();
+        long measuredAdditions = ((Number) repositoryStats[0]).longValue();
+        long measuredDeletions = ((Number) repositoryStats[1]).longValue();
+        long measuredCommits = ((Number) repositoryStats[2]).longValue();
+        double average = measuredCommits > 0 ? (double) (measuredAdditions + measuredDeletions) / measuredCommits :
+                (sizes.isEmpty() ? 0.0 : sizes.stream().mapToInt(Integer::intValue).average().orElse(0.0));
+        if (measuredCommits > 0) { additions = measuredAdditions; deletions = measuredDeletions; }
         double median = median(sizes);
 
         List<YearPoint> years = commitsPerYear.entrySet().stream()
-                .map(entry -> new YearPoint(entry.getKey(), entry.getValue()))
+                .map(entry -> new YearPoint(entry.getKey(), entry.getValue(),
+                        projectNamesPerYear.getOrDefault(entry.getKey(), Set.of()).size(),
+                        List.copyOf(projectNamesPerYear.getOrDefault(entry.getKey(), Set.of()))))
                 .toList();
 
         List<MonthPoint> months = commitsPerMonth.entrySet().stream()
                 .map(entry -> new MonthPoint(
                         entry.getKey().toString(),
                         entry.getValue(),
-                        activeProjectsPerMonth.getOrDefault(entry.getKey(), Set.of()).size()
+                        activeProjectsPerMonth.getOrDefault(entry.getKey(), Set.of()).size(),
+                        List.copyOf(projectNamesPerMonth.getOrDefault(entry.getKey(), Set.of()))
                 ))
                 .toList();
 
@@ -119,6 +136,21 @@ public class MeActivityResource {
                 .flatMap(Set::stream)
                 .collect(java.util.stream.Collectors.toSet())
                 .size();
+
+        List<Object[]> projectRows = entityManager.createQuery(
+                "select c.repository.id, c.repository.name, min(c.occurredAt), max(c.occurredAt), count(c.id) " +
+                "from Contribution c where c.user.id=:userId and c.type=:type " +
+                "group by c.repository.id, c.repository.name order by min(c.occurredAt)", Object[].class)
+                .setParameter("userId", current.user().getId())
+                .setParameter("type", io.github.developeranalytics.domain.model.Contribution.Type.COMMIT)
+                .getResultList();
+        List<ProjectLifecycle> projectsOverTime = projectRows.stream().map(row -> {
+            UUID repositoryId = (UUID) row[0];
+            List<ProjectMonthActivity> activity = projectMonthlyActivity.getOrDefault(repositoryId, Map.of()).entrySet().stream()
+                    .map(e -> new ProjectMonthActivity(e.getKey().toString(), e.getValue())).toList();
+            return new ProjectLifecycle(repositoryId, (String) row[1], (OffsetDateTime) row[2], (OffsetDateTime) row[3],
+                    ((Number) row[4]).intValue(), activity);
+        }).toList();
 
         return new ActivityResponse(
                 rows.size(),
@@ -130,7 +162,9 @@ public class MeActivityResource {
                 first,
                 last,
                 years,
-                months
+                months,
+                projectsOverTime,
+                measuredCommits > 0
         );
     }
 
@@ -163,14 +197,14 @@ public class MeActivityResource {
             OffsetDateTime firstActivityAt,
             OffsetDateTime lastActivityAt,
             List<YearPoint> commitsPerYear,
-            List<MonthPoint> commitsPerMonth
+            List<MonthPoint> commitsPerMonth,
+            List<ProjectLifecycle> projectsOverTime,
+            boolean commitSizeStatisticsAvailable
     ) {}
 
-    public record YearPoint(int year, int commits) {}
-
-    public record MonthPoint(
-            String month,
-            int commits,
-            int activeProjects
-    ) {}
+    public record YearPoint(int year, int commits, int activeProjects, List<String> projects) {}
+    public record MonthPoint(String month, int commits, int activeProjects, List<String> projects) {}
+    public record ProjectLifecycle(UUID repositoryId, String repositoryName, OffsetDateTime firstActivityAt,
+                                   OffsetDateTime lastActivityAt, int commits, List<ProjectMonthActivity> monthlyActivity) {}
+    public record ProjectMonthActivity(String month, int commits) {}
 }

@@ -103,7 +103,7 @@ public class ProjectTypeAnalyticsRepository {
                 Object[].class)
             .setParameter("userId", userId)
             .setParameter("categoryKey", categoryKey)
-            .setMaxResults(Math.max(1, Math.min(limit, 10)))
+            .setMaxResults(Math.max(1, Math.min(limit, 1000)))
             .getResultList()
             .stream()
             .map(row -> new RepresentativeProjectRow(

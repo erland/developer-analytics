@@ -75,7 +75,7 @@ public class MeProjectTypesResource {
                 analytics.representativeProjects(
                         userId,
                         summary.categoryKey(),
-                        5
+                        500
                 ).stream()
                 .map(project -> new RepresentativeProject(
                         project.repositoryId(),

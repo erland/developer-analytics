@@ -1,16 +1,20 @@
 import { useMemo, useState } from 'react'
 import { type TechnologyView, useTechnologyViews } from '../hooks/useTechnologyViews'
 import { setTechnologySuppressed } from '../hooks/useCorrections'
+import { ProjectDetailView } from './ProjectDetailView'
 
 export function TechnologyViews() {
   const technologies = useTechnologyViews()
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
 
   const selected = useMemo(() => {
     if (technologies.status !== 'ready') return null
     if (!selectedKey) return technologies.data[0] ?? null
     return technologies.data.find((item) => item.technologyKey === selectedKey) ?? null
   }, [selectedKey, technologies])
+
+  if (selectedProjectId) return <ProjectDetailView repositoryId={selectedProjectId} onBack={() => setSelectedProjectId(null)} />
 
   if (technologies.status === 'loading') {
     return (
@@ -71,14 +75,14 @@ export function TechnologyViews() {
             ))}
           </section>
 
-          {selected ? <TechnologyDetail technology={selected} /> : null}
+          {selected ? <TechnologyDetail technology={selected} onOpenProject={setSelectedProjectId} /> : null}
         </div>
       )}
     </>
   )
 }
 
-function TechnologyDetail({ technology }: { technology: TechnologyView }) {
+function TechnologyDetail({ technology, onOpenProject }: { technology: TechnologyView; onOpenProject:(id:string)=>void }) {
   const maxActivity = Math.max(
     1,
     ...technology.timeline.map((point) => point.activityCount),
@@ -171,13 +175,7 @@ function TechnologyDetail({ technology }: { technology: TechnologyView }) {
               <article className="project-row" key={project.repositoryId}>
                 <div>
                   <h3>
-                    {project.htmlUrl ? (
-                      <a href={project.htmlUrl} target="_blank" rel="noreferrer">
-                        {project.repositoryName}
-                      </a>
-                    ) : (
-                      project.repositoryName
-                    )}
+                    <button className="project-detail-link" type="button" onClick={() => onOpenProject(project.repositoryId)}>{project.repositoryName}</button>
                   </h3>
                   <p>
                     {ownershipLabel(project.ownershipRelation)} ·{' '}

@@ -22,8 +22,10 @@ class MeActivityResourceModelTest {
                 210,
                 OffsetDateTime.parse("2026-01-01T00:00:00Z"),
                 OffsetDateTime.parse("2026-08-20T00:00:00Z"),
-                List.of(new MeActivityResource.YearPoint(2026, 42)),
-                List.of(new MeActivityResource.MonthPoint("2026-08", 12, 3))
+                List.of(new MeActivityResource.YearPoint(2026, 42, 3, List.of("demo"))),
+                List.of(new MeActivityResource.MonthPoint("2026-08", 12, 3, List.of("demo"))),
+                List.of(),
+                true
         );
 
         assertEquals(42, response.commitCount());

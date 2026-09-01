@@ -10,6 +10,8 @@ import { PrivacyDataSourcesView } from './PrivacyDataSourcesView'
 import { ReportsView } from './ReportsView'
 import { AiInsightsView } from './AiInsightsView'
 import { AccountView } from './AccountView'
+import { ContributionsView } from './ContributionsView'
+import { ProjectDetailView } from './ProjectDetailView'
 
 const sections = [
   'Overview',
@@ -33,11 +35,13 @@ type Props = {
 export function AuthenticatedShell({ user }: Props) {
   const [section, setSection] = useState<Section>('Overview')
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const freshness = useDataFreshness(true)
 
   const displayName = user.displayName.trim() || user.login
 
   function selectSection(next: Section) {
+    setSelectedProjectId(null)
     setSection(next)
     setMobileOpen(false)
   }
@@ -118,7 +122,9 @@ export function AuthenticatedShell({ user }: Props) {
             </div>
           </div>
 
-          {section === 'Overview' ? (
+          {selectedProjectId ? (
+            <ProjectDetailView repositoryId={selectedProjectId} onBack={() => setSelectedProjectId(null)} />
+          ) : section === 'Overview' ? (
             <OverviewDashboard displayName={displayName} />
           ) : section === 'Activity' ? (
             <ActivityView />
@@ -128,6 +134,8 @@ export function AuthenticatedShell({ user }: Props) {
             <TechnologyViews />
           ) : section === 'Project types' ? (
             <ProjectTypeViews />
+          ) : section === 'Contributions' ? (
+            <ContributionsView onOpenProject={setSelectedProjectId} />
           ) : section === 'AI insights' ? (
             <AiInsightsView />
           ) : section === 'Reports' ? (

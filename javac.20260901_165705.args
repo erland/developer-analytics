@@ -1,0 +1,3 @@
+-proc:none
+-Xlint:none
+backend/src/main/java/io/github/developeranalytics/service/discovery/GitHubContributionDiscoveryService.java

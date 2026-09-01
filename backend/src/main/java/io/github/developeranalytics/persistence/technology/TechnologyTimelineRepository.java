@@ -50,7 +50,7 @@ public class TechnologyTimelineRepository {
                 "count(distinct case when c.repository.visibility = io.github.developeranalytics.domain.model.RepositoryVisibility.PRIVATE then c.repository.id else null end) " +
                 "from RepositoryTechnologyEvidence e, " +
                 "Contribution c " +
-                "where e.user.id=:userId " +
+                "where e.user.id=:userId and e.repository.includedInAnalysis=true " +
                 "and c.user.id=:userId " +
                 "and c.repository.id=e.repository.id " +
                 "group by e.technology.technologyKey, " +
@@ -86,7 +86,7 @@ public class TechnologyTimelineRepository {
                 "min(e.observedAt), max(e.observedAt), " +
                 "count(distinct e.repository.id) " +
                 "from RepositoryTechnologyEvidence e " +
-                "where e.user.id=:userId " +
+                "where e.user.id=:userId and e.repository.includedInAnalysis=true " +
                 "group by e.technology.technologyKey",
                 Object[].class)
             .setParameter("userId", userId)
@@ -107,7 +107,7 @@ public class TechnologyTimelineRepository {
                 "count(distinct r.id) " +
                 "from RepositoryTechnologyEvidence e " +
                 "join e.repository r " +
-                "where e.user.id=:userId " +
+                "where e.user.id=:userId and e.repository.includedInAnalysis=true " +
                 "group by e.technology.technologyKey, r.visibility",
                 Object[].class)
             .setParameter("userId", userId)

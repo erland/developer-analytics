@@ -42,6 +42,15 @@ public class SourceRepository {
     @Column(name = "last_seen_at") private OffsetDateTime lastSeenAt;
     @Column(name = "sync_error") private String syncError;
     @Column(name = "included_in_analysis", nullable = false) private boolean includedInAnalysis = true;
+    @Column(name = "contributor_count") private Integer contributorCount;
+    @Column(name = "human_contributor_count") private Integer humanContributorCount;
+    @Column(name = "bot_contributor_count") private Integer botContributorCount;
+    @Column(name = "user_commit_count") private Integer userCommitCount;
+    @Column(name = "repository_commit_count") private Integer repositoryCommitCount;
+    @Column(name = "user_additions") private Long userAdditions;
+    @Column(name = "user_deletions") private Long userDeletions;
+    @Column(name = "contributor_stats_at") private OffsetDateTime contributorStatsAt;
+    @Column(name = "contribution_scope_version", nullable = false) private int contributionScopeVersion;
 
     protected SourceRepository() {}
 
@@ -60,6 +69,26 @@ public class SourceRepository {
     public RepositorySyncStatus getSyncStatus() { return syncStatus; }
     public OffsetDateTime getLastActivityAt() { return lastActivityAt; }
     public boolean isIncludedInAnalysis() { return includedInAnalysis; }
+    public Integer getContributorCount() { return contributorCount; }
+    public Integer getHumanContributorCount() { return humanContributorCount; }
+    public Integer getBotContributorCount() { return botContributorCount; }
+    public Integer getUserCommitCount() { return userCommitCount; }
+    public Integer getRepositoryCommitCount() { return repositoryCommitCount; }
+    public Long getUserAdditions() { return userAdditions; }
+    public Long getUserDeletions() { return userDeletions; }
+    public OffsetDateTime getContributorStatsAt() { return contributorStatsAt; }
+    public int getContributionScopeVersion() { return contributionScopeVersion; }
+    public void markContributionScopeCurrent() { contributionScopeVersion = 2; }
+    public void updateContributorStatistics(int contributors, int humans, int bots, int commits, int repositoryCommits, long additions, long deletions, OffsetDateTime observedAt) {
+        this.contributorCount = contributors;
+        this.humanContributorCount = humans;
+        this.botContributorCount = bots;
+        this.userCommitCount = commits;
+        this.repositoryCommitCount = repositoryCommits;
+        this.userAdditions = additions;
+        this.userDeletions = deletions;
+        this.contributorStatsAt = observedAt;
+    }
 
 public String getOwnerExternalId() { return ownerExternalId; }
 public String getOwnerLogin() { return ownerLogin; }

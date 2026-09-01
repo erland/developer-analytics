@@ -72,7 +72,7 @@ export function OverviewDashboard({ displayName }: Props) {
             {data.keyTechnologies.map((technology) => (
               <div className="evidence-chip" key={technology.technologyKey}>
                 <strong>{technology.technologyName}</strong>
-                <span>{technology.strength}</span>
+                <span>{technology.evidenceLevel}</span>
               </div>
             ))}
           </div>

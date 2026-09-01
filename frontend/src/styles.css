@@ -1204,3 +1204,7 @@ h1 { margin: 0; font-size: clamp(2.2rem,6vw,4.6rem); line-height: 1; letter-spac
   .sync-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sync-error-row { display: grid; }
 }
+
+.activity-drilldown{margin-top:1rem;padding:1rem;border:1px solid var(--border);border-radius:12px;display:flex;gap:1rem;flex-wrap:wrap}.bar-row-button{width:100%;border:0;background:transparent;text-align:left;color:inherit;font:inherit;cursor:pointer}.project-time-scroll{overflow-x:auto;min-width:0}.project-time-row{display:grid;grid-template-columns:minmax(140px,220px) minmax(600px,1fr) 70px;gap:.75rem;align-items:center;padding:.45rem 0}.project-time-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.project-time-track{height:14px;background:var(--surface-muted,#eef1f4);position:relative;border-radius:999px}.project-time-bar{position:absolute;top:0;bottom:0;background:currentColor;opacity:.42;border-radius:999px;min-width:4px}
+
+.project-time-header{display:grid;grid-template-columns:minmax(140px,220px) minmax(700px,1fr) 70px;gap:.75rem;font-size:.75rem;color:var(--muted)}.project-time-months{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(8px,1fr);gap:2px;min-width:700px}.project-time-cell{height:16px;background:transparent;border-radius:2px}.project-time-cell-active{background:currentColor}.project-time-header .project-time-months span{font-size:.65rem;overflow:visible}

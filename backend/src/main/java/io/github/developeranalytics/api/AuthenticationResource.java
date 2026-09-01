@@ -74,7 +74,7 @@ public Response removePrivateRepositoryAccess(
         @CookieParam(AuthenticationService.SESSION_COOKIE) String token
 ) {
     auth.removeGitHubPrivateRepositoryAuthorisation(token);
-    return Response.noContent().build();
+    return Response.seeOther(URI.create(frontendUrl + "?private-repositories=removed")).build();
 }
 
     @GET @Path("/session")
