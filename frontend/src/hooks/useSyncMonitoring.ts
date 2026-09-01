@@ -47,6 +47,28 @@ type State =
   | { status: 'error'; error: string }
   | { status: 'ready'; jobs: SyncJobOverview; errors: SyncJob[]; contributionRuns: ContributionSyncRun[] }
 
+const emptyJobs: SyncJobOverview = {
+  queued: 0,
+  waiting: 0,
+  running: 0,
+  completed: 0,
+  failed: 0,
+  activeJobs: [],
+}
+
+function normalizeJobs(value: unknown): SyncJobOverview {
+  if (!value || typeof value !== 'object') return emptyJobs
+  const jobs = value as Partial<SyncJobOverview>
+  return {
+    queued: typeof jobs.queued === 'number' ? jobs.queued : 0,
+    waiting: typeof jobs.waiting === 'number' ? jobs.waiting : 0,
+    running: typeof jobs.running === 'number' ? jobs.running : 0,
+    completed: typeof jobs.completed === 'number' ? jobs.completed : 0,
+    failed: typeof jobs.failed === 'number' ? jobs.failed : 0,
+    activeJobs: Array.isArray(jobs.activeJobs) ? jobs.activeJobs : [],
+  }
+}
+
 export function useSyncMonitoring(repositoryId?: string) {
   const [state, setState] = useState<State>({ status: 'loading' })
 
@@ -66,9 +88,13 @@ export function useSyncMonitoring(repositoryId?: string) {
         if (!jobsResponse.ok || !errorsResponse.ok || !runsResponse.ok) {
           throw new Error('Synchronisation status could not be loaded')
         }
-        const jobs = await jobsResponse.json() as SyncJobOverview
-        const errors = await errorsResponse.json() as SyncJob[]
-        const contributionRuns = await runsResponse.json() as ContributionSyncRun[]
+        const jobs = normalizeJobs(await jobsResponse.json())
+        const rawErrors = await errorsResponse.json() as unknown
+        const rawContributionRuns = await runsResponse.json() as unknown
+        const errors = Array.isArray(rawErrors) ? rawErrors as SyncJob[] : []
+        const contributionRuns = Array.isArray(rawContributionRuns)
+          ? rawContributionRuns as ContributionSyncRun[]
+          : []
         if (!cancelled) setState({ status: 'ready', jobs, errors, contributionRuns })
       } catch (error) {
         if (!cancelled) {
