@@ -1934,12 +1934,7 @@ The release workflow shall:
 - publish SBOM/provenance if configured,
 - verify published containers.
 
-Record release notes summarising:
-
-- features,
-- known limitations,
-- required configuration,
-- upgrade notes.
+The original plan called for checked-in release notes. The implemented release process now uses the GitHub Release description as the single human-readable release record; GitHub **Generate release notes** can derive it from merged pull requests and commits before publication.
 
 ---
 

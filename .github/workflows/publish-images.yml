@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   packages: write
 
 concurrency:
@@ -15,14 +16,77 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate-release:
+    name: Validate release source
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
+
+      - name: Validate published release tag and main CI
+        if: github.event_name == 'release'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+
+          [[ "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "Release tag must use semantic version format vMAJOR.MINOR.PATCH (for example v1.0.1)." >&2
+            exit 1
+          }
+
+          git fetch origin main --tags --force
+          release_commit="$(git rev-list -n 1 "${TAG}")"
+
+          git merge-base --is-ancestor "${release_commit}" origin/main || {
+            echo "Release tag ${TAG} points to ${release_commit}, which is not on main." >&2
+            exit 1
+          }
+
+          successful_ci="$(
+            gh run list \
+              --repo "${GITHUB_REPOSITORY}" \
+              --workflow ci.yml \
+              --commit "${release_commit}" \
+              --event push \
+              --limit 20 \
+              --json status,conclusion,headSha \
+              | jq --arg sha "${release_commit}" '[.[] | select(.headSha == $sha and .status == "completed" and .conclusion == "success")] | length'
+          )"
+
+          if [[ "${successful_ci}" -lt 1 ]]; then
+            echo "No successful push-to-main CI run was found for release commit ${release_commit}." >&2
+            echo "Wait for CI on main to finish successfully before publishing the GitHub Release." >&2
+            exit 1
+          fi
+
+          echo "Validated ${TAG} at ${release_commit}: commit is on main and its push CI passed."
+
+      - name: Explain manual image publication
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "Manual dispatch publishes SHA-tagged images only."
+          echo "Versioned releases must be created by publishing a GitHub Release."
+
   publish:
-    # Version 1 releases are published and verified by version-1-release.yml.
-    # Rebuilding them here after GitHub release publication would replace the
-    # digest that the authoritative Version 1 workflow already verified.
-    if: ${{ github.event_name != 'release' || !startsWith(github.event.release.tag_name, 'v1.') }}
     name: Publish ${{ matrix.component }} image
+    needs:
+      - validate-release
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
 
     strategy:
       fail-fast: false
@@ -40,6 +104,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -59,12 +125,15 @@ jobs:
           tags: |
             type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
             type=semver,pattern={{major}}.{{minor}},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{major}},enable=${{ github.event_name == 'release' }}
             type=raw,value=latest,enable=${{ github.event_name == 'release' && !github.event.release.prerelease }}
             type=sha,prefix=sha-
           labels: |
             org.opencontainers.image.title=Developer Analytics ${{ matrix.component }}
             org.opencontainers.image.description=Developer Analytics ${{ matrix.component }} container image
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
 
       - name: Build and publish image
         uses: docker/build-push-action@v7
@@ -93,6 +162,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
 
       - name: Verify clean GHCR pull, tags and image hygiene
         env:

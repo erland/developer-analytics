@@ -826,79 +826,23 @@ Step 89 is complete: v1 now has a Playwright/Chromium phone-sized acceptance
 test that exercises every primary mobile flow and checks that essential
 functionality does not depend on wide tables or page-level horizontal scrolling.
 
-Next: **Step 90** according to the development plan.
 
 
-## Version 1 release candidate gate
+## Release process
 
-Before tagging a v1 release candidate, run the GitHub Actions workflow
-**Version 1 Release Candidate Readiness**. It reuses the complete CI/acceptance
-suite, publishes immutable SHA-based candidate images, verifies a clean
-anonymous GHCR installation from those images and checks the v1 documentation
-set. See [`docs/release-candidate-v1.md`](docs/release-candidate-v1.md).
-
-
-## Development status – Step 90
-
-Step 90 is complete: Version 1 now has an executable release-candidate gate.
-The exact candidate commit must pass the complete CI/acceptance workflow,
-published GHCR candidate-image clean-install/runtime verification and the v1
-documentation gate before it may be tagged.
-
-Next: **Step 91 – Version 1 Release**.
-
-## CI correction after Step 90
-
-The first full v1 acceptance run exposed three CI integration issues rather than product failures:
-
-- frontend/backend layer-check scripts were resolved relative to the job default working directory; they now use the correct repository-relative `../scripts/...` path,
-- production TypeScript compilation now excludes Vitest/Playwright test sources while those files remain validated by their dedicated test runners,
-- the mobile Playwright profile now explicitly selects Chromium because the iPhone device descriptor otherwise defaults to WebKit.
-
-The responsive shell fixture was also aligned with the current `SessionUser` contract.
-
-### Follow-up CI correction
-
-The remaining v1 acceptance failures shared three concrete causes and are corrected here:
-
-- the web image now installs the Nginx `server` block as `/etc/nginx/conf.d/default.conf` instead of replacing the top-level `/etc/nginx/nginx.conf`,
-- Vite is pinned to `7.3.6`, the fixed release for CVE-2026-27941 reported by both `npm audit` and the Trivy image scan,
-- the Projects search control is exposed as an accessible textbox (`Search projects`) while retaining search-oriented mobile keyboard hints.
-
-Step 91 remains blocked until this corrected Step 90 candidate passes the complete CI/release-candidate gate.
-
-
-## CI correction after Step 90 – fix 6
-
-The next full acceptance run exposed five remaining CI integration issues. The frontend Vitest suite is now scoped to `src/**/*.test.{ts,tsx}` so Playwright specifications stay in their dedicated mobile job. Acceptance-test session fixtures now hash tokens with the same SHA-256 + unpadded Base64URL representation as the backend, the generated large-account repository UUIDs use the canonical 8-4-4-4-12 format, and the Nginx runtime upgrades Alpine packages during image construction so fixable critical OS vulnerabilities are removed before Trivy scans the image.
-
-## CI correction after Step 90 – fix 8
-
-The final large-account acceptance failure exposed a PostgreSQL/Hibernate query
-typing issue in the all-time activity endpoint. Optional date predicates are now
-added dynamically instead of binding untyped null timestamp parameters.
-
-## CI correction after Step 90 – fix 9
-
-The final large-account filtering assertion used search-target repositories whose
-sequence numbers also matched the excluded-private fixture rule. Search targets
-are now generated on included repository rows, and CI checks that the two fixture
-rules cannot overlap again.
-
-## Version 1 release
-
-Version 1 is released through the **Version 1 Release** GitHub Actions workflow.
-It executes the complete CI/acceptance suite, publishes versioned GHCR web/backend
-images with SBOM/provenance, verifies a clean installation from those images and
-only then creates the Version 1 GitHub tag/release. See
-[`docs/version-1-release.md`](docs/version-1-release.md) and
-[`docs/release-notes-v1.0.0.md`](docs/release-notes-v1.0.0.md).
+Developer Analytics uses ordinary **GitHub Releases** as the single release history and
+release trigger. CI runs for every pull request and every push to `main`. After the exact
+release commit has passed the complete `main` CI suite, create a GitHub Release with a
+`vMAJOR.MINOR.PATCH` tag from that commit and use GitHub **Generate release notes**.
+Publishing the release automatically validates the tag and successful `main` CI, builds and
+publishes versioned GHCR web/backend images, and verifies a clean installation from them.
+See [`docs/release-process.md`](docs/release-process.md).
 
 ## Development status – Step 91
 
-Step 91 is complete: the repository contains the final Version 1 release workflow,
-release notes and operator procedure. This is the final numbered implementation
-step in `docs/development-plan.md`.
+Step 91 completed the original Version 1 implementation plan. The release mechanism has
+since been simplified: the dedicated Version 1/RC workflows and checked-in release notes
+have been replaced by the GitHub Release driven process described above.
 
 ## Repository analysis orchestration
 
