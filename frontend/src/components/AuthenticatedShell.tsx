@@ -3,6 +3,7 @@ import type { SessionUser } from '../hooks/useAuthenticatedSession'
 import { useDataFreshness } from '../hooks/useDataFreshness'
 import { OverviewDashboard } from './OverviewDashboard'
 import { ActivityView } from './ActivityView'
+import { TimelineView } from './TimelineView'
 import { ProjectInventoryView } from './ProjectInventoryView'
 import { TechnologyViews } from './TechnologyViews'
 import { ProjectTypeViews } from './ProjectTypeViews'
@@ -16,6 +17,7 @@ import { ProjectDetailView } from './ProjectDetailView'
 const sections = [
   'Overview',
   'Activity',
+  'Timeline',
   'Projects',
   'Technologies',
   'Project types',
@@ -128,6 +130,8 @@ export function AuthenticatedShell({ user }: Props) {
             <OverviewDashboard displayName={displayName} />
           ) : section === 'Activity' ? (
             <ActivityView />
+          ) : section === 'Timeline' ? (
+            <TimelineView />
           ) : section === 'Projects' ? (
             <ProjectInventoryView />
           ) : section === 'Technologies' ? (
