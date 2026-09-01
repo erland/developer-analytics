@@ -13,15 +13,27 @@ public class JobFailureClassifier {
             if (current instanceof ProviderException providerFailure) {
                 int status = providerFailure.getStatusCode();
 
-                if (status == 401 || status == 403 || status == 404) {
+                // Only an authentication failure is treated as global provider
+                // access loss. A 403 may be repository-specific or a provider
+                // throttle, and a 404 commonly means one repository disappeared.
+                // Neither must poison every repository for the user.
+                if (status == 401) {
                     return new Classification(
                             false,
                             true,
-                            "Provider permission/access lost"
+                            "Provider authentication lost"
                     );
                 }
 
-                if (status == 408 || status == 409 ||
+                if (status == 404) {
+                    return new Classification(
+                            false,
+                            false,
+                            "Provider resource no longer available"
+                    );
+                }
+
+                if (status == 403 || status == 408 || status == 409 ||
                         status == 425 || status == 429 ||
                         status >= 500) {
                     return new Classification(

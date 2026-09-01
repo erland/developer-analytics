@@ -61,6 +61,25 @@ export function usePrivateRepositories(enabled: boolean) {
     setState((current) => ({ ...current, repositories: current.repositories.map((item) => item.id === updated.id ? updated : item) }))
   }
 
+
+  async function bulkSetIncluded(included: boolean, prefix?: string) {
+    setState((current) => ({ ...current, error: null }))
+    try {
+      const response = await fetch('/api/me/private-repositories/selection', {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ included, prefix: prefix?.trim() || null }),
+      })
+      if (!response.ok) throw new Error(`Bulk selection update failed with HTTP ${response.status}`)
+      await load()
+    } catch (error) {
+      setState((current) => ({
+        ...current,
+        error: error instanceof Error ? error.message : 'Unable to update private repository selection',
+      }))
+    }
+  }
+
   async function refresh() {
     setState((current) => ({ ...current, refreshing: true, error: null }))
     try {
@@ -76,5 +95,5 @@ export function usePrivateRepositories(enabled: boolean) {
     }
   }
 
-  return { ...state, setIncluded, remove, refresh }
+  return { ...state, setIncluded, bulkSetIncluded, remove, refresh }
 }

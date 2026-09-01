@@ -57,6 +57,7 @@ public DiscoveryResult discover(AppUser user, SourceRepository repository, Offse
     );
 
     OffsetDateTime startedAt = OffsetDateTime.now(java.time.ZoneOffset.UTC);
+    repository.markSyncing();
     ContributionSyncRun run = new ContributionSyncRun(user, repository, "github");
     syncRuns.persist(run);
     run.start(startedAt);
@@ -131,7 +132,9 @@ public DiscoveryResult discover(AppUser user, SourceRepository repository, Offse
             cursor = page.nextCursor();
         } while (cursor != null);
 
-        run.complete(OffsetDateTime.now(java.time.ZoneOffset.UTC));
+        OffsetDateTime completedAt = OffsetDateTime.now(java.time.ZoneOffset.UTC);
+        run.complete(completedAt);
+        repository.markSynced(completedAt);
         StructuredLog.info(
                 LOG,
                 "contribution_sync_completed",
@@ -165,6 +168,7 @@ public DiscoveryResult discover(AppUser user, SourceRepository repository, Offse
                 )
         );
         OffsetDateTime failedAt = OffsetDateTime.now(java.time.ZoneOffset.UTC);
+        repository.markSyncFailed(e.getMessage());
         if (e.getStatusCode() == 403 || e.getStatusCode() == 429) {
             run.rateLimited(e.getMessage(), run.getRateLimitResetAt(), failedAt);
         } else {
@@ -181,6 +185,7 @@ public DiscoveryResult discover(AppUser user, SourceRepository repository, Offse
                         "provider", "github", "repositoryId", repository.getId()
                 )
         );
+        repository.markSyncFailed(e.getMessage());
         run.fail(e.getMessage(), OffsetDateTime.now(java.time.ZoneOffset.UTC));
         throw e;
     }

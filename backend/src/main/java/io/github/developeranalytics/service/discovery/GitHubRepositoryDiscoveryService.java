@@ -43,10 +43,19 @@ public DiscoveryResult discover(AppUser user) throws ProviderException {
     ProviderAccessToken token = credentials.requireAccessToken(user.getId(), "github");
     ProviderUser providerUser = github.fetchCurrentUser(token);
 
-    boolean privateRepositoriesAuthorised = connections
+    ProviderConnection connection = connections
             .findForUserAndProvider(user.getId(), "github")
-            .map(ProviderConnection::isPrivateRepositoryAccessAuthorised)
-            .orElse(false);
+            .orElse(null);
+
+    // Successfully resolving the authenticated GitHub user proves that the
+    // provider credential is valid again. Clear a stale connection ERROR here;
+    // each repository returned below is independently restored to SYNCED.
+    if (connection != null) {
+        connection.markValidated();
+    }
+
+    boolean privateRepositoriesAuthorised = connection != null
+            && connection.isPrivateRepositoryAccessAuthorised();
 
     OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
     RepositorySyncRun run = new RepositorySyncRun(user, "github");

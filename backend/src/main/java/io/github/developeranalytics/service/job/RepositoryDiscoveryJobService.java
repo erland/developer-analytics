@@ -75,6 +75,37 @@ public class RepositoryDiscoveryJobService {
         );
     }
 
+
+    @Transactional
+    public BackgroundJob enqueueTechnologyAssessmentRecalculation(AppUser user) {
+        return enqueueUserDeduplicated(
+                user,
+                TechnologyAssessmentRecalculationJobHandler.JOB_TYPE,
+                140,
+                "analysis:technology-assessment"
+        );
+    }
+
+    @Transactional
+    public BackgroundJob enqueueTechnologyTimelineRecalculation(AppUser user) {
+        return enqueueUserDeduplicated(
+                user,
+                TechnologyTimelineRecalculationJobHandler.JOB_TYPE,
+                145,
+                "analysis:technology-timeline"
+        );
+    }
+
+    @Transactional
+    public BackgroundJob enqueueProjectSignificanceRecalculation(AppUser user) {
+        return enqueueUserDeduplicated(
+                user,
+                ProjectSignificanceRecalculationJobHandler.JOB_TYPE,
+                150,
+                "analysis:project-significance"
+        );
+    }
+
     @Transactional
     public BackgroundJob enqueueGitHubDiscovery(AppUser user) {
         BackgroundJob job = BackgroundJob.queued(
@@ -84,6 +115,30 @@ public class RepositoryDiscoveryJobService {
                 Map.of("provider", "github"),
                 5,
                 OffsetDateTime.now(ZoneOffset.UTC)
+        );
+        jobs.persist(job);
+        return job;
+    }
+
+
+    private BackgroundJob enqueueUserDeduplicated(
+            AppUser user,
+            String jobType,
+            int priority,
+            String deduplicationKey
+    ) {
+        if (jobs.existsActiveDeduplicatedJob(user.getId(), deduplicationKey)) {
+            return null;
+        }
+
+        BackgroundJob job = BackgroundJob.queuedDeduplicated(
+                user,
+                jobType,
+                priority,
+                Map.of("scope", "user-analysis"),
+                5,
+                OffsetDateTime.now(ZoneOffset.UTC),
+                deduplicationKey
         );
         jobs.persist(job);
         return job;

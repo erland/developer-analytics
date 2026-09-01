@@ -56,6 +56,23 @@ public class SourceRepositoryRepository {
             .getResultList();
     }
 
+
+    public List<SourceRepository> findAnalysisCandidates(UUID userId) {
+        return entityManager.createQuery(
+                "select r from SourceRepository r " +
+                "where r.user.id=:userId " +
+                "and r.includedInAnalysis = true " +
+                "and r.syncStatus <> :accessRevoked " +
+                "order by r.lastActivityAt desc nulls last, r.name",
+                SourceRepository.class)
+            .setParameter("userId", userId)
+            .setParameter(
+                    "accessRevoked",
+                    io.github.developeranalytics.domain.model.RepositorySyncStatus.ACCESS_REVOKED
+            )
+            .getResultList();
+    }
+
     public List<SourceRepository> findByUser(UUID userId) {
         return findAllForUser(userId);
     }
