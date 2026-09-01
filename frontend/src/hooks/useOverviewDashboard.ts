@@ -30,7 +30,7 @@ export function useOverviewDashboard(enabled:boolean):State {
     publicRepositories:included.filter(r=>r.visibility==='PUBLIC').length,
     privateRepositories:included.filter(r=>r.visibility==='PRIVATE').length,
     commits:activity.commitCount, firstActivityAt:activity.firstActivityAt,lastActivityAt:activity.lastActivityAt,activeProjects:activity.activeProjects,
-    keyTechnologies:technologies.slice(0,8).map(t=>({technologyKey:t.technologyKey,technologyName:t.technologyName,strength:t.evidenceLevel,score:t.evidenceScore})), projectCategories:projectTypes.slice(0,8).map(x=>({categoryKey:x.categoryKey,categoryName:x.categoryName,confidence:`${x.projectCount} projects`})), significantProjects:significantProjects.slice(0,8)
+    keyTechnologies:technologies.slice(0,8), projectCategories:projectTypes.slice(0,8).map(x=>({categoryKey:x.categoryKey,categoryName:x.categoryName,confidence:`${x.projectCount} projects`})), significantProjects:significantProjects.slice(0,8)
    }})
   } catch(e){ if(!c.signal.aborted)setState({status:'error',data:null,error:e instanceof Error?e.message:'Unable to load overview'}) }}
   void load(); return()=>c.abort()
