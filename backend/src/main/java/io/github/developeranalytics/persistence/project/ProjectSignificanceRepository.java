@@ -46,39 +46,38 @@ public class ProjectSignificanceRepository {
             .getResultList();
     }
 
-
-public List<ProjectSignificanceAssessment> findSignificantExternalProjects(
-        UUID userId
-) {
-    return entityManager.createQuery(
-            "select a from ProjectSignificanceAssessment a " +
-            "join fetch a.repository r " +
-            "where a.user.id=:userId and r.includedInAnalysis=true " +
-            "and r.ownershipRelation <> :ownedByUser " +
-            "and (" +
-            "a.significanceLevel in (:high, :veryHigh) " +
-            "or a.involvementLevel in (:high, :veryHigh)" +
-            ") " +
-            "order by " +
-            "case " +
-            "when a.significanceLevel=:veryHigh and a.involvementLevel=:veryHigh then 0 " +
-            "when a.significanceLevel in (:high, :veryHigh) " +
-            "     and a.involvementLevel in (:high, :veryHigh) then 1 " +
-            "when a.significanceLevel in (:high, :veryHigh) then 2 " +
-            "else 3 end, " +
-            "a.significanceScore desc, " +
-            "a.involvementScore desc, " +
-            "r.name",
-            ProjectSignificanceAssessment.class)
-        .setParameter(
-                "ownedByUser",
-                io.github.developeranalytics.domain.model.RepositoryOwnershipRelation.OWNED_BY_USER
-        )
-        .setParameter("high", ProjectSignificanceAssessment.Level.HIGH)
-        .setParameter("veryHigh", ProjectSignificanceAssessment.Level.VERY_HIGH)
-        .setParameter("userId", userId)
-        .getResultList();
-}
+    public List<ProjectSignificanceAssessment> findSignificantExternalProjects(
+            UUID userId
+    ) {
+        return entityManager.createQuery(
+                "select a from ProjectSignificanceAssessment a " +
+                "join fetch a.repository r " +
+                "where a.user.id=:userId and r.includedInAnalysis=true " +
+                "and r.ownershipRelation <> :ownedByUser " +
+                "and (" +
+                "a.significanceLevel in (:high, :veryHigh) " +
+                "or a.involvementLevel in (:high, :veryHigh)" +
+                ") " +
+                "order by " +
+                "case " +
+                "when a.significanceLevel=:veryHigh and a.involvementLevel=:veryHigh then 0 " +
+                "when a.significanceLevel in (:high, :veryHigh) " +
+                "     and a.involvementLevel in (:high, :veryHigh) then 1 " +
+                "when a.significanceLevel in (:high, :veryHigh) then 2 " +
+                "else 3 end, " +
+                "a.significanceScore desc, " +
+                "a.involvementScore desc, " +
+                "r.name",
+                ProjectSignificanceAssessment.class)
+            .setParameter(
+                    "ownedByUser",
+                    io.github.developeranalytics.domain.model.RepositoryOwnershipRelation.OWNED_BY_USER
+            )
+            .setParameter("high", ProjectSignificanceAssessment.Level.HIGH)
+            .setParameter("veryHigh", ProjectSignificanceAssessment.Level.VERY_HIGH)
+            .setParameter("userId", userId)
+            .getResultList();
+    }
 
     public ProjectMetrics metrics(UUID userId, UUID repositoryId) {
         Object[] row = entityManager.createQuery(
@@ -95,10 +94,10 @@ public List<ProjectSignificanceAssessment> findSignificantExternalProjects(
             )
             .getSingleResult();
 
-        long contributions = ((Number) row[0]).longValue();
+        long contributions = numberOrZero(row[0]);
         OffsetDateTime first = (OffsetDateTime) row[1];
         OffsetDateTime last = (OffsetDateTime) row[2];
-        long recent = ((Number) row[3]).longValue();
+        long recent = numberOrZero(row[3]);
 
         Object[] repoRow = entityManager.createQuery(
                 "select r.discoveredAt, r.lastActivityAt, r.ownershipRelation, " +
@@ -141,6 +140,10 @@ public List<ProjectSignificanceAssessment> findSignificantExternalProjects(
                 projectContributionCount,
                 categoryCount
         );
+    }
+
+    private long numberOrZero(Object value) {
+        return value == null ? 0L : ((Number) value).longValue();
     }
 
     public record ProjectMetrics(
