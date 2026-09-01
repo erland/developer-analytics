@@ -12,6 +12,7 @@ import io.github.developeranalytics.service.correction.UserCorrectionService;
 import io.github.developeranalytics.service.technology.TechnologyEvidenceStrengthService;
 import io.github.developeranalytics.service.technology.TechnologyTimelineService;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -46,6 +47,7 @@ public class MeTechnologiesResource {
     @Inject TechnologyTimelineService timelineService;
 
     @GET
+    @Transactional
     public List<Entry> list(
             @CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken
     ) {
