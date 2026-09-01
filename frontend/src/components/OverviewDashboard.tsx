@@ -1,4 +1,5 @@
 import { useOverviewDashboard } from '../hooks/useOverviewDashboard'
+import { SyncMonitoringPanel } from './SyncMonitoringPanel'
 
 type Props = {
   displayName: string
@@ -56,6 +57,8 @@ export function OverviewDashboard({ displayName }: Props) {
           compact
         />
       </section>
+
+      <SyncMonitoringPanel />
 
       <section className="dashboard-section" aria-labelledby="technology-heading">
         <div className="section-heading-row">

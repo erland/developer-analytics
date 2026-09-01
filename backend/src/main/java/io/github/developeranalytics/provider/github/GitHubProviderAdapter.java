@@ -288,7 +288,7 @@ public PagedResult<ProviderContribution> listContributions(
         contributions.add(new ProviderContribution(
                 node.path("sha").asText(),
                 ProviderContribution.Type.COMMIT,
-                commit.path("message").asText(null),
+                firstLine(commit.path("message").asText(null)),
                 author.hasNonNull("date")
                         ? OffsetDateTime.parse(author.get("date").asText())
                         : null,
@@ -485,6 +485,14 @@ private List<ProviderContribution> fetchIssues(
     }
 
     return result;
+}
+
+
+private String firstLine(String value) {
+    if (value == null) return null;
+    String normalized = value.replace("\r\n", "\n").replace('\r', '\n');
+    int newline = normalized.indexOf('\n');
+    return (newline >= 0 ? normalized.substring(0, newline) : normalized).strip();
 }
 
 private OffsetDateTime parseNullableDate(JsonNode node, String field) {

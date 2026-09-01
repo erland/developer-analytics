@@ -24,6 +24,7 @@ public class BackgroundJob {
     @Column(name="locked_by") private String lockedBy;
     @Column(name="last_error") private String lastError;
     @Column(name="completed_at") private OffsetDateTime completedAt;
+    @Column(name="created_at", insertable=false, updatable=false) private OffsetDateTime createdAt;
     @Column(name="deduplication_key", length=255) private String deduplicationKey;
     protected BackgroundJob() {}
 
@@ -62,6 +63,7 @@ public class BackgroundJob {
     }
     public UUID getId(){return id;} public AppUser getUser(){return user;} public String getJobType(){return jobType;} public BackgroundJobStatus getStatus(){return status;} public Map<String,Object> getPayload(){return payload;} public String getDeduplicationKey(){return deduplicationKey;}
     public int getAttemptCount(){return attemptCount;} public int getMaxAttempts(){return maxAttempts;}
+    public Integer getProgressPercent(){return progressPercent;} public String getLastError(){return lastError;} public OffsetDateTime getNextExecutionAt(){return nextExecutionAt;} public OffsetDateTime getCompletedAt(){return completedAt;} public OffsetDateTime getCreatedAt(){return createdAt;}
     public void markRunning(String worker, OffsetDateTime now){status=BackgroundJobStatus.RUNNING; lockedBy=worker; lockedAt=now; attemptCount++;}
     public void complete(){status=BackgroundJobStatus.COMPLETED; progressPercent=100; completedAt=OffsetDateTime.now(); lockedAt=null; lockedBy=null;}
     public void retryOrFail(String error, OffsetDateTime next){
