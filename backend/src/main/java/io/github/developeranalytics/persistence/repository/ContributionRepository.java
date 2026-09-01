@@ -18,6 +18,11 @@ public class ContributionRepository {
         entityManager.persist(contribution);
     }
 
+    public int deleteForRepository(UUID userId, UUID repositoryId) {
+        return entityManager.createQuery("delete from Contribution c where c.user.id=:userId and c.repository.id=:repositoryId")
+                .setParameter("userId", userId).setParameter("repositoryId", repositoryId).executeUpdate();
+    }
+
     public Optional<Contribution> findByProviderIdentity(
             UUID userId,
             String provider,

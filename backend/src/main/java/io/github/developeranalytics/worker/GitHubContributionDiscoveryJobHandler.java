@@ -42,9 +42,11 @@ public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandl
                 job.getUser().getId()
         ).orElseThrow(() -> new IllegalStateException("Repository not found for job user"));
 
-        OffsetDateTime since = repository.getLastActivityAt() == null
+        // Scope v2 stores only contributions made by the authenticated user. Existing
+        // pre-v2 data may contain all repository commits, so the first v2 run is a full rebuild.
+        OffsetDateTime since = repository.getContributionScopeVersion() < 2
                 ? null
-                : repository.getLastActivityAt().minusDays(30);
+                : OffsetDateTime.now(java.time.ZoneOffset.UTC).minusDays(30);
 
         discovery.discover(job.getUser(), repository, since);
     }

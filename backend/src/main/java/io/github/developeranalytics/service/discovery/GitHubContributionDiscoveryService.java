@@ -37,6 +37,7 @@ public class GitHubContributionDiscoveryService {
 public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since)
         throws ProviderException {
     ProviderAccessToken token = credentials.requireAccessToken(user.getId(), "github");
+    ProviderUser providerUser = github.fetchCurrentUser(token);
 
     ProviderRepository providerRepository = new ProviderRepository(
             repository.getExternalRepositoryId(),
@@ -57,6 +58,9 @@ public DiscoveryResult discover(AppUser user, SourceRepository repository, Offse
     );
 
     OffsetDateTime startedAt = OffsetDateTime.now(java.time.ZoneOffset.UTC);
+    if (repository.getContributionScopeVersion() < 2 && since == null) {
+        contributions.deleteForRepository(user.getId(), repository.getId());
+    }
     repository.markSyncing();
     ContributionSyncRun run = new ContributionSyncRun(user, repository, "github");
     syncRuns.persist(run);
@@ -79,7 +83,7 @@ public DiscoveryResult discover(AppUser user, SourceRepository repository, Offse
     try {
         do {
             PagedResult<ProviderContribution> page =
-                    github.listContributions(token, providerRepository, since, cursor);
+                    github.listContributions(token, providerRepository, since, cursor, providerUser.login());
             pages++;
 
             for (ProviderContribution pc : page.items()) {
@@ -132,8 +136,20 @@ public DiscoveryResult discover(AppUser user, SourceRepository repository, Offse
             cursor = page.nextCursor();
         } while (cursor != null);
 
+        try {
+            ProviderContributorStatistics statistics = github.fetchContributorStatistics(
+                    token, providerRepository, providerUser.login());
+            repository.updateContributorStatistics(
+                    statistics.contributorCount(), statistics.humanContributorCount(), statistics.botContributorCount(),
+                    statistics.userCommitCount(), statistics.repositoryCommitCount(), statistics.userAdditions(), statistics.userDeletions(), statistics.observedAt());
+        } catch (ProviderException statisticsError) {
+            StructuredLog.warn(LOG, "contributor_statistics_unavailable", statisticsError,
+                    StructuredLog.fields("repositoryId", repository.getId(), "httpStatus", statisticsError.getStatusCode()));
+        }
+
         OffsetDateTime completedAt = OffsetDateTime.now(java.time.ZoneOffset.UTC);
         run.complete(completedAt);
+        repository.markContributionScopeCurrent();
         repository.markSynced(completedAt);
         StructuredLog.info(
                 LOG,

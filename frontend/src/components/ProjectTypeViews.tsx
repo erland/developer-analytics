@@ -1,15 +1,19 @@
 import { useMemo, useState } from 'react'
 import { type ProjectTypeView, useProjectTypes } from '../hooks/useProjectTypes'
+import { ProjectDetailView } from './ProjectDetailView'
 
 export function ProjectTypeViews() {
   const projectTypes = useProjectTypes()
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
 
   const selected = useMemo(() => {
     if (projectTypes.status !== 'ready') return null
     if (!selectedKey) return projectTypes.data[0] ?? null
     return projectTypes.data.find((item) => item.categoryKey === selectedKey) ?? null
   }, [projectTypes, selectedKey])
+
+  if (selectedProjectId) return <ProjectDetailView repositoryId={selectedProjectId} onBack={() => setSelectedProjectId(null)} />
 
   if (projectTypes.status === 'loading') {
     return (
@@ -70,14 +74,14 @@ export function ProjectTypeViews() {
             ))}
           </section>
 
-          {selected ? <ProjectTypeDetail item={selected} /> : null}
+          {selected ? <ProjectTypeDetail item={selected} onOpenProject={setSelectedProjectId} /> : null}
         </div>
       )}
     </>
   )
 }
 
-function ProjectTypeDetail({ item }: { item: ProjectTypeView }) {
+function ProjectTypeDetail({ item, onOpenProject }: { item: ProjectTypeView; onOpenProject: (id:string)=>void }) {
   const maxActivity = Math.max(
     1,
     ...item.timeline.map((point) => point.activityCount),
@@ -140,21 +144,15 @@ function ProjectTypeDetail({ item }: { item: ProjectTypeView }) {
       </section>
 
       <section className="dashboard-section">
-        <span className="card-kicker">Representative work</span>
-        <h2>Representative projects</h2>
+        <span className="card-kicker">Matching work</span>
+        <h2>All matching projects</h2>
         {item.representativeProjects.length ? (
           <div className="project-list">
             {item.representativeProjects.map((project) => (
               <article className="project-row" key={project.repositoryId}>
                 <div>
                   <h3>
-                    {project.htmlUrl ? (
-                      <a href={project.htmlUrl} target="_blank" rel="noreferrer">
-                        {project.repositoryName}
-                      </a>
-                    ) : (
-                      project.repositoryName
-                    )}
+                    <button className="project-detail-link" type="button" onClick={() => onOpenProject(project.repositoryId)}>{project.repositoryName}</button>
                   </h3>
                   <p>
                     {ownershipLabel(project.ownershipRelation)} ·{' '}

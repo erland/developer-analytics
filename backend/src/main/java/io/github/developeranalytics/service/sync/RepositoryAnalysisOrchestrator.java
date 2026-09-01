@@ -82,7 +82,7 @@ public class RepositoryAnalysisOrchestrator {
         return new QueueCounts(queued, alreadyQueued);
     }
 
-    private int enqueueAggregateJobs(AppUser user) {
+    public int enqueueAggregateJobs(AppUser user) {
         int queued = 0;
         if (jobs.enqueueTechnologyAssessmentRecalculation(user) != null) queued++;
         if (jobs.enqueueTechnologyTimelineRecalculation(user) != null) queued++;

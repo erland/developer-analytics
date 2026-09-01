@@ -28,7 +28,7 @@ public class ProjectSignificanceService {
     @Transactional
     public int recalculate(AppUser user) {
         List<SourceRepository> repos =
-                repositories.findByUser(user.getId());
+                repositories.findAnalysisCandidates(user.getId());
 
         int updated = 0;
 

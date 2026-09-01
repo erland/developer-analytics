@@ -49,7 +49,7 @@ class FlywayMigrationTest {
                      "FROM flyway_schema_history")) {
             assertTrue(result.next());
             assertEquals(0, result.getInt(1));
-            assertEquals(29, result.getInt(2));
+            assertEquals(31, result.getInt(2));
         }
     }
 }

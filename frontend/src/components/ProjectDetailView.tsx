@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { type ProjectDetail, useProjectDetail } from '../hooks/useProjectDetail'
-import { setCategoryRejected, setProjectExcludedFromAiProfile } from '../hooks/useCorrections'
+import { setProjectExcludedFromAiProfile } from '../hooks/useCorrections'
 import { useSyncMonitoring } from '../hooks/useSyncMonitoring'
 
 export function ProjectDetailView({
@@ -63,11 +63,6 @@ async function refreshAnalysis() {
   } finally {
     setRefreshing(false)
   }
-}
-
-async function toggleCategory(categoryKey: string, rejected: boolean) {
-  await setCategoryRejected(repositoryId, categoryKey, !rejected)
-  window.location.reload()
 }
 
 async function toggleAiProfileExclusion() {
@@ -148,21 +143,11 @@ async function toggleAiProfileExclusion() {
       </section>
 
       <section className="dashboard-section">
-        <span className="card-kicker">Evidence</span>
+        <span className="card-kicker">Technologies</span>
         <h2>Technologies</h2>
         {data.technologies.length ? (
-          <div className="detail-evidence-list">
-            {data.technologies.map((item, index) => (
-              <article className="detail-evidence-row" key={`${item.technologyKey}-${item.evidenceType}-${index}`}>
-                <div>
-                  <strong>{item.technologyName}</strong>
-                  <span>{item.evidenceType} · {item.strength}</span>
-                </div>
-                <span>{item.sourceValue || 'Observed evidence'}</span>
-              </article>
-            ))}
-          </div>
-        ) : <p className="empty-state">No technology evidence yet.</p>}
+          <div className="chip-list">{data.technologies.map(item => <div className="evidence-chip" key={item.technologyKey}><strong>{item.technologyName}</strong><span>{item.strength.toLowerCase()}</span></div>)}</div>
+        ) : <p className="empty-state">No technologies identified yet.</p>}
       </section>
 
       <section className="dashboard-section">
@@ -171,26 +156,17 @@ async function toggleAiProfileExclusion() {
         {data.categories.length ? (
           <div className="chip-list">
             {data.categories.map((category) => (
-              <div
-                className={`evidence-chip ${category.rejectedByUser ? 'correction-muted' : ''}`}
-                key={`${category.categoryKey}-${category.source}`}
-              >
-                <strong>{category.categoryName}</strong>
-                <span>{category.confidence} · {category.source}</span>
-                <button
-                  type="button"
-                  className="correction-action"
-                  onClick={() => void toggleCategory(
-                    category.categoryKey,
-                    category.rejectedByUser,
-                  )}
-                >
-                  {category.rejectedByUser ? 'Restore category' : 'Reject category'}
-                </button>
+              <div className="evidence-chip" key={`${category.categoryKey}-${category.source}`}>
+                <strong>{category.categoryName}</strong><span>{category.confidence.toLowerCase()} · automatic</span>
               </div>
             ))}
           </div>
         ) : <p className="empty-state">No project categories yet.</p>}
+      </section>
+
+      <section className="dashboard-section">
+        <span className="card-kicker">Contributors</span><h2>Repository contributors</h2>
+        <div className="metric-grid"><Metric label="Total contributors" value={data.contributors.total ?? 'Not collected'} /><Metric label="People" value={data.contributors.humans ?? 'Not collected'} /><Metric label="Bots" value={data.contributors.bots ?? 'Not collected'} /></div>
       </section>
 
       <section className="detail-assessment-grid">

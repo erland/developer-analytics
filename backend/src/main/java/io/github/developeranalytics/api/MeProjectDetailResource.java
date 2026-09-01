@@ -11,6 +11,7 @@ import io.github.developeranalytics.persistence.repository.ContributionRepositor
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
 import io.github.developeranalytics.persistence.technology.RepositoryTechnologyEvidenceRepository;
 import io.github.developeranalytics.service.correction.UserCorrectionService;
+import io.github.developeranalytics.service.project.ProjectSignificanceService;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -32,6 +33,7 @@ public class MeProjectDetailResource {
     @Inject ProjectSignificanceRepository significance;
     @Inject EntityManager entityManager;
     @Inject UserCorrectionService corrections;
+    @Inject ProjectSignificanceService significanceService;
 
     @GET
     @Transactional
@@ -45,20 +47,13 @@ public class MeProjectDetailResource {
                 .findByIdForUser(repositoryId, current.user().getId())
                 .orElseThrow(NotFoundException::new);
 
-        var technologies = technologyEvidence
-                .findForRepository(current.user().getId(), repositoryId)
-                .stream()
-                .map(evidence -> new TechnologyEvidence(
-                        evidence.getTechnology().getTechnologyKey(),
-                        evidence.getTechnology().getDisplayName(),
-                        evidence.getEvidenceType().name(),
-                        evidence.getStrength().name(),
-                        evidence.getSourceValue(),
-                        evidence.getMeasuredValue(),
-                        evidence.getObservedAt(),
-                        evidence.getPrivacyProvenance().name()
-                ))
-                .toList();
+        Map<String, TechnologyEvidence> technologyMap = new LinkedHashMap<>();
+        for (var evidenceItem : technologyEvidence.findForRepository(current.user().getId(), repositoryId)) {
+            technologyMap.putIfAbsent(evidenceItem.getTechnology().getTechnologyKey(), new TechnologyEvidence(
+                    evidenceItem.getTechnology().getTechnologyKey(), evidenceItem.getTechnology().getDisplayName(),
+                    evidenceItem.getStrength().name()));
+        }
+        var technologies = new ArrayList<>(technologyMap.values());
 
         var categories = categoryAssignments.findForRepository(repositoryId)
                 .stream()
@@ -79,9 +74,9 @@ public class MeProjectDetailResource {
 
         ProjectSignificanceAssessment assessment = significance
                 .find(current.user().getId(), repositoryId)
-                .orElse(null);
+                .orElseGet(() -> significanceService.calculateAndStore(current.user(), repository));
 
-        var activity = loadActivity(current.user().getId(), repositoryId);
+        var activity = loadActivity(current.user().getId(), repository);
 
         return new Detail(
                 new Metadata(
@@ -117,14 +112,15 @@ public class MeProjectDetailResource {
                         assessment.getPrivacyProvenance().name()
                 ),
                 new Synchronisation(
-                        repository.getSyncStatus().name(),
-                        repository.getLastSeenAt(),
-                        repository.getSyncError()
-                )
+                        repository.getSyncStatus().name(), repository.getLastSeenAt(), repository.getSyncError()
+                ),
+                new Contributors(repository.getContributorCount(), repository.getHumanContributorCount(),
+                        repository.getBotContributorCount(), repository.getUserCommitCount())
         );
     }
 
-    private Activity loadActivity(UUID userId, UUID repositoryId) {
+    private Activity loadActivity(UUID userId, SourceRepository repository) {
+        UUID repositoryId = repository.getId();
         List<Object[]> rows = entityManager.createQuery(
                 "select c.occurredAt, c.type, c.additions, c.deletions " +
                 "from Contribution c " +
@@ -175,6 +171,10 @@ public class MeProjectDetailResource {
                 ))
                 .toList();
 
+        if (repository.getUserAdditions() != null) additions = repository.getUserAdditions();
+        if (repository.getUserDeletions() != null) deletions = repository.getUserDeletions();
+        if (repository.getUserCommitCount() != null) commits = repository.getUserCommitCount();
+
         return new Activity(
                 commits,
                 pullRequests,
@@ -194,7 +194,8 @@ public class MeProjectDetailResource {
             List<TechnologyEvidence> technologies,
             List<Category> categories,
             Assessment assessment,
-            Synchronisation synchronisation
+            Synchronisation synchronisation,
+            Contributors contributors
     ) {}
 
     public record Metadata(
@@ -228,16 +229,9 @@ public class MeProjectDetailResource {
 
     public record ActivityPoint(String month, int commits) {}
 
-    public record TechnologyEvidence(
-            String technologyKey,
-            String technologyName,
-            String evidenceType,
-            String strength,
-            String sourceValue,
-            Long measuredValue,
-            OffsetDateTime observedAt,
-            String privacyProvenance
-    ) {}
+    public record TechnologyEvidence(String technologyKey, String technologyName, String strength) {}
+
+    public record Contributors(Integer total, Integer humans, Integer bots, Integer userCommits) {}
 
     public record Category(
             String categoryKey,

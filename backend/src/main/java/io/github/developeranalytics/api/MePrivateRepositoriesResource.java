@@ -52,6 +52,7 @@ public class MePrivateRepositoriesResource {
             analysis.enqueueRepository(current.user(), repository.getId());
         } else {
             repository.excludeFromAnalysis();
+            analysis.enqueueAggregateJobs(current.user());
         }
         return Item.from(repository);
     }
@@ -92,6 +93,9 @@ public class MePrivateRepositoriesResource {
                 repository.excludeFromAnalysis();
             }
         }
+        if (!selection.included() && !matched.isEmpty()) {
+            analysis.enqueueAggregateJobs(current.user());
+        }
 
         return new BulkSelectionResponse(
                 matched.size(),
@@ -122,6 +126,7 @@ public class MePrivateRepositoriesResource {
         SourceRepository repository = requirePrivateRepository(
                 current.user().getId(), repositoryId);
         repository.excludeFromAnalysis();
+        analysis.enqueueAggregateJobs(current.user());
         return Item.from(repository);
     }
 

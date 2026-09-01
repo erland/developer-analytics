@@ -258,6 +258,16 @@ public PagedResult<ProviderContribution> listContributions(
         OffsetDateTime since,
         String pageCursor
 ) throws ProviderException {
+    return listContributions(accessToken, repository, since, pageCursor, null);
+}
+
+public PagedResult<ProviderContribution> listContributions(
+        ProviderAccessToken accessToken,
+        ProviderRepository repository,
+        OffsetDateTime since,
+        String pageCursor,
+        String userLogin
+) throws ProviderException {
     int page = parsePage(pageCursor);
     String fullName = repository.fullName();
     if (fullName == null || !fullName.contains("/")) {
@@ -269,6 +279,7 @@ public PagedResult<ProviderContribution> listContributions(
     URI commitsUri = URI.create(
             API_BASE + "/repos/" + fullName + "/commits" +
             "?per_page=" + PAGE_SIZE + "&page=" + page +
+            (userLogin == null || userLogin.isBlank() ? "" : "&author=" + java.net.URLEncoder.encode(userLogin, java.nio.charset.StandardCharsets.UTF_8)) +
             (since == null ? "" : "&since=" + java.net.URLEncoder.encode(
                     since.toString(), java.nio.charset.StandardCharsets.UTF_8))
     );
@@ -305,6 +316,10 @@ public PagedResult<ProviderContribution> listContributions(
         JsonNode pullsArray = fetchPullRequests(fullName, accessToken);
 
         for (JsonNode node : pullsArray) {
+            if (userLogin != null && !userLogin.isBlank() &&
+                    !userLogin.equalsIgnoreCase(node.path("user").path("login").asText(""))) {
+                continue;
+            }
             OffsetDateTime updatedAt = parseNullableDate(node, "updated_at");
             if (since != null && updatedAt != null && updatedAt.isBefore(since)) {
                 continue;
@@ -336,11 +351,12 @@ public PagedResult<ProviderContribution> listContributions(
                     fullName,
                     pullNumber,
                     accessToken,
-                    since
+                    since,
+                    userLogin
             ));
         }
 
-        contributions.addAll(fetchIssues(fullName, accessToken, since));
+        contributions.addAll(fetchIssues(fullName, accessToken, since, userLogin));
     }
 
     String nextCursor = commitsArray.size() == PAGE_SIZE
@@ -378,7 +394,8 @@ private List<ProviderContribution> fetchReviews(
         String fullName,
         int pullNumber,
         ProviderAccessToken accessToken,
-        OffsetDateTime since
+        OffsetDateTime since,
+        String userLogin
 ) throws ProviderException {
     URI reviewsUri = URI.create(
             API_BASE + "/repos/" + fullName + "/pulls/" +
@@ -396,6 +413,8 @@ private List<ProviderContribution> fetchReviews(
 
     List<ProviderContribution> result = new ArrayList<>();
     for (JsonNode node : array) {
+        if (userLogin != null && !userLogin.isBlank() &&
+                !userLogin.equalsIgnoreCase(node.path("user").path("login").asText(""))) continue;
         OffsetDateTime submittedAt = parseNullableDate(node, "submitted_at");
         if (since != null && submittedAt != null && submittedAt.isBefore(since)) {
             continue;
@@ -430,7 +449,8 @@ private List<ProviderContribution> fetchReviews(
 private List<ProviderContribution> fetchIssues(
         String fullName,
         ProviderAccessToken accessToken,
-        OffsetDateTime since
+        OffsetDateTime since,
+        String userLogin
 ) throws ProviderException {
     String sinceQuery = since == null
             ? ""
@@ -458,6 +478,10 @@ private List<ProviderContribution> fetchIssues(
     for (JsonNode node : array) {
         // GitHub's issues API also includes pull requests.
         if (node.has("pull_request")) {
+            continue;
+        }
+        if (userLogin != null && !userLogin.isBlank() &&
+                !userLogin.equalsIgnoreCase(node.path("user").path("login").asText(""))) {
             continue;
         }
 
@@ -499,6 +523,43 @@ private OffsetDateTime parseNullableDate(JsonNode node, String field) {
     return node.hasNonNull(field)
             ? OffsetDateTime.parse(node.get(field).asText())
             : null;
+}
+
+
+public ProviderContributorStatistics fetchContributorStatistics(
+        ProviderAccessToken accessToken,
+        ProviderRepository repository,
+        String userLogin
+) throws ProviderException {
+    String fullName = repository.fullName();
+    if (fullName == null || !fullName.contains("/")) {
+        throw new ProviderException("GitHub repository full name is required", 0);
+    }
+    HttpResponse<String> response = sendGet(
+            URI.create(API_BASE + "/repos/" + fullName + "/stats/contributors"), accessToken);
+    JsonNode array = parse(response.body());
+    if (!array.isArray()) {
+        throw new ProviderException("GitHub contributor statistics response was not an array", response.statusCode());
+    }
+    int contributors = 0, humans = 0, bots = 0, userCommits = 0, repositoryCommits = 0;
+    long userAdditions = 0, userDeletions = 0;
+    for (JsonNode node : array) {
+        JsonNode author = node.path("author");
+        String login = author.path("login").asText("");
+        boolean bot = "Bot".equalsIgnoreCase(author.path("type").asText("")) || login.toLowerCase(Locale.ROOT).endsWith("[bot]");
+        contributors++;
+        repositoryCommits += node.path("total").asInt(0);
+        if (bot) bots++; else humans++;
+        if (userLogin != null && userLogin.equalsIgnoreCase(login)) {
+            userCommits += node.path("total").asInt(0);
+            for (JsonNode week : node.path("weeks")) {
+                userAdditions += week.path("a").asLong(0);
+                userDeletions += week.path("d").asLong(0);
+            }
+        }
+    }
+    return new ProviderContributorStatistics(contributors, humans, bots, userCommits, repositoryCommits,
+            userAdditions, userDeletions, OffsetDateTime.now(ZoneOffset.UTC));
 }
 
 HttpResponse<String> sendGet(URI uri, ProviderAccessToken accessToken) throws ProviderException {
