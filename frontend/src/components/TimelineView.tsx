@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { type ActivityMetric, type ProjectLifecycle, useActivityView } from '../hooks/useActivityView'
 
 type Granularity = 'year' | 'month' | 'week'
