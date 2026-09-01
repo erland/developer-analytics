@@ -131,7 +131,7 @@ export function AuthenticatedShell({ user }: Props) {
           ) : section === 'Activity' ? (
             <ActivityView />
           ) : section === 'Timeline' ? (
-            <TimelineView />
+            <TimelineView onOpenProject={setSelectedProjectId} />
           ) : section === 'Projects' ? (
             <ProjectInventoryView />
           ) : section === 'Technologies' ? (
