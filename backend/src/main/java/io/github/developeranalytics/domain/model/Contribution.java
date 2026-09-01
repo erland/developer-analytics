@@ -19,7 +19,7 @@ public class Contribution {
     @Column(nullable = false, length = 32) private String provider;
     @Column(name = "provider_contribution_id", nullable = false) private String providerContributionId;
     @Enumerated(EnumType.STRING) @Column(name = "contribution_type", nullable = false) private Type type;
-    @Column(length = 500) private String title;
+    @Column(columnDefinition = "text") private String title;
     @Column(name = "occurred_at", nullable = false) private OffsetDateTime occurredAt;
     @Enumerated(EnumType.STRING) private State state = State.UNKNOWN;
     private Integer additions;

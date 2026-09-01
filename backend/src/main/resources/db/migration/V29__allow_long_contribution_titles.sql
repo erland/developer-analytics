@@ -1,0 +1,1 @@
+ALTER TABLE contribution ALTER COLUMN title TYPE TEXT;

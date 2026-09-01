@@ -37,6 +37,25 @@ public class BackgroundJobRepository {
         return count != null && count > 0;
     }
 
+
+    public List<BackgroundJob> findRecentForUser(UUID userId, int limit) {
+        return em.createQuery(
+                "select j from BackgroundJob j where j.user.id=:userId " +
+                "order by j.createdAt desc", BackgroundJob.class)
+            .setParameter("userId", userId)
+            .setMaxResults(Math.max(1, Math.min(limit, 200)))
+            .getResultList();
+    }
+
+    public List<BackgroundJob> findRecentErrorsForUser(UUID userId, int limit) {
+        return em.createQuery(
+                "select j from BackgroundJob j where j.user.id=:userId " +
+                "and j.lastError is not null order by j.createdAt desc", BackgroundJob.class)
+            .setParameter("userId", userId)
+            .setMaxResults(Math.max(1, Math.min(limit, 200)))
+            .getResultList();
+    }
+
     @Transactional
     public Optional<BackgroundJob> claimNext(String workerId, OffsetDateTime now) {
         @SuppressWarnings("unchecked")

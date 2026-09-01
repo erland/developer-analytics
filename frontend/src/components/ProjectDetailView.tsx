@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { type ProjectDetail, useProjectDetail } from '../hooks/useProjectDetail'
 import { setCategoryRejected, setProjectExcludedFromAiProfile } from '../hooks/useCorrections'
+import { useSyncMonitoring } from '../hooks/useSyncMonitoring'
 
 export function ProjectDetailView({
   repositoryId,
@@ -39,6 +40,7 @@ export function ProjectDetailView({
 function Detail({ data, repositoryId }: { data: ProjectDetail; repositoryId: string }) {
   const [refreshing, setRefreshing] = useState(false)
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null)
+  const syncMonitoring = useSyncMonitoring(repositoryId)
   const maxCommits = Math.max(1, ...data.activity.timeline.map((point) => point.commits))
 
 
@@ -233,6 +235,14 @@ async function toggleAiProfileExclusion() {
         <dl className="detail-grid">
           <DetailItem label="Last seen" value={formatDate(data.synchronisation.lastSeenAt)} />
           <DetailItem label="Error" value={data.synchronisation.error ?? 'None'} />
+          {syncMonitoring.status === 'ready' && syncMonitoring.contributionRuns[0] ? (
+            <>
+              <DetailItem label="Contribution sync" value={syncMonitoring.contributionRuns[0].status} />
+              <DetailItem label="Contributions processed" value={String(syncMonitoring.contributionRuns[0].contributionsSeen)} />
+              <DetailItem label="Pages processed" value={String(syncMonitoring.contributionRuns[0].pagesProcessed)} />
+              <DetailItem label="Latest contribution error" value={syncMonitoring.contributionRuns[0].lastError ?? 'None'} />
+            </>
+          ) : null}
         </dl>
         <button
           className="secondary-action"
