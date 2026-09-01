@@ -52,7 +52,6 @@ export function useSyncMonitoring(repositoryId?: string) {
 
   useEffect(() => {
     let cancelled = false
-    let timer: number | undefined
 
     async function load() {
       try {
@@ -79,10 +78,10 @@ export function useSyncMonitoring(repositoryId?: string) {
     }
 
     void load()
-    timer = window.setInterval(() => void load(), 5000)
+    const timer = window.setInterval(() => void load(), 5000)
     return () => {
       cancelled = true
-      if (timer !== undefined) window.clearInterval(timer)
+      window.clearInterval(timer)
     }
   }, [repositoryId])
 
