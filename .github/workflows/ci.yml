@@ -82,15 +82,58 @@ jobs:
       - name: Verify backend
         run: mvn --batch-mode --no-transfer-progress verify
 
-
-  containers:
-    name: Container build validation
+  backend-image:
+    name: Build reusable backend image
+    needs: backend
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build backend image once
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: false
+          load: true
+          tags: developer-analytics-backend:ci
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Export backend image
+        run: docker save developer-analytics-backend:ci | gzip -1 > /tmp/developer-analytics-backend-ci.tar.gz
+
+      - name: Upload backend image artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: developer-analytics-backend-ci
+          path: /tmp/developer-analytics-backend-ci.tar.gz
+          retention-days: 1
+
+  containers:
+    name: Container build validation
+    needs: backend-image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Download backend image artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: developer-analytics-backend-ci
+          path: /tmp
+
+      - name: Load backend image
+        run: gunzip -c /tmp/developer-analytics-backend-ci.tar.gz | docker load
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -112,17 +155,6 @@ jobs:
           tags: developer-analytics-web:ci
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
-
-      - name: Build backend image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: backend/Dockerfile
-          push: false
-          load: true
-          tags: developer-analytics-backend:ci
-          cache-from: type=gha,scope=backend
-          cache-to: type=gha,mode=max,scope=backend
 
       - name: Scan web image for critical vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
@@ -171,6 +203,7 @@ jobs:
 
   backup-restore:
     name: PostgreSQL backup/restore verification
+    needs: backend-image
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -178,12 +211,21 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
+      - name: Download backend image artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: developer-analytics-backend-ci
+          path: /tmp
+
+      - name: Load backend image
+        run: gunzip -c /tmp/developer-analytics-backend-ci.tar.gz | docker load
+
       - name: Start migrated database
         env:
           DB_PASSWORD: ci-backup-restore-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: docker compose -f deploy/compose.yaml -f deploy/compose.local-build.yaml up -d --build db backend
+        run: docker compose -f deploy/compose.yaml -f deploy/compose.ci-prebuilt-backend.yaml up -d --build db backend
 
       - name: Verify PostgreSQL backup and restore
         env:
@@ -198,7 +240,7 @@ jobs:
           DB_PASSWORD: ci-backup-restore-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: docker compose -f deploy/compose.yaml -f deploy/compose.local-build.yaml logs --no-color db backend
+        run: docker compose -f deploy/compose.yaml -f deploy/compose.ci-prebuilt-backend.yaml logs --no-color db backend
 
       - name: Stop verification stack
         if: always()
@@ -206,10 +248,11 @@ jobs:
           DB_PASSWORD: ci-backup-restore-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: docker compose -f deploy/compose.yaml -f deploy/compose.local-build.yaml down -v
+        run: docker compose -f deploy/compose.yaml -f deploy/compose.ci-prebuilt-backend.yaml down -v
 
   e2e-smoke:
     name: End-to-end smoke test
+    needs: backend-image
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -217,13 +260,22 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
+      - name: Download backend image artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: developer-analytics-backend-ci
+          path: /tmp
+
+      - name: Load backend image
+        run: gunzip -c /tmp/developer-analytics-backend-ci.tar.gz | docker load
+
       - name: Start application smoke stack
         env:
           WEB_PORT: '18080'
           DB_PASSWORD: ci-e2e-smoke-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: docker compose -f deploy/compose.yaml -f deploy/compose.local-build.yaml up -d --build db backend web
+        run: docker compose -f deploy/compose.yaml -f deploy/compose.ci-prebuilt-backend.yaml up -d --build db backend web
 
       - name: Verify web, API, migrations and authenticated flow
         env:
@@ -241,7 +293,7 @@ jobs:
           DB_PASSWORD: ci-e2e-smoke-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: docker compose -f deploy/compose.yaml -f deploy/compose.local-build.yaml logs --no-color db backend web
+        run: docker compose -f deploy/compose.yaml -f deploy/compose.ci-prebuilt-backend.yaml logs --no-color db backend web
 
       - name: Stop smoke stack
         if: always()
@@ -250,10 +302,11 @@ jobs:
           DB_PASSWORD: ci-e2e-smoke-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: docker compose -f deploy/compose.yaml -f deploy/compose.local-build.yaml down -v
+        run: docker compose -f deploy/compose.yaml -f deploy/compose.ci-prebuilt-backend.yaml down -v
 
   migration-verification:
     name: Migration verification
+    needs: backend-image
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -261,11 +314,21 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
+      - name: Download backend image artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: developer-analytics-backend-ci
+          path: /tmp
+
+      - name: Load backend image
+        run: gunzip -c /tmp/developer-analytics-backend-ci.tar.gz | docker load
+
       - name: Check Flyway migration sequence
         run: python3 scripts/check-flyway-migrations.py
 
       - name: Verify migrations on fresh PostgreSQL
         env:
+          LOCAL_BUILD_COMPOSE: deploy/compose.ci-prebuilt-backend.yaml
           DB_PASSWORD: ci-migration-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
@@ -277,7 +340,7 @@ jobs:
           DB_PASSWORD: ci-migration-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: docker compose -p developer-analytics-migration-test -f deploy/compose.yaml logs --no-color db backend || true
+        run: docker compose -p developer-analytics-migration-test -f deploy/compose.yaml -f deploy/compose.ci-prebuilt-backend.yaml logs --no-color db backend || true
 
       - name: Stop migration stack
         if: always()
@@ -285,10 +348,11 @@ jobs:
           DB_PASSWORD: ci-migration-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: docker compose -p developer-analytics-migration-test -f deploy/compose.yaml down -v || true
+        run: docker compose -p developer-analytics-migration-test -f deploy/compose.yaml -f deploy/compose.ci-prebuilt-backend.yaml down -v || true
 
   large-account-acceptance:
     name: Large-account acceptance test
+    needs: backend-image
     runs-on: ubuntu-latest
     timeout-minutes: 35
 
@@ -296,8 +360,18 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
+      - name: Download backend image artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: developer-analytics-backend-ci
+          path: /tmp
+
+      - name: Load backend image
+        run: gunzip -c /tmp/developer-analytics-backend-ci.tar.gz | docker load
+
       - name: Run 200+ repository acceptance scenario
         env:
+          LOCAL_BUILD_COMPOSE: deploy/compose.ci-prebuilt-backend.yaml
           WEB_PORT: '18087'
           LARGE_ACCOUNT_BASE_URL: http://localhost:18087
           LARGE_ACCOUNT_REPOSITORY_COUNT: '240'
@@ -314,7 +388,7 @@ jobs:
           DB_PASSWORD: ci-large-account-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: docker compose -p developer-analytics-large-account -f deploy/compose.yaml -f deploy/compose.local-build.yaml logs --no-color db backend worker web || true
+        run: docker compose -p developer-analytics-large-account -f deploy/compose.yaml -f deploy/compose.ci-prebuilt-backend.yaml logs --no-color db backend worker web || true
 
       - name: Stop large-account stack
         if: always()
@@ -323,10 +397,11 @@ jobs:
           DB_PASSWORD: ci-large-account-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: docker compose -p developer-analytics-large-account -f deploy/compose.yaml -f deploy/compose.local-build.yaml down -v --remove-orphans || true
+        run: docker compose -p developer-analytics-large-account -f deploy/compose.yaml -f deploy/compose.ci-prebuilt-backend.yaml down -v --remove-orphans || true
 
   privacy-acceptance:
     name: Privacy acceptance test
+    needs: backend-image
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -334,8 +409,18 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
+      - name: Download backend image artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: developer-analytics-backend-ci
+          path: /tmp
+
+      - name: Load backend image
+        run: gunzip -c /tmp/developer-analytics-backend-ci.tar.gz | docker load
+
       - name: Run privacy boundary acceptance matrix
         env:
+          LOCAL_BUILD_COMPOSE: deploy/compose.ci-prebuilt-backend.yaml
           WEB_PORT: '18088'
           PRIVACY_BASE_URL: http://localhost:18088
           DB_PASSWORD: ci-privacy-acceptance-password
@@ -351,7 +436,7 @@ jobs:
           DB_PASSWORD: ci-privacy-acceptance-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: docker compose -p developer-analytics-privacy-acceptance -f deploy/compose.yaml -f deploy/compose.local-build.yaml logs --no-color db backend worker web || true
+        run: docker compose -p developer-analytics-privacy-acceptance -f deploy/compose.yaml -f deploy/compose.ci-prebuilt-backend.yaml logs --no-color db backend worker web || true
 
       - name: Stop privacy acceptance stack
         if: always()
@@ -360,7 +445,7 @@ jobs:
           DB_PASSWORD: ci-privacy-acceptance-password
           CREDENTIAL_ENCRYPTION_KEY: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
           CREDENTIAL_KEY_VERSION: ci-v1
-        run: docker compose -p developer-analytics-privacy-acceptance -f deploy/compose.yaml -f deploy/compose.local-build.yaml down -v --remove-orphans || true
+        run: docker compose -p developer-analytics-privacy-acceptance -f deploy/compose.yaml -f deploy/compose.ci-prebuilt-backend.yaml down -v --remove-orphans || true
 
   mobile-acceptance:
     name: Mobile acceptance test
