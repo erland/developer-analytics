@@ -10,7 +10,6 @@ import io.github.developeranalytics.persistence.technology.TechnologyTimelineRep
 import io.github.developeranalytics.persistence.technology.UserTechnologyAssessmentRepository;
 import io.github.developeranalytics.service.correction.UserCorrectionService;
 import io.github.developeranalytics.service.technology.TechnologyEvidenceStrengthService;
-import io.github.developeranalytics.service.technology.TechnologyTimelineService;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.CookieParam;
@@ -18,6 +17,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import org.jboss.logging.Logger;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -27,6 +27,8 @@ import java.util.stream.Collectors;
 @Path("/api/me/technologies")
 @Produces(MediaType.APPLICATION_JSON)
 public class MeTechnologiesResource {
+
+    private static final Logger LOG = Logger.getLogger(MeTechnologiesResource.class);
 
     @Inject
     CurrentUserService currentUserService;
@@ -43,44 +45,63 @@ public class MeTechnologiesResource {
     @Inject
     UserCorrectionService corrections;
 
-    @Inject TechnologyEvidenceStrengthService strengthService;
-    @Inject TechnologyTimelineService timelineService;
+    @Inject
+    TechnologyEvidenceStrengthService strengthService;
 
     @GET
     @Transactional
     public List<Entry> list(
             @CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken
     ) {
-        CurrentUser current =
-                currentUserService.requireCurrentUser(sessionToken);
+        CurrentUser current = currentUserService.requireCurrentUser(sessionToken);
+        UUID userId = current.user().getId();
 
-        if (assessments.findForUser(current.user().getId()).isEmpty()) {
-            strengthService.recalculate(current.user());
-            timelineService.recalculate(current.user());
+        List<UserTechnologyAssessment> currentAssessments = assessments.findForUser(userId);
+        if (currentAssessments.isEmpty()) {
+            try {
+                strengthService.recalculate(current.user());
+                currentAssessments = assessments.findForUser(userId);
+            } catch (RuntimeException exception) {
+                LOG.errorf(exception,
+                        "event=technology_assessment_recalculation_failed userId=%s errorType=%s errorMessage=%s",
+                        userId,
+                        exception.getClass().getSimpleName(),
+                        exception.getMessage());
+                throw exception;
+            }
         }
 
         Map<String, List<TechnologyActivityMonth>> monthsByTechnology =
-                timelines.findMonthsForUser(current.user().getId())
+                timelines.findMonthsForUser(userId)
                         .stream()
                         .collect(Collectors.groupingBy(
                                 TechnologyActivityMonth::getTechnologyKey
                         ));
 
-        return assessments.findForUser(current.user().getId())
-                .stream()
-                .filter(assessment -> !corrections.isTechnologySuppressed(
-                        current.user().getId(),
-                        assessment.getTechnology().getTechnologyKey()
-                ))
-                .map(assessment -> toEntry(
-                        current.user().getId(),
-                        assessment,
-                        monthsByTechnology.getOrDefault(
-                                assessment.getTechnology().getTechnologyKey(),
-                                List.of()
-                        )
-                ))
-                .toList();
+        try {
+            return currentAssessments.stream()
+                    .filter(assessment -> !corrections.isTechnologySuppressed(
+                            userId,
+                            assessment.getTechnology().getTechnologyKey()
+                    ))
+                    .map(assessment -> toEntry(
+                            userId,
+                            assessment,
+                            monthsByTechnology.getOrDefault(
+                                    assessment.getTechnology().getTechnologyKey(),
+                                    List.of()
+                            )
+                    ))
+                    .toList();
+        } catch (RuntimeException exception) {
+            LOG.errorf(exception,
+                    "event=technology_response_mapping_failed userId=%s assessmentCount=%d errorType=%s errorMessage=%s",
+                    userId,
+                    currentAssessments.size(),
+                    exception.getClass().getSimpleName(),
+                    exception.getMessage());
+            throw exception;
+        }
     }
 
     private Entry toEntry(
