@@ -51,14 +51,9 @@ public class TechnologyEvidenceStrengthService {
                     now
             );
 
-            UserTechnologyAssessment assessment = assessments
-                    .find(user.getId(), technology.getId())
-                    .orElseGet(() -> {
-                        UserTechnologyAssessment created =
-                                new UserTechnologyAssessment(user, technology);
-                        assessments.persist(created);
-                        return created;
-                    });
+            var existing = assessments.find(user.getId(), technology.getId());
+            UserTechnologyAssessment assessment = existing
+                    .orElseGet(() -> new UserTechnologyAssessment(user, technology));
 
             assessment.update(
                     score.strength(),
@@ -73,6 +68,13 @@ public class TechnologyEvidenceStrengthService {
                     io.github.developeranalytics.domain.model.DataPrivacyProvenance.fromRepositoryCounts(row.publicRepositoryCount(), row.privateRepositoryCount()),
                     now
             );
+
+            // A newly-created assessment must be fully initialized before persist.
+            // Hibernate may flush during a later query in the same transaction, and
+            // calculatedAt/strength are NOT NULL columns.
+            if (existing.isEmpty()) {
+                assessments.persist(assessment);
+            }
             updated++;
         }
 
