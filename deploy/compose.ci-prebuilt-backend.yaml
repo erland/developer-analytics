@@ -1,0 +1,12 @@
+services:
+  backend:
+    image: developer-analytics-backend:ci
+
+  worker:
+    image: developer-analytics-backend:ci
+
+  web:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    image: developer-analytics-web:local
