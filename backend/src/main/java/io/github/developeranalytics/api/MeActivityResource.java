@@ -62,7 +62,7 @@ public class MeActivityResource {
         Map<YearMonth, PeriodAccumulator> months = new TreeMap<>();
         Map<LocalDate, PeriodAccumulator> weeks = new TreeMap<>();
         Map<UUID, Map<YearMonth, PeriodAccumulator>> projectMonths = new HashMap<>();
-        Map<UUID, Map<LocalDate, PeriodAccumulator>> projectWeeks = new HashMap<>();
+        Map<UUID, Map<YearMonth, Map<LocalDate, PeriodAccumulator>>> projectMonthWeeks = new HashMap<>();
 
         List<Integer> sizes = new ArrayList<>();
         long additions = 0;
@@ -94,7 +94,17 @@ public class MeActivityResource {
             LocalDate week = occurredAt.toLocalDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             accumulate(weeks.computeIfAbsent(week, ignored -> new PeriodAccumulator()), repositoryId, repositoryName, a, d, hasLines);
             accumulate(projectMonths.computeIfAbsent(repositoryId, ignored -> new TreeMap<>()).computeIfAbsent(month, ignored -> new PeriodAccumulator()), repositoryId, repositoryName, a, d, hasLines);
-            accumulate(projectWeeks.computeIfAbsent(repositoryId, ignored -> new TreeMap<>()).computeIfAbsent(week, ignored -> new PeriodAccumulator()), repositoryId, repositoryName, a, d, hasLines);
+            accumulate(
+                    projectMonthWeeks
+                            .computeIfAbsent(repositoryId, ignored -> new TreeMap<>())
+                            .computeIfAbsent(month, ignored -> new TreeMap<>())
+                            .computeIfAbsent(week, ignored -> new PeriodAccumulator()),
+                    repositoryId,
+                    repositoryName,
+                    a,
+                    d,
+                    hasLines
+            );
 
             if (first == null || occurredAt.isBefore(first)) first = occurredAt;
             if (last == null || occurredAt.isAfter(last)) last = occurredAt;
@@ -142,10 +152,17 @@ public class MeActivityResource {
         List<ProjectLifecycle> projectsOverTime = projectRows.stream().map(row -> {
             UUID repositoryId = (UUID) row[0];
             List<ProjectPeriodActivity> monthlyActivity = projectMonths.getOrDefault(repositoryId, Map.of()).entrySet().stream()
-                    .map(entry -> toProjectPeriod(entry.getKey().toString(), entry.getValue()))
+                    .map(entry -> toProjectPeriod(entry.getKey().toString(), entry.getKey().toString(), entry.getValue()))
                     .toList();
-            List<ProjectPeriodActivity> weeklyActivity = projectWeeks.getOrDefault(repositoryId, Map.of()).entrySet().stream()
-                    .map(entry -> toProjectPeriod(entry.getKey().toString(), entry.getValue()))
+            List<ProjectPeriodActivity> weeklyActivity = projectMonthWeeks.getOrDefault(repositoryId, Map.of()).entrySet().stream()
+                    .flatMap(monthEntry -> monthEntry.getValue().entrySet().stream()
+                            .map(weekEntry -> toProjectPeriod(
+                                    weekEntry.getKey().toString(),
+                                    monthEntry.getKey().toString(),
+                                    weekEntry.getValue()
+                            )))
+                    .sorted(Comparator.comparing(ProjectPeriodActivity::parentMonth)
+                            .thenComparing(ProjectPeriodActivity::period))
                     .toList();
             return new ProjectLifecycle(
                     repositoryId,
@@ -198,8 +215,8 @@ public class MeActivityResource {
                 value.projectIds.size(), List.copyOf(value.projectNames));
     }
 
-    private ProjectPeriodActivity toProjectPeriod(String period, PeriodAccumulator value) {
-        return new ProjectPeriodActivity(period, value.commits, value.additions, value.deletions,
+    private ProjectPeriodActivity toProjectPeriod(String period, String parentMonth, PeriodAccumulator value) {
+        return new ProjectPeriodActivity(period, parentMonth, value.commits, value.additions, value.deletions,
                 value.additions + value.deletions, value.lineStatisticsCommitCount);
     }
 
@@ -240,7 +257,7 @@ public class MeActivityResource {
             UUID repositoryId = (UUID) row[0];
             String label = (String) row[1];
             String strength = row[2] == null ? "EXPOSURE" : row[2].toString();
-            int rank = switch (strength) { case "STRONG" -> 4; case "MODERATE" -> 3; case "LIMITED" -> 2; default -> 1; };
+            int rank = switch (strength) { case "OBSERVED" -> 5; case "STRONG" -> 4; case "MODERATE" -> 3; case "LIMITED" -> 2; default -> 1; };
             RankedLabel current = ranked.get(repositoryId);
             if (current == null || rank > current.rank || (rank == current.rank && label.compareToIgnoreCase(current.label) < 0)) {
                 ranked.put(repositoryId, new RankedLabel(label, rank));
@@ -308,6 +325,6 @@ public class MeActivityResource {
                                    OffsetDateTime lastActivityAt, int commits, String projectType, String technology,
                                    List<ProjectPeriodActivity> monthlyActivity,
                                    List<ProjectPeriodActivity> weeklyActivity) {}
-    public record ProjectPeriodActivity(String period, int commits, long additions, long deletions,
+    public record ProjectPeriodActivity(String period, String parentMonth, int commits, long additions, long deletions,
                                         long changedLines, int lineStatisticsCommitCount) {}
 }
