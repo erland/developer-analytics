@@ -404,7 +404,7 @@ if (url === '/api/me/reports/preview') {
 
     fireEvent.click(screen.getByRole('button', { name: 'Activity' }))
     expect(screen.getByRole('heading', { name: 'Activity', level: 1 })).toBeInTheDocument()
-    expect(await screen.findByText('Commits per year')).toBeInTheDocument()
+    expect(await screen.findByText('Changed lines per month')).toBeInTheDocument()
     expect(screen.getByText('Average commit size')).toBeInTheDocument()
     expect(screen.getByText('+500')).toBeInTheDocument()
 
