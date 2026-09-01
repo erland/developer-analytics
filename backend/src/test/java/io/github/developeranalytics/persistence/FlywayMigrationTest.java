@@ -39,18 +39,17 @@ class FlywayMigrationTest {
         }
     }
 
-@Test
-void flywayHistoryContainsOnlySuccessfulMigrations() throws Exception {
-    try (Connection connection = dataSource.getConnection();
-         Statement statement = connection.createStatement();
-         ResultSet result = statement.executeQuery(
-                 "SELECT count(*) FILTER (WHERE success = false), " +
-                 "count(*) FILTER (WHERE version IS NOT NULL) " +
-                 "FROM flyway_schema_history")) {
-        assertTrue(result.next());
-        assertEquals(0, result.getInt(1));
-        assertEquals(28, result.getInt(2));
+    @Test
+    void flywayHistoryContainsOnlySuccessfulMigrations() throws Exception {
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet result = statement.executeQuery(
+                     "SELECT count(*) FILTER (WHERE success = false), " +
+                     "count(*) FILTER (WHERE version IS NOT NULL) " +
+                     "FROM flyway_schema_history")) {
+            assertTrue(result.next());
+            assertEquals(0, result.getInt(1));
+            assertEquals(29, result.getInt(2));
+        }
     }
-}
-
 }
