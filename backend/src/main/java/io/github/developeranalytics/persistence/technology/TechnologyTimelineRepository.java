@@ -1,7 +1,6 @@
 package io.github.developeranalytics.persistence.technology;
 
 import io.github.developeranalytics.domain.aggregate.TechnologyActivityMonth;
-import io.github.developeranalytics.domain.model.AppUser;
 import io.github.developeranalytics.domain.model.RepositoryVisibility;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -46,8 +45,8 @@ public class TechnologyTimelineRepository {
                 "select e.technology.technologyKey, " +
                 "function('date_trunc', 'month', c.occurredAt), " +
                 "count(distinct c.repository.id), count(c.id), " +
-                "count(distinct case when c.repository.visibility = io.github.developeranalytics.domain.model.RepositoryVisibility.PUBLIC then c.repository.id else null end), " +
-                "count(distinct case when c.repository.visibility = io.github.developeranalytics.domain.model.RepositoryVisibility.PRIVATE then c.repository.id else null end) " +
+                "count(distinct case when c.repository.visibility = :publicVisibility then c.repository.id else null end), " +
+                "count(distinct case when c.repository.visibility = :privateVisibility then c.repository.id else null end) " +
                 "from RepositoryTechnologyEvidence e, " +
                 "Contribution c " +
                 "where e.user.id=:userId and e.repository.includedInAnalysis=true " +
@@ -57,15 +56,17 @@ public class TechnologyTimelineRepository {
                 "function('date_trunc', 'month', c.occurredAt)",
                 Object[].class)
             .setParameter("userId", userId)
+            .setParameter("publicVisibility", RepositoryVisibility.PUBLIC)
+            .setParameter("privateVisibility", RepositoryVisibility.PRIVATE)
             .getResultList()
             .stream()
             .map(row -> new ActivitySourceRow(
                     (String) row[0],
                     toLocalDate(row[1]),
-                    ((Number) row[2]).intValue(),
-                    ((Number) row[3]).intValue(),
-                    ((Number) row[4]).intValue(),
-                    ((Number) row[5]).intValue()
+                    number(row[2]),
+                    number(row[3]),
+                    number(row[4]),
+                    number(row[5])
             ))
             .toList();
     }
@@ -96,7 +97,7 @@ public class TechnologyTimelineRepository {
                     (String) row[0],
                     (OffsetDateTime) row[1],
                     (OffsetDateTime) row[2],
-                    ((Number) row[3]).intValue()
+                    number(row[3])
             ))
             .toList();
     }
@@ -116,9 +117,13 @@ public class TechnologyTimelineRepository {
             .map(row -> new VisibilityRow(
                     (String) row[0],
                     (RepositoryVisibility) row[1],
-                    ((Number) row[2]).intValue()
+                    number(row[2])
             ))
             .toList();
+    }
+
+    private int number(Object value) {
+        return value == null ? 0 : ((Number) value).intValue();
     }
 
     private LocalDate toLocalDate(Object value) {
