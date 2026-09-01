@@ -73,7 +73,7 @@ public class RestExceptionLoggingMapper implements ExceptionMapper<Throwable> {
 
     private String sanitize(String value) {
         if (value == null || value.isBlank()) return "-";
-        return value.replace('\n', ' ').replace('\r', ' ').replace('"', '\'');
+        return value.replace('\n', ' ').replace('\r', ' ').replace('"', ' ');
     }
 
     public record ErrorResponse(String error) {}
