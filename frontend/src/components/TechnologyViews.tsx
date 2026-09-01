@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { type TechnologyView, useTechnologyViews } from '../hooks/useTechnologyViews'
 import { setTechnologySuppressed } from '../hooks/useCorrections'
+import { DrilldownTimeChart } from './DrilldownTimeChart'
 import { ProjectDetailView } from './ProjectDetailView'
 
 export function TechnologyViews() {
@@ -56,11 +57,7 @@ export function TechnologyViews() {
               <button
                 type="button"
                 key={technology.technologyKey}
-                className={`technology-list-item ${
-                  selected?.technologyKey === technology.technologyKey
-                    ? 'technology-list-item-active'
-                    : ''
-                }`}
+                className={`technology-list-item ${selected?.technologyKey === technology.technologyKey ? 'technology-list-item-active' : ''}`}
                 onClick={() => setSelectedKey(technology.technologyKey)}
               >
                 <div>
@@ -75,7 +72,7 @@ export function TechnologyViews() {
             ))}
           </section>
 
-          {selected ? <TechnologyDetail technology={selected} onOpenProject={setSelectedProjectId} /> : null}
+          {selected ? <TechnologyDetail key={selected.technologyKey} technology={selected} onOpenProject={setSelectedProjectId} /> : null}
         </div>
       )}
     </>
@@ -83,11 +80,6 @@ export function TechnologyViews() {
 }
 
 function TechnologyDetail({ technology, onOpenProject }: { technology: TechnologyView; onOpenProject:(id:string)=>void }) {
-  const maxActivity = Math.max(
-    1,
-    ...technology.timeline.map((point) => point.activityCount),
-  )
-
   return (
     <div className="technology-detail">
       <section className="project-detail-hero">
@@ -106,25 +98,24 @@ function TechnologyDetail({ technology, onOpenProject }: { technology: Technolog
         </div>
       </section>
 
-
-<section className="dashboard-section correction-panel">
-  <span className="card-kicker">Correction</span>
-  <h2>Technology inference</h2>
-  <p className="settings-intro">
-    Suppressing this inference hides it from analysis views and AI profile
-    conclusions while retaining the underlying repository evidence.
-  </p>
-  <button
-    className="secondary-action"
-    type="button"
-    onClick={async () => {
-      await setTechnologySuppressed(technology.technologyKey, true)
-      window.location.reload()
-    }}
-  >
-    Suppress technology inference
-  </button>
-</section>
+      <section className="dashboard-section correction-panel">
+        <span className="card-kicker">Correction</span>
+        <h2>Technology inference</h2>
+        <p className="settings-intro">
+          Suppressing this inference hides it from analysis views and AI profile
+          conclusions while retaining the underlying repository evidence.
+        </p>
+        <button
+          className="secondary-action"
+          type="button"
+          onClick={async () => {
+            await setTechnologySuppressed(technology.technologyKey, true)
+            window.location.reload()
+          }}
+        >
+          Suppress technology inference
+        </button>
+      </section>
 
       <section className="metric-grid">
         <Metric label="Projects" value={technology.projectCount} />
@@ -138,32 +129,15 @@ function TechnologyDetail({ technology, onOpenProject }: { technology: Technolog
       <section className="dashboard-section">
         <span className="card-kicker">Timeline</span>
         <h2>Activity over time</h2>
-        <div className="bar-chart">
-          {technology.timeline.length ? (
-            technology.timeline.map((point) => (
-              <div className="bar-row" key={point.month}>
-                <div className="bar-label">
-                  <strong>{formatMonth(point.month)}</strong>
-                  <span>{point.projectCount} project{point.projectCount === 1 ? '' : 's'}</span>
-                </div>
-                <div className="bar-track" aria-hidden="true">
-                  <div
-                    className="bar-fill"
-                    style={{
-                      width: `${Math.max(
-                        2,
-                        Math.round((point.activityCount / maxActivity) * 100),
-                      )}%`,
-                    }}
-                  />
-                </div>
-                <span className="bar-value">{point.activityCount}</span>
-              </div>
-            ))
-          ) : (
-            <p className="empty-state">No timeline aggregate yet.</p>
-          )}
-        </div>
+        <DrilldownTimeChart
+          points={technology.timeline.map(point => ({
+            month: point.month.slice(0, 7),
+            value: point.activityCount,
+            secondary: `${point.projectCount} project${point.projectCount === 1 ? '' : 's'}`,
+          }))}
+          valueLabel="Activity"
+          emptyText="No timeline aggregate yet."
+        />
       </section>
 
       <section className="dashboard-section">
@@ -183,9 +157,7 @@ function TechnologyDetail({ technology, onOpenProject }: { technology: Technolog
                     {project.evidenceCount === 1 ? '' : 's'}
                   </p>
                 </div>
-                <span className="representative-date">
-                  {formatDate(project.lastActivityAt)}
-                </span>
+                <span className="representative-date">{formatDate(project.lastActivityAt)}</span>
               </article>
             ))}
           </div>
@@ -197,21 +169,8 @@ function TechnologyDetail({ technology, onOpenProject }: { technology: Technolog
   )
 }
 
-function Metric({
-  label,
-  value,
-  compact = false,
-}: {
-  label: string
-  value: string | number
-  compact?: boolean
-}) {
-  return (
-    <article className="metric-card">
-      <span>{label}</span>
-      <strong className={compact ? 'metric-value-compact' : undefined}>{value}</strong>
-    </article>
-  )
+function Metric({ label, value, compact = false }: { label: string; value: string | number; compact?: boolean }) {
+  return <article className="metric-card"><span>{label}</span><strong className={compact ? 'metric-value-compact' : undefined}>{value}</strong></article>
 }
 
 function ownershipLabel(value: string) {
@@ -224,18 +183,7 @@ function humanize(value: string) {
 
 function formatDate(value: string | null) {
   if (!value) return 'Unknown'
-  return new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'short',
-  }).format(new Date(value))
-}
-
-function formatMonth(value: string) {
-  const normalized = value.length === 7 ? `${value}-01` : value
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    year: '2-digit',
-  }).format(new Date(`${normalized}T00:00:00Z`))
+  return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short' }).format(new Date(value))
 }
 
 function privacyLabel(value: TechnologyView['privacyProvenance']) {
