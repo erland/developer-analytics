@@ -7,6 +7,7 @@ import { useSyncRecovery } from '../hooks/useSyncRecovery'
 export function PrivacyDataSourcesView() {
   const disconnect = useGitHubDisconnect()
   const recovery = useSyncRecovery()
+  const [privatePrefix, setPrivatePrefix] = React.useState('')
   const [disconnectDisposition, setDisconnectDisposition] =
     React.useState<DisconnectDataDisposition | null>(null)
   const github = useGitHubDataSource()
@@ -104,6 +105,49 @@ export function PrivacyDataSourcesView() {
       GitHub may authorise several private repositories. Only repositories explicitly
       selected here are included in Developer Analytics statistics and assessments.
     </p>
+    <div className="recovery-actions">
+      <button
+        className="secondary-action"
+        type="button"
+        onClick={() => void privateRepos.bulkSetIncluded(true)}
+      >
+        Include all private repositories
+      </button>
+      <button
+        className="secondary-action"
+        type="button"
+        onClick={() => void privateRepos.bulkSetIncluded(false)}
+      >
+        Exclude all private repositories
+      </button>
+    </div>
+    <div className="view-toolbar">
+      <label>
+        <span>Repository prefix</span>
+        <input
+          type="text"
+          value={privatePrefix}
+          placeholder="e.g. customer- or erland/project-"
+          onChange={(event) => setPrivatePrefix(event.target.value)}
+        />
+      </label>
+      <button
+        className="secondary-action"
+        type="button"
+        disabled={!privatePrefix.trim()}
+        onClick={() => void privateRepos.bulkSetIncluded(true, privatePrefix)}
+      >
+        Include matching prefix
+      </button>
+      <button
+        className="text-button"
+        type="button"
+        disabled={!privatePrefix.trim()}
+        onClick={() => void privateRepos.bulkSetIncluded(false, privatePrefix)}
+      >
+        Exclude matching prefix
+      </button>
+    </div>
     {privateRepos.loading ? <p className="empty-state">Loading private repositories…</p> : null}
     {privateRepos.error ? <p className="settings-error">{privateRepos.error}</p> : null}
     {!privateRepos.loading && privateRepos.repositories.length === 0 ? (

@@ -899,3 +899,21 @@ only then creates the Version 1 GitHub tag/release. See
 Step 91 is complete: the repository contains the final Version 1 release workflow,
 release notes and operator procedure. This is the final numbered implementation
 step in `docs/development-plan.md`.
+
+## Repository analysis orchestration
+
+A successful GitHub sign-in now queues repository discovery automatically. After discovery,
+Developer Analytics queues the full deterministic analysis pipeline for every repository that
+is included in analysis: contributions, language evidence, file/manifest evidence and project
+classification, followed by technology strength, technology timeline and project significance
+recalculation.
+
+Private repository access remains opt-in. Once authorised, the Privacy/data sources view can
+include or exclude all private repositories at once, or apply the selection to repositories
+whose name/full name starts with a prefix. Including a private repository queues its analysis.
+Each project detail page also provides **Refresh repository analysis** for a targeted re-analysis.
+
+Provider recovery is repository-safe: only GitHub HTTP 401 is treated as global credential loss.
+A missing repository (404) or a repository-specific/temporary forbidden response (403) no longer
+marks every repository as `ACCESS_REVOKED`. A successful GitHub discovery validates the provider
+connection again and restores discovered repositories to `SYNCED`.

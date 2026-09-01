@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { type ProjectDetail, useProjectDetail } from '../hooks/useProjectDetail'
 import { setCategoryRejected, setProjectExcludedFromAiProfile } from '../hooks/useCorrections'
 
@@ -36,8 +37,31 @@ export function ProjectDetailView({
 }
 
 function Detail({ data, repositoryId }: { data: ProjectDetail; repositoryId: string }) {
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshMessage, setRefreshMessage] = useState<string | null>(null)
   const maxCommits = Math.max(1, ...data.activity.timeline.map((point) => point.commits))
 
+
+
+async function refreshAnalysis() {
+  setRefreshing(true)
+  setRefreshMessage(null)
+  try {
+    const response = await fetch(`/api/me/sync/github/repositories/${repositoryId}/refresh-analysis`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+    })
+    if (!response.ok) {
+      throw new Error(`Refresh request failed with HTTP ${response.status}`)
+    }
+    setRefreshMessage('Repository analysis queued. Refresh this view after the background jobs complete.')
+  } catch (error) {
+    setRefreshMessage(error instanceof Error ? error.message : 'Unable to refresh repository analysis')
+  } finally {
+    setRefreshing(false)
+  }
+}
 
 async function toggleCategory(categoryKey: string, rejected: boolean) {
   await setCategoryRejected(repositoryId, categoryKey, !rejected)
@@ -210,6 +234,15 @@ async function toggleAiProfileExclusion() {
           <DetailItem label="Last seen" value={formatDate(data.synchronisation.lastSeenAt)} />
           <DetailItem label="Error" value={data.synchronisation.error ?? 'None'} />
         </dl>
+        <button
+          className="secondary-action"
+          type="button"
+          disabled={refreshing}
+          onClick={() => void refreshAnalysis()}
+        >
+          {refreshing ? 'Queueing analysis…' : 'Refresh repository analysis'}
+        </button>
+        {refreshMessage ? <p className="settings-intro" role="status">{refreshMessage}</p> : null}
       </section>
     </>
   )

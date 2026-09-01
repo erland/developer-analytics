@@ -2,7 +2,7 @@ package io.github.developeranalytics.worker;
 
 import io.github.developeranalytics.domain.job.BackgroundJob;
 import io.github.developeranalytics.service.discovery.GitHubRepositoryDiscoveryService;
-import io.github.developeranalytics.service.sync.ContributionSyncOrchestrator;
+import io.github.developeranalytics.service.sync.RepositoryAnalysisOrchestrator;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -15,7 +15,7 @@ public class GitHubRepositoryDiscoveryJobHandler implements BackgroundJobHandler
     GitHubRepositoryDiscoveryService discovery;
 
     @Inject
-    ContributionSyncOrchestrator contributionSync;
+    RepositoryAnalysisOrchestrator analysis;
 
     @Override
     public String jobType() {
@@ -29,11 +29,8 @@ public class GitHubRepositoryDiscoveryJobHandler implements BackgroundJobHandler
         }
         discovery.discover(job.getUser());
 
-        // Seed the first contribution batch after repository inventory refresh.
-        contributionSync.enqueueBatch(
-                job.getUser(),
-                0,
-                ContributionSyncOrchestrator.DEFAULT_BATCH_SIZE
-        );
+        // A repository refresh is the start of the complete analysis pipeline,
+        // not merely inventory discovery. Queue every selected repository.
+        analysis.enqueueAll(job.getUser());
     }
 }

@@ -6,6 +6,7 @@ import io.github.developeranalytics.domain.model.ProviderConnection;
 import io.github.developeranalytics.persistence.auth.AuthenticationRepository;
 import io.github.developeranalytics.persistence.auth.ProviderConnectionRepository;
 import io.github.developeranalytics.service.connection.ProviderCredentialService;
+import io.github.developeranalytics.service.job.RepositoryDiscoveryJobService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -22,6 +23,7 @@ public class AuthenticationService {
     @Inject GitHubOAuthClient github;
     @Inject ProviderCredentialService credentials;
     @Inject ProviderConnectionRepository connections;
+    @Inject RepositoryDiscoveryJobService discoveryJobs;
     @ConfigProperty(name="developer-analytics.session.hours", defaultValue="8") long sessionHours;
     @ConfigProperty(name="developer-analytics.session.cookie-secure", defaultValue="true") boolean secureCookie;
 
@@ -145,6 +147,10 @@ public CallbackResult finishGitHubCallback(
                 ));
         connection.authorisePrivateRepositoryAccess();
 
+        // Refresh immediately so newly authorised private repositories appear
+        // without requiring a separate recovery action from the user.
+        discoveryJobs.enqueueGitHubDiscovery(current.getUser());
+
         return CallbackResult.privateRepositoryAccess();
     }
 
@@ -172,6 +178,10 @@ public CallbackResult finishGitHubCallback(
             CryptoTokens.sha256(token),
             expiry
     );
+
+    // Initial sign-in starts repository discovery automatically. The
+    // discovery handler then queues the complete analysis pipeline.
+    discoveryJobs.enqueueGitHubDiscovery(identity.getUser());
 
     return CallbackResult.login(token, expiry);
 }

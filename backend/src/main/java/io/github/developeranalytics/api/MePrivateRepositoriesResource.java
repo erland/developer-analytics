@@ -8,6 +8,7 @@ import io.github.developeranalytics.domain.model.RepositoryVisibility;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
 import io.github.developeranalytics.service.job.RepositoryDiscoveryJobService;
+import io.github.developeranalytics.service.sync.RepositoryAnalysisOrchestrator;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
@@ -24,6 +25,7 @@ public class MePrivateRepositoriesResource {
     @Inject CurrentUserService currentUserService;
     @Inject SourceRepositoryRepository repositories;
     @Inject RepositoryDiscoveryJobService jobs;
+    @Inject RepositoryAnalysisOrchestrator analysis;
 
     @GET
     public List<Item> list(
@@ -45,9 +47,58 @@ public class MePrivateRepositoriesResource {
         CurrentUser current = currentUserService.requireCurrentUser(token);
         SourceRepository repository = requirePrivateRepository(
                 current.user().getId(), repositoryId);
-        if (selection.included()) repository.includeInAnalysis();
-        else repository.excludeFromAnalysis();
+        if (selection.included()) {
+            repository.includeInAnalysis();
+            analysis.enqueueRepository(current.user(), repository.getId());
+        } else {
+            repository.excludeFromAnalysis();
+        }
         return Item.from(repository);
+    }
+
+
+    @PUT
+    @Path("/selection")
+    @Transactional
+    public BulkSelectionResponse bulkSelect(
+            @CookieParam(AuthenticationService.SESSION_COOKIE) String token,
+            BulkSelection selection
+    ) {
+        CurrentUser current = currentUserService.requireCurrentUser(token);
+        if (selection == null) {
+            throw new BadRequestException("Selection is required");
+        }
+
+        String prefix = selection.prefix() == null
+                ? ""
+                : selection.prefix().trim().toLowerCase(java.util.Locale.ROOT);
+
+        List<SourceRepository> matched = repositories
+                .findPrivateForUser(current.user().getId())
+                .stream()
+                .filter(repository -> prefix.isBlank()
+                        || repository.getName().toLowerCase(java.util.Locale.ROOT).startsWith(prefix)
+                        || (repository.getFullName() != null
+                            && repository.getFullName().toLowerCase(java.util.Locale.ROOT).startsWith(prefix)))
+                .toList();
+
+        int analysisQueuedFor = 0;
+        for (SourceRepository repository : matched) {
+            if (selection.included()) {
+                repository.includeInAnalysis();
+                analysis.enqueueRepository(current.user(), repository.getId());
+                analysisQueuedFor++;
+            } else {
+                repository.excludeFromAnalysis();
+            }
+        }
+
+        return new BulkSelectionResponse(
+                matched.size(),
+                selection.included(),
+                prefix.isBlank() ? null : prefix,
+                analysisQueuedFor
+        );
     }
 
     @POST
@@ -85,6 +136,13 @@ public class MePrivateRepositoriesResource {
     }
 
     public record Selection(boolean included) {}
+    public record BulkSelection(boolean included, String prefix) {}
+    public record BulkSelectionResponse(
+            int repositoriesMatched,
+            boolean included,
+            String prefix,
+            int analysisQueuedFor
+    ) {}
     public record RefreshResponse(UUID jobId) {}
     public record Item(
             UUID id,

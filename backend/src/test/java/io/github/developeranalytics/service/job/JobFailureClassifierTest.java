@@ -25,13 +25,29 @@ class JobFailureClassifierTest {
     }
 
     @Test
-    void lostRepositoryPermissionIsTerminal() {
-        for (int status : new int[] {401, 403, 404}) {
-            var result = classifier.classify(
-                    new ProviderException("lost access", status)
-            );
-            assertFalse(result.retriable());
-            assertTrue(result.providerAccessLost());
-        }
+    void authenticationFailureIsGlobalAccessLoss() {
+        var result = classifier.classify(
+                new ProviderException("bad credential", 401)
+        );
+        assertFalse(result.retriable());
+        assertTrue(result.providerAccessLost());
+    }
+
+    @Test
+    void repositoryNotFoundDoesNotRevokeProviderAccess() {
+        var result = classifier.classify(
+                new ProviderException("repository missing", 404)
+        );
+        assertFalse(result.retriable());
+        assertFalse(result.providerAccessLost());
+    }
+
+    @Test
+    void forbiddenDoesNotRevokeEveryRepository() {
+        var result = classifier.classify(
+                new ProviderException("forbidden", 403)
+        );
+        assertTrue(result.retriable());
+        assertFalse(result.providerAccessLost());
     }
 }
