@@ -1,6 +1,5 @@
 package io.github.developeranalytics.persistence.repository;
 
-import io.github.developeranalytics.provider.ProviderContributorStatistics;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -17,7 +16,7 @@ public class RepositoryUserActivityWeekRepository {
     EntityManager entityManager;
 
     public void replace(UUID userId, UUID repositoryId,
-                        List<ProviderContributorStatistics.Week> weeks,
+                        List<WeekInput> weeks,
                         OffsetDateTime observedAt) {
         entityManager.createNativeQuery(
                 "delete from repository_user_activity_week where user_id=:userId and repository_id=:repositoryId")
@@ -25,7 +24,7 @@ public class RepositoryUserActivityWeekRepository {
                 .setParameter("repositoryId", repositoryId)
                 .executeUpdate();
 
-        for (ProviderContributorStatistics.Week week : weeks) {
+        for (WeekInput week : weeks) {
             entityManager.createNativeQuery(
                     "insert into repository_user_activity_week " +
                     "(user_id, repository_id, week_start, commits, additions, deletions, observed_at) " +
@@ -68,12 +67,19 @@ public class RepositoryUserActivityWeekRepository {
     private WeekRow row(Object[] row) {
         return new WeekRow(
                 (UUID) row[0],
-                (LocalDate) row[1],
+                toLocalDate(row[1]),
                 ((Number) row[2]).intValue(),
                 ((Number) row[3]).longValue(),
                 ((Number) row[4]).longValue());
     }
 
+    private LocalDate toLocalDate(Object value) {
+        if (value instanceof LocalDate date) return date;
+        if (value instanceof java.sql.Date date) return date.toLocalDate();
+        throw new IllegalStateException("Unsupported week date value: " + value);
+    }
+
+    public record WeekInput(LocalDate weekStart, int commits, long additions, long deletions) {}
     public record WeekRow(UUID repositoryId, LocalDate weekStart,
                           int commits, long additions, long deletions) {
         public long changedLines() { return additions + deletions; }
