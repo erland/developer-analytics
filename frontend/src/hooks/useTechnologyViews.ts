@@ -16,8 +16,10 @@ export type TechnologyView = {
   rationale: Record<string, unknown>
   timeline: Array<{
     month: string
+    commits: number
+    changedLines: number
+    lineStatisticsCommitCount: number
     projectCount: number
-    activityCount: number
   }>
   representativeProjects: Array<{
     repositoryId: string
@@ -36,39 +38,23 @@ type State =
   | { status: 'error'; data: null; error: string }
 
 export function useTechnologyViews(): State {
-  const [state, setState] = useState<State>({
-    status: 'loading',
-    data: null,
-    error: null,
-  })
+  const [state, setState] = useState<State>({ status: 'loading', data: null, error: null })
 
   useEffect(() => {
     const controller = new AbortController()
-
     async function load() {
       try {
         const response = await fetch('/api/me/technologies', {
-          credentials: 'include',
-          headers: { Accept: 'application/json' },
-          signal: controller.signal,
+          credentials: 'include', headers: { Accept: 'application/json' }, signal: controller.signal,
         })
-
-        if (!response.ok) {
-          throw new Error(`Technology request failed with HTTP ${response.status}`)
-        }
-
+        if (!response.ok) throw new Error(`Technology request failed with HTTP ${response.status}`)
         const data = (await response.json()) as TechnologyView[]
         setState({ status: 'ready', data, error: null })
       } catch (error) {
         if (controller.signal.aborted) return
-        setState({
-          status: 'error',
-          data: null,
-          error: error instanceof Error ? error.message : 'Unable to load technologies',
-        })
+        setState({ status: 'error', data: null, error: error instanceof Error ? error.message : 'Unable to load technologies' })
       }
     }
-
     void load()
     return () => controller.abort()
   }, [])

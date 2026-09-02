@@ -3,7 +3,6 @@ package io.github.developeranalytics.api;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -30,29 +29,23 @@ class MeTechnologiesResourceModelTest {
                 4,
                 "INCLUDES_PRIVATE",
                 Map.of("score", 88),
-                List.of(
-                        new MeTechnologiesResource.TimelinePoint(
-                                LocalDate.of(2026, 8, 1),
-                                3,
-                                12
-                        )
-                ),
-                List.of(
-                        new MeTechnologiesResource.RepresentativeProject(
-                                UUID.randomUUID(),
-                                "demo",
-                                "https://github.com/example/demo",
-                                "PUBLIC",
-                                "OWNED_BY_USER",
-                                OffsetDateTime.parse("2026-08-20T08:00:00Z"),
-                                3
-                        )
-                )
+                List.of(new MeTechnologiesResource.TimelinePoint("2026-08", 12, 360, 11, 3)),
+                List.of(new MeTechnologiesResource.RepresentativeProject(
+                        UUID.randomUUID(),
+                        "demo",
+                        "https://github.com/example/demo",
+                        "PUBLIC",
+                        "OWNED_BY_USER",
+                        OffsetDateTime.parse("2026-08-20T08:00:00Z"),
+                        3
+                ))
         );
 
         assertEquals("STRONG", entry.evidenceLevel());
         assertEquals(6, entry.projectCount());
-        assertEquals(12, entry.timeline().getFirst().activityCount());
+        assertEquals(12, entry.timeline().getFirst().commits());
+        assertEquals(360, entry.timeline().getFirst().changedLines());
+        assertEquals(3, entry.timeline().getFirst().projectCount());
         assertEquals("demo", entry.representativeProjects().getFirst().repositoryName());
     }
 }
