@@ -150,6 +150,16 @@ async function installApiFixtures(page: Page) {
       privateRepositoriesAuthorised: true,
       privateRepositoriesAuthorisedAt: '2026-08-01T00:00:00Z',
     })
+    if (path === '/api/me/private-repositories') return json(route, [
+      {
+        id: 'private-1',
+        name: 'private-mobile',
+        fullName: 'mobile-developer/private-mobile',
+        htmlUrl: null,
+        includedInAnalysis: true,
+        syncStatus: 'SYNCED',
+      },
+    ])
     if (path === '/api/me/external-clients') return json(route, [])
 
     if (path === '/api/me/reports/preview' && method === 'POST') return json(route, {
@@ -246,8 +256,8 @@ test('primary v1 flows remain usable at phone width without wide-table dependenc
   await expectNoHorizontalOverflow(page)
 
   await openSection(page, 'Privacy/data sources')
-  await expect(page.getByRole('heading', { name: 'GitHub App repository access' })).toBeVisible()
-  await expect(page.getByText(/install the Developer Analytics GitHub App/i)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Repository access' })).toBeVisible()
+  await expect(page.getByText(/To include a private repository in Developer Analytics/i)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Recover interrupted jobs' })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
