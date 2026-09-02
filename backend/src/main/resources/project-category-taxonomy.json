@@ -1,188 +1,23 @@
 {
   "categories": [
-    {
-      "key": "web-application",
-      "name": "Web application",
-      "description": "User-facing browser application",
-      "aliases": [
-        "web app",
-        "frontend application"
-      ],
-      "sortOrder": 10
-    },
-    {
-      "key": "mobile-application",
-      "name": "Mobile application",
-      "description": "Application targeting mobile or tv/mobile-family platforms",
-      "aliases": [
-        "mobile app",
-        "ios app",
-        "android app",
-        "tvos app"
-      ],
-      "sortOrder": 20
-    },
-    {
-      "key": "game",
-      "name": "Game",
-      "description": "Interactive game or game-related project",
-      "aliases": [
-        "video game"
-      ],
-      "sortOrder": 30
-    },
-    {
-      "key": "backend-service",
-      "name": "Backend service",
-      "description": "Server-side application or service",
-      "aliases": [
-        "backend",
-        "service"
-      ],
-      "sortOrder": 40
-    },
-    {
-      "key": "api",
-      "name": "API",
-      "description": "API-first service or API implementation",
-      "aliases": [
-        "web api",
-        "rest api"
-      ],
-      "sortOrder": 50
-    },
-    {
-      "key": "library",
-      "name": "Library",
-      "description": "Reusable software library or package",
-      "aliases": [
-        "package",
-        "sdk"
-      ],
-      "sortOrder": 60
-    },
-    {
-      "key": "framework",
-      "name": "Framework",
-      "description": "Reusable application or development framework",
-      "aliases": [],
-      "sortOrder": 70
-    },
-    {
-      "key": "developer-tooling",
-      "name": "Developer tooling",
-      "description": "Tooling primarily for software developers",
-      "aliases": [
-        "devtool",
-        "developer tool"
-      ],
-      "sortOrder": 80
-    },
-    {
-      "key": "automation",
-      "name": "Automation",
-      "description": "Automation scripts, bots or workflow automation",
-      "aliases": [],
-      "sortOrder": 90
-    },
-    {
-      "key": "infrastructure-platform",
-      "name": "Infrastructure/platform",
-      "description": "Infrastructure, platform or runtime engineering project",
-      "aliases": [
-        "platform",
-        "infrastructure"
-      ],
-      "sortOrder": 100
-    },
-    {
-      "key": "devops-ci-cd",
-      "name": "DevOps/CI/CD",
-      "description": "Build, delivery, release or operations automation",
-      "aliases": [
-        "devops",
-        "ci/cd"
-      ],
-      "sortOrder": 110
-    },
-    {
-      "key": "security",
-      "name": "Security",
-      "description": "Security-focused software or analysis",
-      "aliases": [],
-      "sortOrder": 120
-    },
-    {
-      "key": "observability",
-      "name": "Observability",
-      "description": "Logging, metrics, tracing or monitoring",
-      "aliases": [
-        "monitoring"
-      ],
-      "sortOrder": 130
-    },
-    {
-      "key": "data-database",
-      "name": "Data/database",
-      "description": "Data processing, storage or database project",
-      "aliases": [
-        "database",
-        "data"
-      ],
-      "sortOrder": 140
-    },
-    {
-      "key": "integration",
-      "name": "Integration",
-      "description": "System integration, adapters or connectors",
-      "aliases": [
-        "connector",
-        "adapter"
-      ],
-      "sortOrder": 150
-    },
-    {
-      "key": "ai-ml",
-      "name": "AI/ML",
-      "description": "Artificial intelligence or machine learning project",
-      "aliases": [
-        "ai",
-        "ml"
-      ],
-      "sortOrder": 160
-    },
-    {
-      "key": "architecture-modelling",
-      "name": "Architecture/modelling",
-      "description": "Architecture, modelling or design tooling/content",
-      "aliases": [
-        "architecture",
-        "modeling",
-        "modelling"
-      ],
-      "sortOrder": 170
-    },
-    {
-      "key": "documentation-education",
-      "name": "Documentation/education",
-      "description": "Documentation, teaching or educational content",
-      "aliases": [
-        "docs",
-        "education",
-        "tutorial"
-      ],
-      "sortOrder": 180
-    },
-    {
-      "key": "experiment-prototype",
-      "name": "Experiment/prototype",
-      "description": "Prototype, spike, proof of concept or experiment",
-      "aliases": [
-        "prototype",
-        "poc",
-        "experiment"
-      ],
-      "sortOrder": 190
-    }
+    {"key":"web-application","name":"Web application","description":"User-facing browser application","aliases":["web app","frontend application"],"sortOrder":10},
+    {"key":"mobile-application","name":"Mobile application","description":"Application targeting mobile or tv/mobile-family platforms","aliases":["mobile app","ios app","android app","tvos app"],"sortOrder":20},
+    {"key":"game","name":"Game","description":"Interactive game or game-related project","aliases":["video game"],"sortOrder":30},
+    {"key":"backend-service","name":"Backend service","description":"Server-side application or service","aliases":["backend","service"],"sortOrder":40},
+    {"key":"api","name":"API","description":"API-first service or API implementation","aliases":["web api","rest api"],"sortOrder":50},
+    {"key":"library","name":"Library","description":"Reusable software library or package","aliases":["package","sdk"],"sortOrder":60},
+    {"key":"framework","name":"Framework","description":"Reusable application or development framework","aliases":[],"sortOrder":70},
+    {"key":"developer-tooling","name":"Developer tooling","description":"Tooling primarily for software developers","aliases":["devtool","developer tool"],"sortOrder":80},
+    {"key":"automation","name":"Automation","description":"Automation scripts, bots or workflow automation","aliases":[],"sortOrder":90},
+    {"key":"infrastructure-platform","name":"Infrastructure/platform","description":"Infrastructure, platform or runtime engineering project","aliases":["platform","infrastructure"],"sortOrder":100},
+    {"key":"devops-ci-cd","name":"DevOps/CI/CD","description":"Build, delivery, release or operations automation","aliases":["devops","ci/cd"],"sortOrder":110},
+    {"key":"security","name":"Security","description":"Security-focused software or analysis","aliases":[],"sortOrder":120},
+    {"key":"observability","name":"Observability","description":"Logging, metrics, tracing or monitoring","aliases":["monitoring"],"sortOrder":130},
+    {"key":"data-database","name":"Data/database","description":"Data processing, storage or database project","aliases":["database","data"],"sortOrder":140},
+    {"key":"integration","name":"Integration","description":"System integration, adapters or connectors","aliases":["connector","adapter"],"sortOrder":150},
+    {"key":"ai-ml","name":"AI/ML","description":"Artificial intelligence or machine learning project","aliases":["ai","ml"],"sortOrder":160},
+    {"key":"architecture-modelling","name":"Architecture/modelling","description":"Architecture, modelling or design tooling/content","aliases":["architecture","modeling","modelling"],"sortOrder":170},
+    {"key":"documentation-education","name":"Documentation/education","description":"Documentation, books, writing, teaching or educational content","aliases":["docs","documentation","education","tutorial","book","writing","novel","manuscript"],"sortOrder":180},
+    {"key":"experiment-prototype","name":"Experiment/prototype","description":"Prototype, spike, proof of concept or experiment","aliases":["prototype","poc","experiment"],"sortOrder":190}
   ]
 }

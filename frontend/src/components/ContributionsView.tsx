@@ -1,3 +1,35 @@
 import { useContributions } from '../hooks/useContributions'
-export function ContributionsView({onOpenProject}:{onOpenProject:(id:string)=>void}){const x=useContributions();if(x.status==='loading')return <section className="dashboard-loading"><div className="loading-indicator"/><p>Loading contributions…</p></section>;if(x.status==='error')return <section className="dashboard-error"><h2>Contributions could not be loaded.</h2><p>{x.error}</p></section>;const d=x.data;return <><section className="metric-grid"><Metric l="Commits" v={d.commits}/><Metric l="Pull requests" v={d.pullRequests}/><Metric l="Reviews" v={d.reviews}/><Metric l="Issues" v={d.issues}/></section><section className="dashboard-section"><span className="card-kicker">Recent work</span><h2>Contributions</h2>{d.recent.length?<div className="project-list">{d.recent.map(i=><article className="project-row" key={`${i.type}-${i.id}`}><div><h3><button className="project-detail-link" type="button" onClick={()=>onOpenProject(i.repositoryId)}>{i.repositoryName}</button></h3><p>{i.type.toLowerCase().replaceAll('_',' ')} · {i.title||'Untitled contribution'}</p></div><span className="representative-date">{new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'numeric'}).format(new Date(i.occurredAt))}</span></article>)}</div>:<p className="empty-state">No contributions have been collected yet.</p>}</section></>}
-function Metric({l,v}:{l:string;v:number}){return <article className="metric-card"><span>{l}</span><strong>{new Intl.NumberFormat().format(v)}</strong></article>}
+
+export function ContributionsView({ onOpenProject }: { onOpenProject: (id: string) => void }) {
+  const state = useContributions()
+  if (state.status === 'loading') return <section className="dashboard-loading"><div className="loading-indicator"/><p>Loading contributions…</p></section>
+  if (state.status === 'error') return <section className="dashboard-error"><h2>Contributions could not be loaded.</h2><p>{state.error}</p></section>
+  const data = state.data
+  return <>
+    <section className="metric-grid">
+      <Metric label="Commits" value={data.commits}/>
+      <Metric label="Pull requests" value={data.pullRequests}/>
+      <Metric label="Reviews" value={data.reviews}/>
+      <Metric label="Issues" value={data.issues}/>
+    </section>
+    <section className="dashboard-section">
+      <span className="card-kicker">Recent work</span>
+      <h2>Recently active projects</h2>
+      {data.recentProjects.length ? <div className="project-list">
+        {data.recentProjects.map(project => <article className="project-row" key={project.repositoryId}>
+          <div>
+            <h3><button className="project-detail-link" type="button" onClick={() => onOpenProject(project.repositoryId)}>{project.repositoryName}</button></h3>
+            <p>{number(project.commitCount)} commits · {number(project.contributionCount)} total contributions</p>
+          </div>
+          <span className="representative-date">{date(project.lastActivityAt)}</span>
+        </article>)}
+      </div> : <p className="empty-state">No contributions have been collected yet.</p>}
+    </section>
+  </>
+}
+
+function Metric({ label, value }: { label: string; value: number }) {
+  return <article className="metric-card"><span>{label}</span><strong>{number(value)}</strong></article>
+}
+const number = (value: number) => new Intl.NumberFormat().format(value)
+const date = (value: string) => new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(value))

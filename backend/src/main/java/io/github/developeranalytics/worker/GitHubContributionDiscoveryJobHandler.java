@@ -2,6 +2,7 @@ package io.github.developeranalytics.worker;
 
 import io.github.developeranalytics.domain.job.BackgroundJob;
 import io.github.developeranalytics.domain.model.SourceRepository;
+import io.github.developeranalytics.persistence.repository.ContributionRepository;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
 import io.github.developeranalytics.service.discovery.GitHubContributionDiscoveryService;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -14,12 +15,11 @@ import java.util.UUID;
 public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandler {
 
     public static final String JOB_TYPE = "GITHUB_CONTRIBUTION_DISCOVERY";
+    private static final int INCREMENTAL_OVERLAP_DAYS = 3;
 
-    @Inject
-    SourceRepositoryRepository repositories;
-
-    @Inject
-    GitHubContributionDiscoveryService discovery;
+    @Inject SourceRepositoryRepository repositories;
+    @Inject ContributionRepository contributions;
+    @Inject GitHubContributionDiscoveryService discovery;
 
     @Override
     public String jobType() {
@@ -38,15 +38,17 @@ public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandl
         }
 
         SourceRepository repository = repositories.findByIdForUser(
-                UUID.fromString(repositoryId.toString()),
-                job.getUser().getId()
-        ).orElseThrow(() -> new IllegalStateException("Repository not found for job user"));
+                UUID.fromString(repositoryId.toString()), job.getUser().getId())
+                .orElseThrow(() -> new IllegalStateException("Repository not found for job user"));
 
-        // Scope v2 stores only contributions made by the authenticated user. Existing
-        // pre-v2 data may contain all repository commits, so the first v2 run is a full rebuild.
+        // A scope-version change still forces a complete rebuild. Normal refreshes start
+        // just before the latest stored commit to tolerate timestamp/force-push edge cases
+        // without repeatedly downloading a fixed 30-day window.
         OffsetDateTime since = repository.getContributionScopeVersion() < 2
                 ? null
-                : OffsetDateTime.now(java.time.ZoneOffset.UTC).minusDays(30);
+                : contributions.latestCommitAt(job.getUser().getId(), repository.getId())
+                        .map(latest -> latest.minusDays(INCREMENTAL_OVERLAP_DAYS))
+                        .orElse(null);
 
         discovery.discover(job.getUser(), repository, since);
     }

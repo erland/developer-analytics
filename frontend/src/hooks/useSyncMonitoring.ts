@@ -22,6 +22,7 @@ export type SyncJobOverview = {
   running: number
   completed: number
   failed: number
+  totalRepositories: number
   activeJobs: SyncJob[]
 }
 
@@ -53,18 +54,27 @@ const emptyJobs: SyncJobOverview = {
   running: 0,
   completed: 0,
   failed: 0,
+  totalRepositories: 0,
   activeJobs: [],
 }
 
 function normalizeJobs(value: unknown): SyncJobOverview {
   if (!value || typeof value !== 'object') return emptyJobs
   const jobs = value as Partial<SyncJobOverview>
+  const queued = typeof jobs.queued === 'number' ? jobs.queued : 0
+  const waiting = typeof jobs.waiting === 'number' ? jobs.waiting : 0
+  const running = typeof jobs.running === 'number' ? jobs.running : 0
+  const completed = typeof jobs.completed === 'number' ? jobs.completed : 0
+  const failed = typeof jobs.failed === 'number' ? jobs.failed : 0
   return {
-    queued: typeof jobs.queued === 'number' ? jobs.queued : 0,
-    waiting: typeof jobs.waiting === 'number' ? jobs.waiting : 0,
-    running: typeof jobs.running === 'number' ? jobs.running : 0,
-    completed: typeof jobs.completed === 'number' ? jobs.completed : 0,
-    failed: typeof jobs.failed === 'number' ? jobs.failed : 0,
+    queued,
+    waiting,
+    running,
+    completed,
+    failed,
+    totalRepositories: typeof jobs.totalRepositories === 'number'
+      ? jobs.totalRepositories
+      : queued + waiting + running + completed + failed,
     activeJobs: Array.isArray(jobs.activeJobs) ? jobs.activeJobs : [],
   }
 }

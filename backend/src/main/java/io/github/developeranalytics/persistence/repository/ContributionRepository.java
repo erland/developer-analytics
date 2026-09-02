@@ -5,6 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,6 +22,19 @@ public class ContributionRepository {
     public int deleteForRepository(UUID userId, UUID repositoryId) {
         return entityManager.createQuery("delete from Contribution c where c.user.id=:userId and c.repository.id=:repositoryId")
                 .setParameter("userId", userId).setParameter("repositoryId", repositoryId).executeUpdate();
+    }
+
+    public Optional<OffsetDateTime> latestCommitAt(UUID userId, UUID repositoryId) {
+        return entityManager.createQuery(
+                "select max(c.occurredAt) from Contribution c " +
+                "where c.user.id=:userId and c.repository.id=:repositoryId and c.type=:type",
+                OffsetDateTime.class)
+                .setParameter("userId", userId)
+                .setParameter("repositoryId", repositoryId)
+                .setParameter("type", Contribution.Type.COMMIT)
+                .getResultStream()
+                .filter(java.util.Objects::nonNull)
+                .findFirst();
     }
 
     public Optional<Contribution> findByProviderIdentity(
