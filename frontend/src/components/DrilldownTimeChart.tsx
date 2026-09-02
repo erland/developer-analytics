@@ -1,39 +1,38 @@
 import { useMemo, useState } from 'react'
 
+export type DrilldownMetric = 'lines' | 'commits'
+
 export type DrilldownMonthPoint = {
   month: string
-  value: number
+  commits: number
+  changedLines: number
+  lineStatisticsCommitCount?: number
   secondary?: string
 }
 
 type Props = {
   points: DrilldownMonthPoint[]
-  valueLabel: string
   emptyText: string
   initialLevel?: 'year' | 'month'
 }
 
-export function DrilldownTimeChart({
-  points,
-  valueLabel,
-  emptyText,
-  initialLevel = 'year',
-}: Props) {
+export function DrilldownTimeChart({ points, emptyText, initialLevel = 'year' }: Props) {
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
+  const [metric, setMetric] = useState<DrilldownMetric>('lines')
 
   const years = useMemo(() => {
-    const grouped = new Map<number, { value: number; months: number }>()
+    const grouped = new Map<number, { commits: number; changedLines: number; lineStatisticsCommitCount: number; months: number }>()
     for (const point of points) {
       const year = Number(point.month.slice(0, 4))
       if (!Number.isFinite(year)) continue
-      const current = grouped.get(year) ?? { value: 0, months: 0 }
-      current.value += point.value
+      const current = grouped.get(year) ?? { commits: 0, changedLines: 0, lineStatisticsCommitCount: 0, months: 0 }
+      current.commits += point.commits
+      current.changedLines += point.changedLines
+      current.lineStatisticsCommitCount += point.lineStatisticsCommitCount ?? 0
       current.months += 1
       grouped.set(year, current)
     }
-    return Array.from(grouped.entries())
-      .sort(([a], [b]) => a - b)
-      .map(([year, value]) => ({ year, ...value }))
+    return Array.from(grouped.entries()).sort(([a], [b]) => a - b).map(([year, value]) => ({ year, ...value }))
   }, [points])
 
   const monthlyPoints = selectedYear == null
@@ -41,12 +40,33 @@ export function DrilldownTimeChart({
     : points.filter(point => Number(point.month.slice(0, 4)) === selectedYear)
 
   const showYears = initialLevel === 'year' && selectedYear == null
-  const values = showYears ? years.map(point => point.value) : monthlyPoints.map(point => point.value)
-  const max = Math.max(1, ...values)
+  const selectedPoints = showYears ? years : monthlyPoints
+  const valueOf = (point: { commits: number; changedLines: number }) => metric === 'lines' ? point.changedLines : point.commits
+  const max = Math.max(1, ...selectedPoints.map(valueOf))
+  const commitCount = points.reduce((sum, point) => sum + point.commits, 0)
+  const lineStatisticsCommitCount = points.reduce((sum, point) => sum + (point.lineStatisticsCommitCount ?? 0), 0)
+  const lineCoverage = commitCount > 0 ? Math.round((lineStatisticsCommitCount / commitCount) * 100) : 0
 
   if (!points.length) return <p className="empty-state">{emptyText}</p>
 
   return <>
+    <div className="timeline-controls time-chart-controls">
+      <label>
+        <span>Measure</span>
+        <select value={metric} onChange={event => setMetric(event.target.value as DrilldownMetric)}>
+          <option value="lines">Changed lines</option>
+          <option value="commits">Commits</option>
+        </select>
+      </label>
+    </div>
+
+    {metric === 'lines' && lineCoverage < 100 ? (
+      <p className="timeline-coverage-note">
+        Changed-line activity uses additions + deletions where commit-level line statistics are available
+        ({lineStatisticsCommitCount.toLocaleString()} of {commitCount.toLocaleString()} commits, {lineCoverage}%).
+      </p>
+    ) : null}
+
     {selectedYear != null ? (
       <button className="text-button timeline-back" type="button" onClick={() => setSelectedYear(null)}>
         ← Back to years
@@ -60,7 +80,7 @@ export function DrilldownTimeChart({
             key={point.year}
             label={String(point.year)}
             secondary={`${point.months} active month${point.months === 1 ? '' : 's'}`}
-            value={point.value}
+            value={valueOf(point)}
             max={max}
             onClick={() => setSelectedYear(point.year)}
           />
@@ -70,7 +90,7 @@ export function DrilldownTimeChart({
             key={point.month}
             label={formatMonth(point.month)}
             secondary={point.secondary}
-            value={point.value}
+            value={valueOf(point)}
             max={max}
           />
         ))}
@@ -78,21 +98,15 @@ export function DrilldownTimeChart({
 
     <p className="time-chart-caption">
       {showYears
-        ? `Select a year to see ${valueLabel.toLowerCase()} by month.`
+        ? `Select a year to see ${metric === 'lines' ? 'changed lines' : 'commits'} by month.`
         : selectedYear != null
-          ? `${selectedYear} by month.`
-          : `${valueLabel} by month.`}
+          ? `${selectedYear} by month · ${metric === 'lines' ? 'changed lines' : 'commits'}.`
+          : `${metric === 'lines' ? 'Changed lines' : 'Commits'} by month.`}
     </p>
   </>
 }
 
-function TimeBar({
-  label,
-  secondary,
-  value,
-  max,
-  onClick,
-}: {
+function TimeBar({ label, secondary, value, max, onClick }: {
   label: string
   secondary?: string
   value: number
