@@ -54,8 +54,8 @@ public class GitHubWeeklyActivityService {
                 return false;
             }
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                StructuredLog.warn(LOG, "weekly_activity_statistics_unavailable", null,
-                        StructuredLog.fields("repositoryId", repository.getId(), "httpStatus", response.statusCode()));
+                LOG.warn(StructuredLog.format("weekly_activity_statistics_unavailable",
+                        StructuredLog.fields("repositoryId", repository.getId(), "httpStatus", response.statusCode())));
                 return false;
             }
 
