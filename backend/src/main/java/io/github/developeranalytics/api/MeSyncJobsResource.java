@@ -29,8 +29,7 @@ public class MeSyncJobsResource {
     ) {
         CurrentUser current = currentUserService.requireCurrentUser(sessionToken);
         UUID userId = current.user().getId();
-        List<BackgroundJob> recent = jobs.findRecentForUser(userId, limit);
-        return overview(userId, recent);
+        return overview(userId, jobs.findActiveForUser(userId), limit);
     }
 
     @GET
@@ -45,29 +44,56 @@ public class MeSyncJobsResource {
                 .toList();
     }
 
-    private JobOverview overview(UUID userId, List<BackgroundJob> recent) {
-        // The status cards describe repository analysis progress, not the truncated
-        // recent-job page. This keeps the total aligned with the repository inventory.
+    private JobOverview overview(UUID userId, List<BackgroundJob> activeJobs, int requestedLimit) {
         List<SourceRepository> repositoriesForAnalysis = repositories.findAllForUser(userId).stream()
                 .filter(SourceRepository::isIncludedInAnalysis)
                 .toList();
-        long queued = repositoriesForAnalysis.stream()
-                .filter(r -> r.getSyncStatus() == RepositorySyncStatus.QUEUED).count();
-        long waiting = repositoriesForAnalysis.stream()
-                .filter(r -> r.getSyncStatus() == RepositorySyncStatus.NOT_SYNCED).count();
-        long running = repositoriesForAnalysis.stream()
-                .filter(r -> r.getSyncStatus() == RepositorySyncStatus.SYNCING).count();
-        long completed = repositoriesForAnalysis.stream()
-                .filter(r -> r.getSyncStatus() == RepositorySyncStatus.SYNCED).count();
-        long failed = repositoriesForAnalysis.stream()
-                .filter(r -> r.getSyncStatus() == RepositorySyncStatus.FAILED
-                        || r.getSyncStatus() == RepositorySyncStatus.ACCESS_REVOKED).count();
 
-        List<JobSummary> active = recent.stream()
-                .filter(j -> Set.of("QUEUED", "WAITING", "RUNNING").contains(j.getStatus().name()))
-                .limit(25)
-                .map(j -> summary(userId, j))
+        Map<UUID, List<BackgroundJob>> activeByRepository = new HashMap<>();
+        for (BackgroundJob job : activeJobs) {
+            UUID repositoryId = repositoryId(job);
+            if (repositoryId != null) {
+                activeByRepository.computeIfAbsent(repositoryId, ignored -> new ArrayList<>()).add(job);
+            }
+        }
+
+        long queued = 0;
+        long waiting = 0;
+        long running = 0;
+        long completed = 0;
+        long failed = 0;
+
+        for (SourceRepository repository : repositoriesForAnalysis) {
+            List<BackgroundJob> repositoryJobs = activeByRepository.getOrDefault(repository.getId(), List.of());
+            if (repositoryJobs.stream().anyMatch(job -> job.getStatus().name().equals("RUNNING"))) {
+                running++;
+            } else if (repositoryJobs.stream().anyMatch(job -> job.getStatus().name().equals("WAITING"))) {
+                waiting++;
+            } else if (repositoryJobs.stream().anyMatch(job -> job.getStatus().name().equals("QUEUED"))) {
+                queued++;
+            } else if (repository.getSyncStatus() == RepositorySyncStatus.FAILED
+                    || repository.getSyncStatus() == RepositorySyncStatus.ACCESS_REVOKED) {
+                failed++;
+            } else if (repository.getSyncStatus() == RepositorySyncStatus.NOT_SYNCED) {
+                waiting++;
+            } else if (repository.getSyncStatus() == RepositorySyncStatus.QUEUED) {
+                queued++;
+            } else if (repository.getSyncStatus() == RepositorySyncStatus.SYNCING) {
+                running++;
+            } else {
+                completed++;
+            }
+        }
+
+        int displayLimit = Math.max(1, Math.min(requestedLimit, 25));
+        List<JobSummary> active = activeJobs.stream()
+                .sorted(Comparator
+                        .comparing((BackgroundJob job) -> !job.getStatus().name().equals("RUNNING"))
+                        .thenComparing(BackgroundJob::getCreatedAt))
+                .limit(displayLimit)
+                .map(job -> summary(userId, job))
                 .toList();
+
         return new JobOverview(queued, waiting, running, completed, failed,
                 repositoriesForAnalysis.size(), active);
     }
