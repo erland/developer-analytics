@@ -15,62 +15,41 @@ import java.util.List;
 
 @ApplicationScoped
 public class TechnologyCatalogueService {
-
-    @Inject
-    TechnologyCatalogueRepository repository;
-
-    @Inject
-    ObjectMapper objectMapper;
+    @Inject TechnologyCatalogueRepository repository;
+    @Inject ObjectMapper objectMapper;
 
     @Transactional
     public int seedBuiltInCatalogueIfEmpty() {
-        if (!repository.findActive().isEmpty()) {
-            return 0;
-        }
-
-        try (InputStream in = Thread.currentThread()
-                .getContextClassLoader()
+        try (InputStream in = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream("technology-catalogue.json")) {
-            if (in == null) {
-                throw new IllegalStateException("technology-catalogue.json not found");
-            }
-
+            if (in == null) throw new IllegalStateException("technology-catalogue.json not found");
             JsonNode root = objectMapper.readTree(in);
             int created = 0;
-
             for (JsonNode node : root.path("technologies")) {
+                String key = node.path("key").asText();
+                if (repository.findByKey(key).isPresent()) continue;
                 TechnologyCatalogueEntry entry = new TechnologyCatalogueEntry(
-                        node.path("key").asText(),
+                        key,
                         node.path("name").asText(),
                         TechnologyCategory.valueOf(node.path("category").asText()),
                         node.path("description").isMissingNode() ? null : node.path("description").asText(null),
                         node.path("homepageUrl").isMissingNode() ? null : node.path("homepageUrl").asText(null),
-                        strings(node.path("aliases")),
-                        strings(node.path("languages")),
-                        strings(node.path("files")),
-                        strings(node.path("manifests"))
-                );
+                        strings(node.path("aliases")), strings(node.path("languages")),
+                        strings(node.path("files")), strings(node.path("manifests")));
                 repository.persist(entry);
                 created++;
             }
-
             return created;
         } catch (Exception e) {
             throw new IllegalStateException("Unable to seed technology catalogue", e);
         }
     }
 
-    public List<TechnologyCatalogueEntry> activeCatalogue() {
-        return repository.findActive();
-    }
+    public List<TechnologyCatalogueEntry> activeCatalogue() { return repository.findActive(); }
 
     private List<String> strings(JsonNode array) {
         List<String> values = new ArrayList<>();
-        if (array.isArray()) {
-            for (JsonNode item : array) {
-                values.add(item.asText());
-            }
-        }
+        if (array.isArray()) for (JsonNode item : array) values.add(item.asText());
         return values;
     }
 }
