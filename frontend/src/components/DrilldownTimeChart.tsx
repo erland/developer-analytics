@@ -20,9 +20,16 @@ export function DrilldownTimeChart({ points, emptyText, initialLevel = 'year' }:
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
   const [metric, setMetric] = useState<DrilldownMetric>('lines')
 
+  const normalizedPoints = useMemo(() => points.map(point => ({
+    ...point,
+    commits: finite(point.commits),
+    changedLines: finite(point.changedLines),
+    lineStatisticsCommitCount: finite(point.lineStatisticsCommitCount ?? 0),
+  })), [points])
+
   const years = useMemo(() => {
     const grouped = new Map<number, { commits: number; changedLines: number; lineStatisticsCommitCount: number; months: number }>()
-    for (const point of points) {
+    for (const point of normalizedPoints) {
       const year = Number(point.month.slice(0, 4))
       if (!Number.isFinite(year)) continue
       const current = grouped.get(year) ?? { commits: 0, changedLines: 0, lineStatisticsCommitCount: 0, months: 0 }
@@ -33,21 +40,21 @@ export function DrilldownTimeChart({ points, emptyText, initialLevel = 'year' }:
       grouped.set(year, current)
     }
     return Array.from(grouped.entries()).sort(([a], [b]) => a - b).map(([year, value]) => ({ year, ...value }))
-  }, [points])
+  }, [normalizedPoints])
 
   const monthlyPoints = selectedYear == null
-    ? points
-    : points.filter(point => Number(point.month.slice(0, 4)) === selectedYear)
+    ? normalizedPoints
+    : normalizedPoints.filter(point => Number(point.month.slice(0, 4)) === selectedYear)
 
   const showYears = initialLevel === 'year' && selectedYear == null
   const selectedPoints = showYears ? years : monthlyPoints
   const valueOf = (point: { commits: number; changedLines: number }) => metric === 'lines' ? point.changedLines : point.commits
   const max = Math.max(1, ...selectedPoints.map(valueOf))
-  const commitCount = points.reduce((sum, point) => sum + point.commits, 0)
-  const lineStatisticsCommitCount = points.reduce((sum, point) => sum + (point.lineStatisticsCommitCount ?? 0), 0)
+  const commitCount = normalizedPoints.reduce((sum, point) => sum + point.commits, 0)
+  const lineStatisticsCommitCount = normalizedPoints.reduce((sum, point) => sum + (point.lineStatisticsCommitCount ?? 0), 0)
   const lineCoverage = commitCount > 0 ? Math.round((lineStatisticsCommitCount / commitCount) * 100) : 0
 
-  if (!points.length) return <p className="empty-state">{emptyText}</p>
+  if (!normalizedPoints.length) return <p className="empty-state">{emptyText}</p>
 
   return <>
     <div className="timeline-controls time-chart-controls">
@@ -62,7 +69,7 @@ export function DrilldownTimeChart({ points, emptyText, initialLevel = 'year' }:
 
     {metric === 'lines' && lineCoverage < 100 ? (
       <p className="timeline-coverage-note">
-        Changed-line activity uses additions + deletions where commit-level line statistics are available
+        Changed-line activity uses additions + deletions where line statistics are available
         ({lineStatisticsCommitCount.toLocaleString()} of {commitCount.toLocaleString()} commits, {lineCoverage}%).
       </p>
     ) : null}
@@ -128,6 +135,10 @@ function formatMonth(value: string) {
   const normalized = value.length === 7 ? `${value}-01` : value
   return new Intl.DateTimeFormat(undefined, { month: 'short', year: 'numeric' })
     .format(new Date(`${normalized}T00:00:00Z`))
+}
+
+function finite(value: number) {
+  return Number.isFinite(value) ? value : 0
 }
 
 const compact = (value: number) => new Intl.NumberFormat(undefined, {
