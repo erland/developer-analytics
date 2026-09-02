@@ -27,7 +27,12 @@ export type ProjectDetail = {
     firstActivityAt: string | null
     lastActivityAt: string | null
     excludedFromAiProfile: boolean
-    timeline: Array<{ month: string; commits: number }>
+    timeline: Array<{
+      month: string
+      commits: number
+      changedLines: number
+      lineStatisticsCommitCount: number
+    }>
   }
   technologies: Array<{ technologyKey: string; technologyName: string; strength: string }>
   categories: Array<{
@@ -60,11 +65,7 @@ type State =
   | { status: 'error'; data: null; error: string }
 
 export function useProjectDetail(repositoryId: string | null): State {
-  const [state, setState] = useState<State>({
-    status: 'idle',
-    data: null,
-    error: null,
-  })
+  const [state, setState] = useState<State>({ status: 'idle', data: null, error: null })
 
   useEffect(() => {
     if (!repositoryId) {
@@ -73,34 +74,21 @@ export function useProjectDetail(repositoryId: string | null): State {
     }
 
     const controller = new AbortController()
-
     async function load() {
       setState({ status: 'loading', data: null, error: null })
-
       try {
         const response = await fetch(`/api/me/projects/${repositoryId}`, {
-          credentials: 'include',
-          headers: { Accept: 'application/json' },
-          signal: controller.signal,
+          credentials: 'include', headers: { Accept: 'application/json' }, signal: controller.signal,
         })
-
-        if (!response.ok) {
-          throw new Error(`Project detail request failed with HTTP ${response.status}`)
-        }
-
+        if (!response.ok) throw new Error(`Project detail request failed with HTTP ${response.status}`)
         const raw = (await response.json()) as ProjectDetail
         const data: ProjectDetail = { ...raw, contributors: raw.contributors ?? { total: null, humans: null, bots: null, userCommits: null } }
         setState({ status: 'ready', data, error: null })
       } catch (error) {
         if (controller.signal.aborted) return
-        setState({
-          status: 'error',
-          data: null,
-          error: error instanceof Error ? error.message : 'Unable to load project',
-        })
+        setState({ status: 'error', data: null, error: error instanceof Error ? error.message : 'Unable to load project' })
       }
     }
-
     void load()
     return () => controller.abort()
   }, [repositoryId])
