@@ -484,9 +484,9 @@ if (url === '/api/me/reports/preview') {
     expect(
       await screen.findByText('Private repositories'),
     ).toBeInTheDocument()
-    expect(await screen.findByText('alice/private-app')).toBeInTheDocument()
-    expect(screen.getByLabelText('Include in analysis')).toBeChecked()
-    expect(screen.getByRole('button', { name: 'Refresh permissions' })).toBeInTheDocument()
+    expect(screen.getByText('Managed by your GitHub App installation')).toBeInTheDocument()
+    expect(screen.getByText(/install the GitHub App for that repository/i)).toBeInTheDocument()
+    expect(screen.queryByLabelText('Include in analysis')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Project types' }))
     expect(screen.getByRole('heading', { name: 'Project types', level: 1 })).toBeInTheDocument()

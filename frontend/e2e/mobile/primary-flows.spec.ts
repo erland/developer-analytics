@@ -256,8 +256,8 @@ test('primary v1 flows remain usable at phone width without wide-table dependenc
   await expectNoHorizontalOverflow(page)
 
   await openSection(page, 'Privacy/data sources')
-  await expect(page.getByText('mobile-developer/private-mobile')).toBeVisible()
-  await expect(page.getByRole('checkbox', { name: 'Include in analysis' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Repository access' })).toBeVisible()
+  await expect(page.getByText(/To include a private repository in Developer Analytics/i)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Recover interrupted jobs' })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 

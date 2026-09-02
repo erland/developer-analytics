@@ -153,11 +153,11 @@ public OffsetDateTime getLastSeenAt() { return lastSeenAt; }
         this.topics = topics == null ? new ArrayList<>() : new ArrayList<>(topics);
         this.ownerType = ownerType;
         this.ownershipRelation = ownershipRelation;
-        boolean firstDiscovery = this.discoveredAt == null;
         this.visibility = visibility;
-        if (firstDiscovery && visibility == RepositoryVisibility.PRIVATE) {
-            this.includedInAnalysis = false;
-        }
+        // GitHub App installation scope is the repository selection boundary.
+        // Every repository returned by GitHub is therefore included in analysis;
+        // Developer Analytics no longer maintains a second repository allow-list.
+        this.includedInAnalysis = true;
         this.fork = fork;
         this.archived = archived;
         this.lastActivityAt = lastActivityAt;

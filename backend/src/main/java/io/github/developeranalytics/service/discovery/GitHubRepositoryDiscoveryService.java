@@ -37,161 +37,151 @@ public class GitHubRepositoryDiscoveryService {
     @Inject
     ProviderConnectionRepository connections;
 
+    @Transactional
+    public DiscoveryResult discover(AppUser user) throws ProviderException {
+        ProviderAccessToken token = credentials.requireAccessToken(user.getId(), "github");
+        ProviderUser providerUser = github.fetchCurrentUser(token);
 
-@Transactional
-public DiscoveryResult discover(AppUser user) throws ProviderException {
-    ProviderAccessToken token = credentials.requireAccessToken(user.getId(), "github");
-    ProviderUser providerUser = github.fetchCurrentUser(token);
+        ProviderConnection connection = connections
+                .findForUserAndProvider(user.getId(), "github")
+                .orElse(null);
 
-    ProviderConnection connection = connections
-            .findForUserAndProvider(user.getId(), "github")
-            .orElse(null);
+        // Successfully resolving the authenticated GitHub user proves that the
+        // provider credential is valid again. Clear a stale connection ERROR here;
+        // each repository returned below is independently restored to SYNCED.
+        if (connection != null) {
+            connection.markValidated();
+        }
 
-    // Successfully resolving the authenticated GitHub user proves that the
-    // provider credential is valid again. Clear a stale connection ERROR here;
-    // each repository returned below is independently restored to SYNCED.
-    if (connection != null) {
-        connection.markValidated();
-    }
-
-    boolean privateRepositoriesAuthorised = connection != null
-            && connection.isPrivateRepositoryAccessAuthorised();
-
-    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
-    RepositorySyncRun run = new RepositorySyncRun(user, "github");
-    syncRuns.persist(run);
-    run.start(now);
-    StructuredLog.info(
-            LOG,
-            "repository_sync_started",
-            StructuredLog.fields(
-                    "syncId", run.getId(),
-                    "provider", "github"
-            )
-    );
-
-    int seen = 0;
-    int created = 0;
-    int updated = 0;
-    int pages = 0;
-    String cursor = null;
-
-    try {
-        do {
-            PagedResult<ProviderRepository> page = github.listRepositories(token, cursor);
-            pages++;
-
-            for (ProviderRepository providerRepository : page.items()) {
-                if (providerRepository.visibility() ==
-                        ProviderRepository.Visibility.PRIVATE &&
-                        !privateRepositoriesAuthorised) {
-                    // Never infer consent from token capabilities.
-                    // Private repositories are ignored until the user
-                    // explicitly authorises them in Developer Analytics.
-                    continue;
-                }
-
-                SourceRepository repository = repositories
-                        .findByExternalIdForUser(
-                                user.getId(),
-                                "github",
-                                providerRepository.externalRepositoryId())
-                        .orElse(null);
-
-                if (repository == null) {
-                    repository = new SourceRepository(
-                            user,
-                            "github",
-                            providerRepository.externalRepositoryId(),
-                            providerRepository.ownerLogin(),
-                            providerRepository.name()
-                    );
-                    repositories.persist(repository);
-                    created++;
-                } else {
-                    updated++;
-                }
-
-                repository.markSyncing();
-                repository.updateFromDiscovery(
-                        providerRepository.ownerExternalId(),
-                        providerRepository.ownerLogin(),
-                        providerRepository.name(),
-                        providerRepository.fullName(),
-                        providerRepository.htmlUrl(),
-                        providerRepository.description(),
-                        providerRepository.topics(),
-                        mapOwnerType(providerRepository.ownerType()),
-                        ownership(providerUser, providerRepository),
-                        mapVisibility(providerRepository.visibility()),
-                        providerRepository.fork(),
-                        providerRepository.archived(),
-                        latestActivity(providerRepository),
-                        now
-                );
-                repository.markSynced(now);
-                seen++;
-            }
-
-            ProviderRateLimit rate = page.rateLimit();
-            run.progress(
-                    seen,
-                    created,
-                    updated,
-                    pages,
-                    rate == null ? null : rate.remaining(),
-                    rate == null ? null : rate.resetAt()
-            );
-
-            cursor = page.nextCursor();
-        } while (cursor != null);
-
-        run.complete(OffsetDateTime.now(ZoneOffset.UTC));
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        RepositorySyncRun run = new RepositorySyncRun(user, "github");
+        syncRuns.persist(run);
+        run.start(now);
         StructuredLog.info(
                 LOG,
-                "repository_sync_completed",
-                StructuredLog.fields(
-                        "syncId", run.getId(),
-                        "provider", "github",
-                        "seen", seen,
-                        "created", created,
-                        "updated", updated,
-                        "pages", pages
-                )
-        );
-        return new DiscoveryResult(run.getId(), seen, created, updated, pages);
-    } catch (ProviderException e) {
-        StructuredLog.warn(
-                LOG,
-                "repository_sync_provider_error",
-                e,
-                StructuredLog.fields(
-                        "syncId", run.getId(),
-                        "provider", "github",
-                        "httpStatus", e.getStatusCode()
-                )
-        );
-        OffsetDateTime failedAt = OffsetDateTime.now(ZoneOffset.UTC);
-        if (e.getStatusCode() == 403 || e.getStatusCode() == 429) {
-            run.rateLimited(e.getMessage(), run.getRateLimitResetAt(), failedAt);
-        } else {
-            run.fail(e.getMessage(), failedAt);
-        }
-        throw e;
-    } catch (RuntimeException e) {
-        StructuredLog.warn(
-                LOG,
-                "repository_sync_runtime_error",
-                e,
+                "repository_sync_started",
                 StructuredLog.fields(
                         "syncId", run.getId(),
                         "provider", "github"
                 )
         );
-        run.fail(e.getMessage(), OffsetDateTime.now(ZoneOffset.UTC));
-        throw e;
+
+        int seen = 0;
+        int created = 0;
+        int updated = 0;
+        int pages = 0;
+        String cursor = null;
+
+        try {
+            do {
+                PagedResult<ProviderRepository> page = github.listRepositories(token, cursor);
+                pages++;
+
+                for (ProviderRepository providerRepository : page.items()) {
+                    // Repository selection belongs to the GitHub App installation.
+                    // If GitHub exposes a repository to this token, Developer Analytics
+                    // includes it regardless of public/private visibility.
+                    SourceRepository repository = repositories
+                            .findByExternalIdForUser(
+                                    user.getId(),
+                                    "github",
+                                    providerRepository.externalRepositoryId())
+                            .orElse(null);
+
+                    if (repository == null) {
+                        repository = new SourceRepository(
+                                user,
+                                "github",
+                                providerRepository.externalRepositoryId(),
+                                providerRepository.ownerLogin(),
+                                providerRepository.name()
+                        );
+                        repositories.persist(repository);
+                        created++;
+                    } else {
+                        updated++;
+                    }
+
+                    repository.markSyncing();
+                    repository.updateFromDiscovery(
+                            providerRepository.ownerExternalId(),
+                            providerRepository.ownerLogin(),
+                            providerRepository.name(),
+                            providerRepository.fullName(),
+                            providerRepository.htmlUrl(),
+                            providerRepository.description(),
+                            providerRepository.topics(),
+                            mapOwnerType(providerRepository.ownerType()),
+                            ownership(providerUser, providerRepository),
+                            mapVisibility(providerRepository.visibility()),
+                            providerRepository.fork(),
+                            providerRepository.archived(),
+                            latestActivity(providerRepository),
+                            now
+                    );
+                    repository.markSynced(now);
+                    seen++;
+                }
+
+                ProviderRateLimit rate = page.rateLimit();
+                run.progress(
+                        seen,
+                        created,
+                        updated,
+                        pages,
+                        rate == null ? null : rate.remaining(),
+                        rate == null ? null : rate.resetAt()
+                );
+
+                cursor = page.nextCursor();
+            } while (cursor != null);
+
+            run.complete(OffsetDateTime.now(ZoneOffset.UTC));
+            StructuredLog.info(
+                    LOG,
+                    "repository_sync_completed",
+                    StructuredLog.fields(
+                            "syncId", run.getId(),
+                            "provider", "github",
+                            "seen", seen,
+                            "created", created,
+                            "updated", updated,
+                            "pages", pages
+                    )
+            );
+            return new DiscoveryResult(run.getId(), seen, created, updated, pages);
+        } catch (ProviderException e) {
+            StructuredLog.warn(
+                    LOG,
+                    "repository_sync_provider_error",
+                    e,
+                    StructuredLog.fields(
+                            "syncId", run.getId(),
+                            "provider", "github",
+                            "httpStatus", e.getStatusCode()
+                    )
+            );
+            OffsetDateTime failedAt = OffsetDateTime.now(ZoneOffset.UTC);
+            if (e.getStatusCode() == 403 || e.getStatusCode() == 429) {
+                run.rateLimited(e.getMessage(), run.getRateLimitResetAt(), failedAt);
+            } else {
+                run.fail(e.getMessage(), failedAt);
+            }
+            throw e;
+        } catch (RuntimeException e) {
+            StructuredLog.warn(
+                    LOG,
+                    "repository_sync_runtime_error",
+                    e,
+                    StructuredLog.fields(
+                            "syncId", run.getId(),
+                            "provider", "github"
+                    )
+            );
+            run.fail(e.getMessage(), OffsetDateTime.now(ZoneOffset.UTC));
+            throw e;
+        }
     }
-}
 
     private RepositoryOwnershipRelation ownership(
             ProviderUser currentUser,
