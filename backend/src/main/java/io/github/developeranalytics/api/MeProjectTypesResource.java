@@ -19,83 +19,43 @@ import java.util.stream.Collectors;
 @Produces(MediaType.APPLICATION_JSON)
 public class MeProjectTypesResource {
 
-    @Inject
-    CurrentUserService currentUserService;
-
-    @Inject
-    ProjectTypeAnalyticsRepository analytics;
+    @Inject CurrentUserService currentUserService;
+    @Inject ProjectTypeAnalyticsRepository analytics;
 
     @GET
-    public List<Entry> list(
-            @CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken
-    ) {
-        CurrentUser current =
-                currentUserService.requireCurrentUser(sessionToken);
+    public List<Entry> list(@CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken) {
+        CurrentUser current = currentUserService.requireCurrentUser(sessionToken);
 
         Map<String, List<ProjectTypeAnalyticsRepository.CategoryActivityRow>> activity =
-                analytics.categoryActivity(current.user().getId())
-                        .stream()
-                        .collect(Collectors.groupingBy(
-                                ProjectTypeAnalyticsRepository.CategoryActivityRow::categoryKey
-                        ));
+                analytics.categoryActivity(current.user().getId()).stream()
+                        .collect(Collectors.groupingBy(ProjectTypeAnalyticsRepository.CategoryActivityRow::categoryKey));
 
-        return analytics.categorySummaries(current.user().getId())
-                .stream()
-                .map(summary -> toEntry(
-                        current.user().getId(),
-                        summary,
-                        activity.getOrDefault(
-                                summary.categoryKey(),
-                                List.of()
-                        )
-                ))
+        return analytics.categorySummaries(current.user().getId()).stream()
+                .map(summary -> toEntry(current.user().getId(), summary,
+                        activity.getOrDefault(summary.categoryKey(), List.of())))
                 .toList();
     }
 
-    private Entry toEntry(
-            UUID userId,
-            ProjectTypeAnalyticsRepository.CategorySummaryRow summary,
-            List<ProjectTypeAnalyticsRepository.CategoryActivityRow> rows
-    ) {
-        int totalActivity = rows.stream()
-                .mapToInt(
-                        ProjectTypeAnalyticsRepository.CategoryActivityRow::activityCount
-                )
-                .sum();
+    private Entry toEntry(UUID userId,
+                          ProjectTypeAnalyticsRepository.CategorySummaryRow summary,
+                          List<ProjectTypeAnalyticsRepository.CategoryActivityRow> rows) {
+        int totalCommits = rows.stream().mapToInt(ProjectTypeAnalyticsRepository.CategoryActivityRow::commitCount).sum();
 
         List<TimelinePoint> timeline = rows.stream()
                 .map(row -> new TimelinePoint(
-                        row.month(),
-                        row.activityCount(),
-                        row.activeProjectCount()
-                ))
+                        row.month(), row.commitCount(), row.changedLines(),
+                        row.lineStatisticsCommitCount(), row.activeProjectCount()))
                 .toList();
 
-        List<RepresentativeProject> representatives =
-                analytics.representativeProjects(
-                        userId,
-                        summary.categoryKey(),
-                        500
-                ).stream()
+        List<RepresentativeProject> representatives = analytics.representativeProjects(userId, summary.categoryKey(), 500)
+                .stream()
                 .map(project -> new RepresentativeProject(
-                        project.repositoryId(),
-                        project.repositoryName(),
-                        project.htmlUrl(),
-                        project.visibility(),
-                        project.ownershipRelation(),
-                        project.lastActivityAt(),
-                        project.contributionCount()
-                ))
+                        project.repositoryId(), project.repositoryName(), project.htmlUrl(), project.visibility(),
+                        project.ownershipRelation(), project.lastActivityAt(), project.contributionCount()))
                 .toList();
 
-        return new Entry(
-                summary.categoryKey(),
-                summary.categoryName(),
-                summary.projectCount(),
-                totalActivity,
-                timeline,
-                representatives
-        );
+        return new Entry(summary.categoryKey(), summary.categoryName(), summary.projectCount(),
+                totalCommits, timeline, representatives);
     }
 
     public record Entry(
@@ -109,7 +69,9 @@ public class MeProjectTypesResource {
 
     public record TimelinePoint(
             String month,
-            int activityCount,
+            int commits,
+            long changedLines,
+            int lineStatisticsCommitCount,
             int activeProjectCount
     ) {}
 
