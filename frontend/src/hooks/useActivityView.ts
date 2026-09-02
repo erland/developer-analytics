@@ -15,6 +15,7 @@ export type ActivityPeriodPoint = {
 
 export type ProjectPeriodActivity = {
   period: string
+  parentMonth?: string | null
   commits: number
   additions: number
   deletions: number
@@ -126,6 +127,7 @@ export function useActivityView(period: ActivityPeriod): State {
             technology: project.technology ?? 'Unclassified',
             monthlyActivity: (project.monthlyActivity ?? []).map(value => ({
               period: value.period ?? (value as { month?: string }).month ?? '',
+              parentMonth: value.parentMonth ?? null,
               commits: value.commits ?? 0,
               additions: value.additions ?? 0,
               deletions: value.deletions ?? 0,
@@ -134,6 +136,7 @@ export function useActivityView(period: ActivityPeriod): State {
             })),
             weeklyActivity: (project.weeklyActivity ?? []).map(value => ({
               period: value.period ?? '',
+              parentMonth: value.parentMonth ?? null,
               commits: value.commits ?? 0,
               additions: value.additions ?? 0,
               deletions: value.deletions ?? 0,
