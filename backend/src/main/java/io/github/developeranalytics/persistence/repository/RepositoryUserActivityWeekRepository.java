@@ -28,19 +28,21 @@ public class RepositoryUserActivityWeekRepository {
     }
 
     public List<WeekRow> findForUser(UUID userId){
-        return entityManager.createNativeQuery(
+        List<?> result = entityManager.createNativeQuery(
                 "select w.repository_id,w.week_start,w.commits,w.additions,w.deletions " +
                 "from repository_user_activity_week w join source_repository r on r.id=w.repository_id " +
-                "where w.user_id=:userId and r.user_id=:userId and r.included_in_analysis=true order by w.week_start",Object[].class)
-                .setParameter("userId",userId).getResultList().stream().map(this::row).toList();
+                "where w.user_id=:userId and r.user_id=:userId and r.included_in_analysis=true order by w.week_start")
+                .setParameter("userId",userId).getResultList();
+        return result.stream().map(value -> row((Object[]) value)).toList();
     }
 
     public List<WeekRow> findForRepository(UUID userId,UUID repositoryId){
-        return entityManager.createNativeQuery(
+        List<?> result = entityManager.createNativeQuery(
                 "select repository_id,week_start,commits,additions,deletions from repository_user_activity_week " +
-                "where user_id=:userId and repository_id=:repositoryId order by week_start",Object[].class)
+                "where user_id=:userId and repository_id=:repositoryId order by week_start")
                 .setParameter("userId",userId).setParameter("repositoryId",repositoryId)
-                .getResultList().stream().map(this::row).toList();
+                .getResultList();
+        return result.stream().map(value -> row((Object[]) value)).toList();
     }
 
     private WeekRow row(Object[] row){return new WeekRow((UUID)row[0],toLocalDate(row[1]),((Number)row[2]).intValue(),((Number)row[3]).longValue(),((Number)row[4]).longValue());}
