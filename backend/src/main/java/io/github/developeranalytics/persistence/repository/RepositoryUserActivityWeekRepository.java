@@ -1,0 +1,81 @@
+package io.github.developeranalytics.persistence.repository;
+
+import io.github.developeranalytics.provider.ProviderContributorStatistics;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+
+@ApplicationScoped
+public class RepositoryUserActivityWeekRepository {
+
+    @Inject
+    EntityManager entityManager;
+
+    public void replace(UUID userId, UUID repositoryId,
+                        List<ProviderContributorStatistics.Week> weeks,
+                        OffsetDateTime observedAt) {
+        entityManager.createNativeQuery(
+                "delete from repository_user_activity_week where user_id=:userId and repository_id=:repositoryId")
+                .setParameter("userId", userId)
+                .setParameter("repositoryId", repositoryId)
+                .executeUpdate();
+
+        for (ProviderContributorStatistics.Week week : weeks) {
+            entityManager.createNativeQuery(
+                    "insert into repository_user_activity_week " +
+                    "(user_id, repository_id, week_start, commits, additions, deletions, observed_at) " +
+                    "values (:userId, :repositoryId, :weekStart, :commits, :additions, :deletions, :observedAt)")
+                    .setParameter("userId", userId)
+                    .setParameter("repositoryId", repositoryId)
+                    .setParameter("weekStart", week.weekStart())
+                    .setParameter("commits", week.commits())
+                    .setParameter("additions", week.additions())
+                    .setParameter("deletions", week.deletions())
+                    .setParameter("observedAt", observedAt)
+                    .executeUpdate();
+        }
+    }
+
+    public List<WeekRow> findForUser(UUID userId) {
+        return entityManager.createNativeQuery(
+                "select repository_id, week_start, commits, additions, deletions " +
+                "from repository_user_activity_week where user_id=:userId order by week_start", Object[].class)
+                .setParameter("userId", userId)
+                .getResultList()
+                .stream()
+                .map(this::row)
+                .toList();
+    }
+
+    public List<WeekRow> findForRepository(UUID userId, UUID repositoryId) {
+        return entityManager.createNativeQuery(
+                "select repository_id, week_start, commits, additions, deletions " +
+                "from repository_user_activity_week where user_id=:userId and repository_id=:repositoryId order by week_start",
+                Object[].class)
+                .setParameter("userId", userId)
+                .setParameter("repositoryId", repositoryId)
+                .getResultList()
+                .stream()
+                .map(this::row)
+                .toList();
+    }
+
+    private WeekRow row(Object[] row) {
+        return new WeekRow(
+                (UUID) row[0],
+                (LocalDate) row[1],
+                ((Number) row[2]).intValue(),
+                ((Number) row[3]).longValue(),
+                ((Number) row[4]).longValue());
+    }
+
+    public record WeekRow(UUID repositoryId, LocalDate weekStart,
+                          int commits, long additions, long deletions) {
+        public long changedLines() { return additions + deletions; }
+    }
+}
