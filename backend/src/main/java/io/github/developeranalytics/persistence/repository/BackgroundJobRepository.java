@@ -17,33 +17,38 @@ public class BackgroundJobRepository {
         em.persist(job);
     }
 
-
-    public boolean existsActiveDeduplicatedJob(
-            java.util.UUID userId,
-            String deduplicationKey
-    ) {
+    public boolean existsActiveDeduplicatedJob(UUID userId, String deduplicationKey) {
         Long count = em.createQuery(
                 "select count(j) from BackgroundJob j " +
                 "where j.user.id=:userId and j.deduplicationKey=:key " +
-                "and j.status in (:queued, :waiting, :running)",
-                Long.class)
+                "and j.status in (:queued, :waiting, :running)", Long.class)
             .setParameter("userId", userId)
             .setParameter("key", deduplicationKey)
             .setParameter("queued", BackgroundJobStatus.QUEUED)
             .setParameter("waiting", BackgroundJobStatus.WAITING)
             .setParameter("running", BackgroundJobStatus.RUNNING)
             .getSingleResult();
-
         return count != null && count > 0;
     }
 
-
     public List<BackgroundJob> findRecentForUser(UUID userId, int limit) {
         return em.createQuery(
-                "select j from BackgroundJob j where j.user.id=:userId " +
-                "order by j.createdAt desc", BackgroundJob.class)
+                "select j from BackgroundJob j where j.user.id=:userId order by j.createdAt desc",
+                BackgroundJob.class)
             .setParameter("userId", userId)
             .setMaxResults(Math.max(1, Math.min(limit, 200)))
+            .getResultList();
+    }
+
+    public List<BackgroundJob> findActiveForUser(UUID userId) {
+        return em.createQuery(
+                "select j from BackgroundJob j where j.user.id=:userId " +
+                "and j.status in (:queued, :waiting, :running) order by j.createdAt asc",
+                BackgroundJob.class)
+            .setParameter("userId", userId)
+            .setParameter("queued", BackgroundJobStatus.QUEUED)
+            .setParameter("waiting", BackgroundJobStatus.WAITING)
+            .setParameter("running", BackgroundJobStatus.RUNNING)
             .getResultList();
     }
 
@@ -71,53 +76,37 @@ public class BackgroundJobRepository {
         return Optional.of(job);
     }
 
-@Transactional
-public int cancelProviderJobs(
-        UUID userId,
-        String provider,
-        OffsetDateTime now
-) {
-    return em.createNativeQuery(
-            "UPDATE background_job SET status='CANCELLED', " +
-            "completed_at=:now, locked_at=NULL, locked_by=NULL, " +
-            "last_error='Cancelled because provider was disconnected' " +
-            "WHERE user_id=:userId " +
-            "AND status IN ('QUEUED','WAITING') " +
-            "AND (payload->>'provider'=:provider " +
-            "OR deduplication_key LIKE :providerPrefix)"
-    )
-    .setParameter("now", now)
-    .setParameter("userId", userId)
-    .setParameter("provider", provider)
-    .setParameter("providerPrefix", provider + ":%")
-    .executeUpdate();
-}
-
-
-@Transactional
-public int recoverStaleRunningJobs(
-        OffsetDateTime lockedBefore,
-        OffsetDateTime nextExecutionAt
-) {
-    @SuppressWarnings("unchecked")
-    List<UUID> ids = em.createNativeQuery(
-            "SELECT id FROM background_job " +
-            "WHERE status='RUNNING' AND locked_at < :lockedBefore " +
-            "FOR UPDATE SKIP LOCKED"
-    )
-    .setParameter("lockedBefore", lockedBefore)
-    .getResultList();
-
-    int recovered = 0;
-    for (UUID id : ids) {
-        BackgroundJob job = em.find(BackgroundJob.class, id);
-        if (job != null && job.getStatus() == BackgroundJobStatus.RUNNING) {
-            job.recoverInterrupted(nextExecutionAt);
-            recovered++;
-        }
+    @Transactional
+    public int cancelProviderJobs(UUID userId, String provider, OffsetDateTime now) {
+        return em.createNativeQuery(
+                "UPDATE background_job SET status='CANCELLED', completed_at=:now, " +
+                "locked_at=NULL, locked_by=NULL, last_error='Cancelled because provider was disconnected' " +
+                "WHERE user_id=:userId AND status IN ('QUEUED','WAITING') " +
+                "AND (payload->>'provider'=:provider OR deduplication_key LIKE :providerPrefix)")
+            .setParameter("now", now)
+            .setParameter("userId", userId)
+            .setParameter("provider", provider)
+            .setParameter("providerPrefix", provider + ":%")
+            .executeUpdate();
     }
-    em.flush();
-    return recovered;
-}
 
+    @Transactional
+    public int recoverStaleRunningJobs(OffsetDateTime lockedBefore, OffsetDateTime nextExecutionAt) {
+        @SuppressWarnings("unchecked")
+        List<UUID> ids = em.createNativeQuery(
+                "SELECT id FROM background_job WHERE status='RUNNING' AND locked_at < :lockedBefore " +
+                "FOR UPDATE SKIP LOCKED")
+            .setParameter("lockedBefore", lockedBefore)
+            .getResultList();
+        int recovered = 0;
+        for (UUID id : ids) {
+            BackgroundJob job = em.find(BackgroundJob.class, id);
+            if (job != null && job.getStatus() == BackgroundJobStatus.RUNNING) {
+                job.recoverInterrupted(nextExecutionAt);
+                recovered++;
+            }
+        }
+        em.flush();
+        return recovered;
+    }
 }
