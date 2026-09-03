@@ -76,16 +76,16 @@ public class MeActivityResource {
             UUID repositoryId = (UUID) row[1];
             String repositoryName = (String) row[2];
             repositoryNames.put(repositoryId, repositoryName);
-            YearMonth month = YearMonth.from(occurredAt);
-            LocalDate week = occurredAt.toLocalDate().minusDays(occurredAt.getDayOfWeek().getValue() % 7L);
+            YearMonth activityMonth = YearMonth.from(occurredAt);
+            LocalDate weekStart = occurredAt.toLocalDate().minusDays(occurredAt.getDayOfWeek().getValue() - 1L);
             accumulateCommit(years.computeIfAbsent(occurredAt.getYear(), ignored -> new PeriodAccumulator()), repositoryId, repositoryName);
-            accumulateCommit(months.computeIfAbsent(month, ignored -> new PeriodAccumulator()), repositoryId, repositoryName);
-            accumulateCommit(weeks.computeIfAbsent(week, ignored -> new PeriodAccumulator()), repositoryId, repositoryName);
+            accumulateCommit(months.computeIfAbsent(activityMonth, ignored -> new PeriodAccumulator()), repositoryId, repositoryName);
+            accumulateCommit(weeks.computeIfAbsent(weekStart, ignored -> new PeriodAccumulator()), repositoryId, repositoryName);
             accumulateCommit(projectMonths.computeIfAbsent(repositoryId, ignored -> new TreeMap<>())
-                    .computeIfAbsent(month, ignored -> new PeriodAccumulator()), repositoryId, repositoryName);
+                    .computeIfAbsent(activityMonth, ignored -> new PeriodAccumulator()), repositoryId, repositoryName);
             accumulateCommit(projectMonthWeeks.computeIfAbsent(repositoryId, ignored -> new TreeMap<>())
-                    .computeIfAbsent(month, ignored -> new TreeMap<>())
-                    .computeIfAbsent(week, ignored -> new PeriodAccumulator()), repositoryId, repositoryName);
+                    .computeIfAbsent(activityMonth, ignored -> new TreeMap<>())
+                    .computeIfAbsent(weekStart, ignored -> new PeriodAccumulator()), repositoryId, repositoryName);
             if (first == null || occurredAt.isBefore(first)) first = occurredAt;
             if (last == null || occurredAt.isAfter(last)) last = occurredAt;
         }
@@ -95,25 +95,25 @@ public class MeActivityResource {
         long deletions = 0;
         long measuredCommits = 0;
         for (RepositoryUserActivityWeekRepository.WeekRow row : weeklyActivity.findForUser(userId)) {
-            LocalDate week = row.weekStart();
-            if (fromDate != null && week.isBefore(fromDate.toLocalDate())) continue;
-            if (toDate != null && !week.isBefore(toDate.toLocalDate())) continue;
+            LocalDate weekStart = row.weekStart();
+            if (fromDate != null && weekStart.isBefore(fromDate.toLocalDate())) continue;
+            if (toDate != null && !weekStart.isBefore(toDate.toLocalDate())) continue;
             UUID repositoryId = row.repositoryId();
             if (!matchingRepositoryIds.contains(repositoryId)) continue;
             String repositoryName = repositoryNames.getOrDefault(repositoryId, repositoryName(userId, repositoryId));
-            YearMonth month = YearMonth.from(week);
+            YearMonth activityMonth = YearMonth.from(weekStart);
             lineStatisticsCommitCount += row.commits();
             measuredCommits += row.commits();
             additions += row.additions();
             deletions += row.deletions();
-            accumulateLines(years.computeIfAbsent(week.getYear(), ignored -> new PeriodAccumulator()), repositoryId, repositoryName, row);
-            accumulateLines(months.computeIfAbsent(month, ignored -> new PeriodAccumulator()), repositoryId, repositoryName, row);
-            accumulateLines(weeks.computeIfAbsent(week, ignored -> new PeriodAccumulator()), repositoryId, repositoryName, row);
+            accumulateLines(years.computeIfAbsent(weekStart.getYear(), ignored -> new PeriodAccumulator()), repositoryId, repositoryName, row);
+            accumulateLines(months.computeIfAbsent(activityMonth, ignored -> new PeriodAccumulator()), repositoryId, repositoryName, row);
+            accumulateLines(weeks.computeIfAbsent(weekStart, ignored -> new PeriodAccumulator()), repositoryId, repositoryName, row);
             accumulateLines(projectMonths.computeIfAbsent(repositoryId, ignored -> new TreeMap<>())
-                    .computeIfAbsent(month, ignored -> new PeriodAccumulator()), repositoryId, repositoryName, row);
+                    .computeIfAbsent(activityMonth, ignored -> new PeriodAccumulator()), repositoryId, repositoryName, row);
             accumulateLines(projectMonthWeeks.computeIfAbsent(repositoryId, ignored -> new TreeMap<>())
-                    .computeIfAbsent(month, ignored -> new TreeMap<>())
-                    .computeIfAbsent(week, ignored -> new PeriodAccumulator()), repositoryId, repositoryName, row);
+                    .computeIfAbsent(activityMonth, ignored -> new TreeMap<>())
+                    .computeIfAbsent(weekStart, ignored -> new PeriodAccumulator()), repositoryId, repositoryName, row);
         }
 
         double average = measuredCommits > 0 ? (double) (additions + deletions) / measuredCommits : 0.0;
