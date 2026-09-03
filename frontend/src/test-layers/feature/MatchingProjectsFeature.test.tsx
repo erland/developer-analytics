@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createAnalysisScope } from '../../analysis/AnalysisScope'
@@ -111,13 +111,15 @@ describe('MatchingProjects', () => {
     expect(params.get('year')).toBe('2025')
     expect(screen.getByRole('heading', { name: 'Project detail repo-1' })).toBeInTheDocument()
 
-    await act(async () => {
+    act(() => {
       window.history.back()
-      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    await waitFor(() => {
+      expect(new URLSearchParams(window.location.search).get('project')).toBeNull()
     })
 
     params = new URLSearchParams(window.location.search)
-    expect(params.get('project')).toBeNull()
     expect(params.get('technology')).toBe('java')
     expect(params.get('year')).toBe('2025')
     expect(screen.getByRole('heading', { name: 'Projects matching this selection' })).toBeInTheDocument()

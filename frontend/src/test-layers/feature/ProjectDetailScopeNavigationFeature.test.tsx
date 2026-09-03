@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useProjectDetailNavigation } from '../../hooks/useProjectDetailNavigation'
 
@@ -19,13 +19,15 @@ describe('project detail scope navigation', () => {
     expect(params.get('year')).toBe('2025')
     expect(result.current.selectedProjectId).toBe('repo-1')
 
-    await act(async () => {
+    act(() => {
       window.history.back()
-      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    await waitFor(() => {
+      expect(new URLSearchParams(window.location.search).get('project')).toBeNull()
     })
 
     params = new URLSearchParams(window.location.search)
-    expect(params.get('project')).toBeNull()
     expect(params.get('technology')).toBe('java')
     expect(params.get('projectType')).toBe('backend')
     expect(params.get('year')).toBe('2025')

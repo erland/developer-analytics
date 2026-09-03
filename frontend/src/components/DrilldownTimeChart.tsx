@@ -156,8 +156,10 @@ function TimeBar({ label, secondary, value, max, onClick, active = false }: {
     <span className="bar-value">{compact(value)}</span>
   </>
 
+  const accessibleLabel = [label, secondary, compact(value)].filter(Boolean).join(' · ')
+
   return onClick
-    ? <button type="button" className={`bar-row bar-row-button${active ? ' active' : ''}`} aria-pressed={active || undefined} onClick={onClick}>{content}</button>
+    ? <button type="button" className={`bar-row bar-row-button${active ? ' active' : ''}`} aria-label={accessibleLabel} aria-pressed={active || undefined} onClick={onClick}>{content}</button>
     : <div className="bar-row">{content}</div>
 }
 

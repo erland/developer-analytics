@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ContributionsView } from '../../components/ContributionsView'
@@ -148,7 +148,9 @@ describe('Contributions AnalysisScope filtering', () => {
     window.history.pushState(null, '', '/contributions?technology=typescript')
     window.dispatchEvent(new PopStateEvent('popstate'))
 
-    expect(screen.getByLabelText('Technology')).toHaveValue('typescript')
+    await waitFor(() => {
+      expect(screen.getByLabelText('Technology')).toHaveValue('typescript')
+    })
     expect(mocks.scopeSpy).toHaveBeenLastCalledWith(expect.objectContaining({ technologies: ['typescript'] }))
   })
 

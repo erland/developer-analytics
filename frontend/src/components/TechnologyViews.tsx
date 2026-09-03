@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { createAnalysisScope, type AnalysisScope } from '../analysis/AnalysisScope'
 import { nonEmptyActivityPeriods } from '../analysis/AnalysisTimeline'
 import { type TechnologyView, useTechnologyViews } from '../hooks/useTechnologyViews'
@@ -12,11 +12,12 @@ import { MatchingProjects } from './MatchingProjects'
 export function TechnologyViews() {
   const technologies = useTechnologyViews()
   const { scope, pushScope, replaceScope } = useAnalysisScope()
+  const defaultSelectionInitialized = useRef(false)
 
   const selected = useMemo(() => {
     if (technologies.status !== 'ready') return null
     const selectedKey = scope.technologies[0]
-    if (!selectedKey) return technologies.data[0] ?? null
+    if (!selectedKey) return defaultSelectionInitialized.current ? null : technologies.data[0] ?? null
     return technologies.data.find((item) => item.technologyKey === selectedKey) ?? technologies.data[0] ?? null
   }, [scope.technologies, technologies])
 
@@ -33,10 +34,19 @@ export function TechnologyViews() {
     if (technologies.status !== 'ready' || technologies.data.length === 0) return
 
     const requestedKey = scope.technologies[0]
-    if (!requestedKey) return
+    const requestedExists = requestedKey
+      ? technologies.data.some((item) => item.technologyKey === requestedKey)
+      : false
 
-    const requestedExists = technologies.data.some((item) => item.technologyKey === requestedKey)
-    if (!requestedExists) {
+    if (!defaultSelectionInitialized.current) {
+      defaultSelectionInitialized.current = true
+      if (!requestedKey || !requestedExists) {
+        replaceScope(createAnalysisScope({ ...scope, technologies: [technologies.data[0].technologyKey] }))
+      }
+      return
+    }
+
+    if (requestedKey && !requestedExists) {
       replaceScope(createAnalysisScope({ ...scope, technologies: [technologies.data[0].technologyKey] }))
     }
   }, [replaceScope, scope, technologies])

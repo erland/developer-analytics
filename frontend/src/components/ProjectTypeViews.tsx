@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { createAnalysisScope, type AnalysisScope } from '../analysis/AnalysisScope'
 import { nonEmptyActivityPeriods } from '../analysis/AnalysisTimeline'
 import { type ProjectTypeView, useProjectTypes } from '../hooks/useProjectTypes'
@@ -11,11 +11,12 @@ import { MatchingProjects } from './MatchingProjects'
 export function ProjectTypeViews() {
   const projectTypes = useProjectTypes()
   const { scope, pushScope, replaceScope } = useAnalysisScope()
+  const defaultSelectionInitialized = useRef(false)
 
   const selected = useMemo(() => {
     if (projectTypes.status !== 'ready') return null
     const selectedKey = scope.projectTypes[0]
-    if (!selectedKey) return projectTypes.data[0] ?? null
+    if (!selectedKey) return defaultSelectionInitialized.current ? null : projectTypes.data[0] ?? null
     return projectTypes.data.find((item) => item.categoryKey === selectedKey) ?? projectTypes.data[0] ?? null
   }, [projectTypes, scope.projectTypes])
 
@@ -32,10 +33,19 @@ export function ProjectTypeViews() {
     if (projectTypes.status !== 'ready' || projectTypes.data.length === 0) return
 
     const requestedKey = scope.projectTypes[0]
-    if (!requestedKey) return
+    const requestedExists = requestedKey
+      ? projectTypes.data.some((item) => item.categoryKey === requestedKey)
+      : false
 
-    const requestedExists = projectTypes.data.some((item) => item.categoryKey === requestedKey)
-    if (!requestedExists) {
+    if (!defaultSelectionInitialized.current) {
+      defaultSelectionInitialized.current = true
+      if (!requestedKey || !requestedExists) {
+        replaceScope(createAnalysisScope({ ...scope, projectTypes: [projectTypes.data[0].categoryKey] }))
+      }
+      return
+    }
+
+    if (requestedKey && !requestedExists) {
       replaceScope(createAnalysisScope({ ...scope, projectTypes: [projectTypes.data[0].categoryKey] }))
     }
   }, [projectTypes, replaceScope, scope])
