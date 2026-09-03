@@ -271,7 +271,7 @@ test('primary v1 flows remain usable at phone width without wide-table dependenc
   await expectNoHorizontalOverflow(page)
 
   await openSection(page, 'Projects')
-  await expect(page.locator('.inventory-filters')).toBeVisible()
+  await expect(page.locator('.project-scope-filters')).toBeVisible()
   await expect(page.getByRole('textbox').first()).toBeVisible()
   await expect(page.getByText('mobile-dashboard').first()).toBeVisible()
   await expect(page.locator('table')).toHaveCount(0)
