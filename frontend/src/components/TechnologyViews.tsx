@@ -33,10 +33,9 @@ export function TechnologyViews() {
     if (technologies.status !== 'ready' || technologies.data.length === 0) return
 
     const requestedKey = scope.technologies[0]
-    const requestedExists = requestedKey
-      ? technologies.data.some((item) => item.technologyKey === requestedKey)
-      : false
+    if (!requestedKey) return
 
+    const requestedExists = technologies.data.some((item) => item.technologyKey === requestedKey)
     if (!requestedExists) {
       replaceScope(createAnalysisScope({ ...scope, technologies: [technologies.data[0].technologyKey] }))
     }
