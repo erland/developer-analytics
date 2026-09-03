@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createAnalysisScope, type AnalysisScope } from '../analysis/AnalysisScope'
 import { nonEmptyActivityPeriods } from '../analysis/AnalysisTimeline'
 import { type ProjectTypeView, useProjectTypes } from '../hooks/useProjectTypes'
@@ -11,12 +11,12 @@ import { MatchingProjects } from './MatchingProjects'
 export function ProjectTypeViews() {
   const projectTypes = useProjectTypes()
   const { scope, pushScope, replaceScope } = useAnalysisScope()
-  const defaultSelectionInitialized = useRef(false)
+  const [defaultSelectionInitialized, setDefaultSelectionInitialized] = useState(false)
 
   const selected = useMemo(() => {
     if (projectTypes.status !== 'ready') return null
     const selectedKey = scope.projectTypes[0]
-    if (!selectedKey) return defaultSelectionInitialized.current ? null : projectTypes.data[0] ?? null
+    if (!selectedKey) return null
     return projectTypes.data.find((item) => item.categoryKey === selectedKey) ?? projectTypes.data[0] ?? null
   }, [projectTypes, scope.projectTypes])
 
@@ -37,8 +37,8 @@ export function ProjectTypeViews() {
       ? projectTypes.data.some((item) => item.categoryKey === requestedKey)
       : false
 
-    if (!defaultSelectionInitialized.current) {
-      defaultSelectionInitialized.current = true
+    if (!defaultSelectionInitialized) {
+      setDefaultSelectionInitialized(true)
       if (!requestedKey || !requestedExists) {
         replaceScope(createAnalysisScope({ ...scope, projectTypes: [projectTypes.data[0].categoryKey] }))
       }
@@ -48,7 +48,7 @@ export function ProjectTypeViews() {
     if (requestedKey && !requestedExists) {
       replaceScope(createAnalysisScope({ ...scope, projectTypes: [projectTypes.data[0].categoryKey] }))
     }
-  }, [projectTypes, replaceScope, scope])
+  }, [defaultSelectionInitialized, projectTypes, replaceScope, scope])
 
   if (projectTypes.status === 'loading') return <section className="dashboard-loading" aria-live="polite"><div className="loading-indicator" aria-hidden="true" /><p>Loading project types…</p></section>
   if (projectTypes.status === 'error') return <section className="dashboard-error" role="alert"><h2>Project type data could not be loaded.</h2><p>{projectTypes.error}</p></section>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createAnalysisScope, type AnalysisScope } from '../analysis/AnalysisScope'
 import { nonEmptyActivityPeriods } from '../analysis/AnalysisTimeline'
 import { type TechnologyView, useTechnologyViews } from '../hooks/useTechnologyViews'
@@ -12,12 +12,12 @@ import { MatchingProjects } from './MatchingProjects'
 export function TechnologyViews() {
   const technologies = useTechnologyViews()
   const { scope, pushScope, replaceScope } = useAnalysisScope()
-  const defaultSelectionInitialized = useRef(false)
+  const [defaultSelectionInitialized, setDefaultSelectionInitialized] = useState(false)
 
   const selected = useMemo(() => {
     if (technologies.status !== 'ready') return null
     const selectedKey = scope.technologies[0]
-    if (!selectedKey) return defaultSelectionInitialized.current ? null : technologies.data[0] ?? null
+    if (!selectedKey) return null
     return technologies.data.find((item) => item.technologyKey === selectedKey) ?? technologies.data[0] ?? null
   }, [scope.technologies, technologies])
 
@@ -38,8 +38,8 @@ export function TechnologyViews() {
       ? technologies.data.some((item) => item.technologyKey === requestedKey)
       : false
 
-    if (!defaultSelectionInitialized.current) {
-      defaultSelectionInitialized.current = true
+    if (!defaultSelectionInitialized) {
+      setDefaultSelectionInitialized(true)
       if (!requestedKey || !requestedExists) {
         replaceScope(createAnalysisScope({ ...scope, technologies: [technologies.data[0].technologyKey] }))
       }
@@ -49,7 +49,7 @@ export function TechnologyViews() {
     if (requestedKey && !requestedExists) {
       replaceScope(createAnalysisScope({ ...scope, technologies: [technologies.data[0].technologyKey] }))
     }
-  }, [replaceScope, scope, technologies])
+  }, [defaultSelectionInitialized, replaceScope, scope, technologies])
 
   if (technologies.status === 'loading') return <section className="dashboard-loading" aria-live="polite"><div className="loading-indicator" aria-hidden="true" /><p>Loading technologies…</p></section>
   if (technologies.status === 'error') return <section className="dashboard-error" role="alert"><h2>Technology data could not be loaded.</h2><p>{technologies.error}</p></section>
@@ -112,7 +112,7 @@ function TechnologyDetail({
             ...scope,
             from: undefined,
             to: undefined,
-            year,
+            year;
             month: undefined,
             week: undefined,
           }))}
