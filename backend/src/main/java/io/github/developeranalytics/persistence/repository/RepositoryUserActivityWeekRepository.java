@@ -27,6 +27,31 @@ public class RepositoryUserActivityWeekRepository {
         }
     }
 
+
+    public List<UUID> findActiveRepositoryIds(UUID userId, LocalDate from, LocalDate to) {
+        StringBuilder sql = new StringBuilder(
+                "select distinct w.repository_id from repository_user_activity_week w " +
+                "join source_repository r on r.id=w.repository_id " +
+                "where w.user_id=:userId and r.user_id=:userId and r.included_in_analysis=true ");
+        if (from != null) {
+            // A weekly bucket overlaps the requested range when its six-day tail
+            // reaches the lower bound.
+            sql.append("and (w.week_start + 6) >= :from ");
+        }
+        if (to != null) {
+            sql.append("and w.week_start <= :to ");
+        }
+
+        var query = entityManager.createNativeQuery(sql.toString())
+                .setParameter("userId", userId);
+        if (from != null) query.setParameter("from", from);
+        if (to != null) query.setParameter("to", to);
+
+        return query.getResultList().stream()
+                .map(value -> (UUID) value)
+                .toList();
+    }
+
     public List<WeekRow> findForUser(UUID userId){
         List<?> result = entityManager.createNativeQuery(
                 "select w.repository_id,w.week_start,w.commits,w.additions,w.deletions " +

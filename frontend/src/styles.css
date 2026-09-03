@@ -55,14 +55,19 @@ h1 { margin: 0; font-size: clamp(2.2rem,6vw,4.6rem); line-height: 1; letter-spac
   display: flex; flex-direction: column; justify-content: space-between;
   padding: 1rem .75rem; border-right: 1px solid #e2e8f0; background: #fff;
 }
-.sidebar nav { display: grid; gap: .2rem; }
+.sidebar nav { display: grid; gap: .95rem; overflow-y: auto; padding-bottom: .5rem; }
+.nav-group { display: grid; gap: .28rem; }
+.nav-group-items { display: grid; gap: .2rem; }
+.nav-group-label { padding: 0 .8rem; color: #94a3b8; font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.nav-filter-count { min-width: 1.35rem; height: 1.35rem; padding: 0 .35rem; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: #eef2f7; color: #475569; font-size: .68rem; line-height: 1; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.nav-group-divider { height: 1px; margin: .65rem .35rem 0; background: #e2e8f0; }
 .nav-item {
   border: 0; background: transparent; text-align: left; cursor: pointer;
   padding: .67rem .8rem; border-radius: .65rem; font-weight: 620; color: #475569;
 }
 .nav-item:hover { background: #f1f5f9; color: #111827; }
 .nav-item-active { background: #eef2f7; color: #111827; }
-.sidebar-footer { border-top: 1px solid #e2e8f0; padding: .9rem .8rem .2rem; display: grid; gap: .6rem; }
+.sidebar-footer { flex-shrink: 0; border-top: 1px solid #e2e8f0; padding: .9rem .8rem .2rem; display: grid; gap: .6rem; }
 .provider-label { color: #64748b; font-size: .78rem; }
 .text-button { border: 0; padding: 0; background: transparent; cursor: pointer; text-align: left; font-weight: 700; }
 
@@ -140,35 +145,6 @@ h1 { margin: 0; font-size: clamp(2.2rem,6vw,4.6rem); line-height: 1; letter-spac
 }
 
 
-.metric-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
-}
-.metric-card {
-  min-width: 0;
-  padding: 1.15rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 1rem;
-  background: #fff;
-  display: grid;
-  gap: .45rem;
-}
-.metric-card > span {
-  color: #64748b;
-  font-size: .78rem;
-  font-weight: 700;
-}
-.metric-card > strong {
-  font-size: clamp(1.55rem, 3vw, 2.25rem);
-  letter-spacing: -.035em;
-  overflow-wrap: anywhere;
-}
-.metric-value-compact {
-  font-size: clamp(1rem, 2vw, 1.3rem) !important;
-  line-height: 1.35;
-}
 .dashboard-section {
   margin-top: 1rem;
   padding: 1.25rem;
@@ -268,18 +244,9 @@ h1 { margin: 0; font-size: clamp(2.2rem,6vw,4.6rem); line-height: 1; letter-spac
 }
 
 @media (max-width: 900px) {
-  .metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 560px) {
-  .metric-grid {
-    grid-template-columns: 1fr;
-  }
-  .metric-card {
-    padding: 1rem;
-  }
   .project-row {
     display: grid;
     gap: .6rem;
@@ -702,57 +669,7 @@ h1 { margin: 0; font-size: clamp(2.2rem,6vw,4.6rem); line-height: 1; letter-spac
 }
 
 
-.technology-layout {
-  display: grid;
-  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
-  gap: 1rem;
-  align-items: start;
-}
-.technology-list {
-  display: grid;
-  gap: .45rem;
-  position: sticky;
-  top: 84px;
-}
-.technology-list-item {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  gap: .8rem;
-  padding: .85rem;
-  border: 1px solid #e2e8f0;
-  border-radius: .8rem;
-  background: #fff;
-  text-align: left;
-  cursor: pointer;
-}
-.technology-list-item:hover {
-  border-color: #94a3b8;
-}
-.technology-list-item-active {
-  border-color: #475569;
-  background: #f1f5f9;
-}
-.technology-list-item > div:first-child,
-.technology-list-meta {
-  display: grid;
-  gap: .2rem;
-  min-width: 0;
-}
-.technology-list-item span {
-  color: #64748b;
-  font-size: .7rem;
-}
-.technology-list-item strong {
-  overflow-wrap: anywhere;
-}
-.technology-list-meta {
-  text-align: right;
-  white-space: nowrap;
-}
-.technology-list-meta strong {
-  font-size: .72rem;
-}
+
 .technology-detail {
   min-width: 0;
   display: grid;
@@ -786,19 +703,7 @@ h1 { margin: 0; font-size: clamp(2.2rem,6vw,4.6rem); line-height: 1; letter-spac
 .project-row h3 a:hover {
   text-decoration: underline;
 }
-@media (max-width: 900px) {
-  .technology-layout {
-    grid-template-columns: 1fr;
-  }
-  .technology-list {
-    position: static;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 @media (max-width: 560px) {
-  .technology-list {
-    grid-template-columns: 1fr;
-  }
   .technology-score {
     justify-items: start;
   }
@@ -1034,6 +939,15 @@ h1 { margin: 0; font-size: clamp(2.2rem,6vw,4.6rem); line-height: 1; letter-spac
 .correction-panel {
   border-style: dashed;
 }
+.technology-advanced-details > summary,
+.technology-evidence-details > summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+.technology-advanced-content,
+.technology-evidence-content {
+  margin-top: .85rem;
+}
 
 
 .account-field {
@@ -1208,3 +1122,326 @@ h1 { margin: 0; font-size: clamp(2.2rem,6vw,4.6rem); line-height: 1; letter-spac
 .activity-drilldown{margin-top:1rem;padding:1rem;border:1px solid var(--border);border-radius:12px;display:flex;gap:1rem;flex-wrap:wrap}.bar-row-button{width:100%;border:0;background:transparent;text-align:left;color:inherit;font:inherit;cursor:pointer}.project-time-scroll{overflow-x:auto;min-width:0}.project-time-row{display:grid;grid-template-columns:minmax(140px,220px) minmax(600px,1fr) 70px;gap:.75rem;align-items:center;padding:.45rem 0}.project-time-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.project-time-track{height:14px;background:var(--surface-muted,#eef1f4);position:relative;border-radius:999px}.project-time-bar{position:absolute;top:0;bottom:0;background:currentColor;opacity:.42;border-radius:999px;min-width:4px}
 
 .project-time-header{display:grid;grid-template-columns:minmax(140px,220px) minmax(700px,1fr) 70px;gap:.75rem;font-size:.75rem;color:var(--muted)}.project-time-months{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(8px,1fr);gap:2px;min-width:700px}.project-time-cell{height:16px;background:transparent;border-radius:2px}.project-time-cell-active{background:currentColor}.project-time-header .project-time-months span{font-size:.65rem;overflow:visible}
+
+/* Shared Explore analysis filters. Kept deliberately compact so analysis
+   content remains visible above the fold. */
+.analysis-filters {
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+  margin-bottom: 1rem;
+  padding: .8rem 1rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: .85rem;
+  background: var(--surface, #fff);
+}
+.analysis-filter-fields {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+.analysis-filter-field {
+  display: grid;
+  gap: .3rem;
+  min-width: 9.5rem;
+}
+.analysis-filter-field > span {
+  color: var(--muted, #64748b);
+  font-size: .72rem;
+  font-weight: 700;
+}
+.analysis-filter-field select {
+  min-height: 2.25rem;
+  padding: .4rem 1.9rem .4rem .6rem;
+  border: 1px solid var(--border, #cbd5e1);
+  border-radius: .6rem;
+  background: var(--surface, #fff);
+  color: inherit;
+  font: inherit;
+}
+.analysis-clear-filters:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+@media (max-width: 720px) {
+  .analysis-filter-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .analysis-filter-field {
+    min-width: 0;
+  }
+  .analysis-clear-filters {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .analysis-filter-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Active analysis filters make inherited/cross-view scope visible without
+   turning the filter area into another large dashboard section. */
+.analysis-filter-controls {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
+.analysis-active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  width: 100%;
+}
+.analysis-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  min-height: 1.9rem;
+  padding: .25rem .55rem;
+  border: 1px solid var(--border, #cbd5e1);
+  border-radius: 999px;
+  background: var(--surface-muted, #f8fafc);
+  color: inherit;
+  font: inherit;
+  font-size: .78rem;
+  cursor: pointer;
+}
+.analysis-filter-chip:hover {
+  border-color: currentColor;
+}
+
+@media (max-width: 720px) {
+  .analysis-filter-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+/* Technologies now follows the shared Explore flow: filters, summary,
+   over-time analysis, matching projects, then secondary details. */
+.technology-summary {
+  margin-bottom: 0;
+}
+.technology-secondary-statistics {
+  margin-top: 0;
+}
+
+/* Step 4.3: keep technology statistics compact so the timeline and projects
+   remain the primary content. */
+.technology-summary-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem .8rem;
+  margin: .65rem 0;
+  color: #475569;
+  font-size: .82rem;
+}
+.technology-summary-facts span {
+  display: inline-flex;
+  align-items: center;
+}
+.technology-summary-facts span:not(:last-child)::after {
+  content: "·";
+  margin-left: .8rem;
+  color: #94a3b8;
+}
+@media (max-width: 560px) {
+  .technology-summary-facts {
+    display: grid;
+    gap: .2rem;
+  }
+  .technology-summary-facts span:not(:last-child)::after {
+    content: none;
+  }
+}
+
+/* Projects keeps analysis-scope refinements visually separate from list-only
+   controls. This makes it clear which choices follow the user across Explore
+   and which only affect the current inventory presentation. */
+.project-filter-group {
+  margin-bottom: 1rem;
+}
+.project-filter-group-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 .45rem;
+}
+.project-filter-group-heading h3 {
+  margin: 0;
+  font-size: .88rem;
+}
+.project-filter-group-heading p {
+  margin: .15rem 0 0;
+  color: var(--muted, #64748b);
+  font-size: .75rem;
+}
+.project-scope-filters,
+.project-list-option-fields {
+  margin-bottom: 0;
+  padding: .75rem;
+}
+.project-scope-filters {
+  grid-template-columns: minmax(220px, 2fr) minmax(120px, 1fr);
+}
+.project-list-option-fields {
+  grid-template-columns: minmax(120px, 220px);
+}
+
+@media (max-width: 700px) {
+  .project-filter-group-heading {
+    align-items: flex-start;
+  }
+  .project-scope-filters,
+  .project-list-option-fields {
+    grid-template-columns: 1fr;
+  }
+  .project-scope-filters label:first-child,
+  .project-list-option-fields label:first-child {
+    grid-column: auto;
+  }
+}
+.project-scope-filters label:first-child,
+.project-list-option-fields label:first-child {
+  grid-column: auto;
+}
+
+/* Compact, reusable statistics presentation. Secondary facts should remain
+   visible without pushing the primary analysis/result below the fold. */
+.summary-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem 0;
+  margin: 1rem 0 0;
+  padding: .85rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: .9rem;
+  background: #fff;
+}
+.summary-fact {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .35rem;
+  min-width: 0;
+  padding: 0 .8rem;
+}
+.summary-fact:first-child { padding-left: 0; }
+.summary-fact:not(:last-child) { border-right: 1px solid #e2e8f0; }
+.summary-fact dt {
+  color: #64748b;
+  font-size: .76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.summary-fact dd {
+  margin: 0;
+  font-size: .92rem;
+  font-weight: 750;
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+.summary-facts-embedded {
+  margin-top: .8rem;
+  padding: .75rem .85rem;
+  background: #f8fafc;
+}
+.overview-summary-facts {
+  margin-top: 1rem;
+}
+@media (max-width: 720px) {
+  .summary-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .7rem .9rem;
+  }
+  .summary-fact,
+  .summary-fact:first-child {
+    display: grid;
+    gap: .18rem;
+    padding: 0;
+    border-right: 0 !important;
+  }
+  .summary-fact dt { white-space: normal; }
+}
+@media (max-width: 420px) {
+  .summary-facts { grid-template-columns: 1fr; }
+}
+
+.analysis-empty-state {
+  padding: 1rem;
+  border: 1px solid var(--border-soft, rgba(127, 127, 127, 0.25));
+  border-radius: 0.75rem;
+}
+
+.analysis-empty-state h3,
+.analysis-empty-state p {
+  margin-top: 0;
+}
+
+.analysis-empty-selection {
+  margin-top: 0.9rem;
+}
+
+.analysis-empty-filter-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.analysis-empty-filter-list > span {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-subtle, rgba(127, 127, 127, 0.08));
+}
+
+.analysis-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+
+.dashboard-section > .analysis-empty-state-inline {
+  margin-top: 0.75rem;
+  background: var(--surface-subtle, rgba(127, 127, 127, 0.04));
+}
+
+/* Step 14.1: on compact screens keep active filter chips visible while the
+   filter controls themselves stay behind an explicit Edit filters action. */
+.analysis-filter-mobile-summary {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .analysis-filter-mobile-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    min-height: 2rem;
+  }
+  .analysis-filter-mobile-summary strong {
+    font-size: .82rem;
+  }
+  .analysis-filter-controls {
+    display: none;
+  }
+  .analysis-filter-controls.is-expanded {
+    display: flex;
+  }
+  .analysis-active-filters {
+    order: -1;
+  }
+}

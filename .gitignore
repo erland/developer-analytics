@@ -85,6 +85,7 @@ pnpm-debug.log*
 *.bak
 *.orig
 *.rej
+javac.*.args
 .cache/
 **/.cache/
 

@@ -1,0 +1,130 @@
+
+.matching-projects-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.matching-projects-heading h2 {
+  margin-bottom: 0;
+}
+
+.matching-project-technologies {
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+  opacity: 0.78;
+}
+
+@media (max-width: 720px) {
+  .matching-projects-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+}
+
+.technology-evidence-details {
+  padding: 0;
+  overflow: hidden;
+}
+
+.technology-evidence-details > summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 1rem 1.15rem;
+  list-style-position: inside;
+}
+
+.technology-evidence-details[open] > summary {
+  border-bottom: 1px solid var(--border-subtle, rgba(127, 127, 127, 0.2));
+}
+
+.technology-evidence-content {
+  padding: 0 1.15rem 1.15rem;
+}
+
+.technology-evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+}
+
+.technology-evidence-grid > div {
+  min-width: 0;
+}
+
+.technology-evidence-grid dt {
+  font-size: 0.78rem;
+  opacity: 0.72;
+}
+
+.technology-evidence-grid dd {
+  margin: 0.2rem 0 0;
+  font-weight: 700;
+}
+
+/* Secondary/tertiary information stays available without dominating the page. */
+.secondary-details {
+  padding: 0;
+  overflow: hidden;
+}
+.secondary-details > summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .75rem;
+  cursor: pointer;
+  padding: 1rem 1.15rem;
+  font-weight: 700;
+}
+.secondary-details[open] > summary {
+  border-bottom: 1px solid var(--border-subtle, rgba(127, 127, 127, 0.2));
+}
+.secondary-details-content {
+  padding: 0 1.15rem 1.15rem;
+}
+.secondary-details-summary-meta {
+  font-size: .82rem;
+  font-weight: 600;
+  opacity: .72;
+  text-align: right;
+}
+.assessment-rationale-details {
+  margin-top: .8rem;
+}
+.assessment-rationale-details > summary {
+  cursor: pointer;
+  font-size: .86rem;
+  font-weight: 700;
+}
+.assessment-rationale-details .rationale-list {
+  margin-top: .75rem;
+}
+@media (max-width: 720px) {
+  .secondary-details > summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: .25rem;
+  }
+  .secondary-details-summary-meta { text-align: left; }
+}
+
+
+/* Step 14.2: primary analysis/result content precedes secondary statistics, especially on mobile. */
+.secondary-summary-section {
+  margin-top: 1rem;
+}
+.secondary-summary-section > h2 {
+  margin-bottom: .7rem;
+}
+@media (max-width: 720px) {
+  .secondary-summary-section {
+    margin-top: .75rem;
+  }
+  .secondary-summary-section .summary-facts {
+    margin-top: .45rem;
+  }
+}

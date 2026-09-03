@@ -1,5 +1,6 @@
 import { useOverviewDashboard } from '../hooks/useOverviewDashboard'
 import { SyncMonitoringPanel } from './SyncMonitoringPanel'
+import { SummaryFacts } from './SummaryFacts'
 
 type Props = {
   displayName: string
@@ -39,24 +40,18 @@ export function OverviewDashboard({ displayName }: Props) {
         </p>
       </section>
 
-      <section className="metric-grid" aria-label="Repository overview">
-        <MetricCard label="Repositories analysed" value={data.repositoriesAnalysed} />
-        <MetricCard
-          label="Own / external"
-          value={`${data.ownRepositories} / ${data.externalRepositories}`}
-        />
-        <MetricCard
-          label="Public / private"
-          value={`${data.publicRepositories} / ${data.privateRepositories}`}
-        />
-        <MetricCard label="Commits observed" value={data.commits} />
-        <MetricCard label="Active projects" value={data.activeProjects} />
-        <MetricCard
-          label="Activity period"
-          value={formatPeriod(data.firstActivityAt, data.lastActivityAt)}
-          compact
-        />
-      </section>
+      <SummaryFacts
+        ariaLabel="Repository overview"
+        className="overview-summary-facts"
+        items={[
+          { label: 'Repositories analysed', value: data.repositoriesAnalysed },
+          { label: 'Own / external', value: `${data.ownRepositories} / ${data.externalRepositories}` },
+          { label: 'Public / private', value: `${data.publicRepositories} / ${data.privateRepositories}` },
+          { label: 'Commits observed', value: data.commits },
+          { label: 'Active projects', value: data.activeProjects },
+          { label: 'Activity period', value: formatPeriod(data.firstActivityAt, data.lastActivityAt) },
+        ]}
+      />
 
       <SyncMonitoringPanel />
 
@@ -129,23 +124,6 @@ export function OverviewDashboard({ displayName }: Props) {
         )}
       </section>
     </>
-  )
-}
-
-function MetricCard({
-  label,
-  value,
-  compact = false,
-}: {
-  label: string
-  value: string | number
-  compact?: boolean
-}) {
-  return (
-    <article className="metric-card">
-      <span>{label}</span>
-      <strong className={compact ? 'metric-value-compact' : undefined}>{value}</strong>
-    </article>
   )
 }
 

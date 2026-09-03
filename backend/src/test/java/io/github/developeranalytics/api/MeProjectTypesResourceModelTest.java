@@ -28,4 +28,15 @@ class MeProjectTypesResourceModelTest {
         assertEquals(3, entry.timeline().getFirst().activeProjectCount());
         assertEquals("demo-service", entry.representativeProjects().getFirst().repositoryName());
     }
+    @Test
+    void emptyCategoryTimelineRowsAreNotConsideredActivity() {
+        var empty = new io.github.developeranalytics.persistence.project.ProjectTypeAnalyticsRepository.CategoryActivityRow(
+                "backend-service", "2025-01", 0, 0, 0, 0);
+        var active = new io.github.developeranalytics.persistence.project.ProjectTypeAnalyticsRepository.CategoryActivityRow(
+                "backend-service", "2026-08", 0, 120, 7, 0);
+
+        assertFalse(MeProjectTypesResource.hasActivity(empty));
+        assertTrue(MeProjectTypesResource.hasActivity(active));
+    }
+
 }

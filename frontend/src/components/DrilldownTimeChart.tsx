@@ -14,11 +14,38 @@ type Props = {
   points: DrilldownMonthPoint[]
   emptyText: string
   initialLevel?: 'year' | 'month'
+  year?: number
+  month?: string
+  onYearChange?: (year: number | undefined) => void
+  onMonthChange?: (month: string | undefined) => void
 }
 
-export function DrilldownTimeChart({ points, emptyText, initialLevel = 'year' }: Props) {
-  const [selectedYear, setSelectedYear] = useState<number | null>(null)
+export function DrilldownTimeChart({
+  points,
+  emptyText,
+  initialLevel = 'year',
+  year,
+  month,
+  onYearChange,
+  onMonthChange,
+}: Props) {
+  const [localSelectedYear, setLocalSelectedYear] = useState<number | null>(null)
+  const selectedYear = onYearChange ? (year ?? null) : localSelectedYear
   const [metric, setMetric] = useState<DrilldownMetric>('lines')
+
+  function selectYear(nextYear: number) {
+    if (onYearChange) onYearChange(nextYear)
+    else setLocalSelectedYear(nextYear)
+  }
+
+  function clearYear() {
+    if (onYearChange) onYearChange(undefined)
+    else setLocalSelectedYear(null)
+  }
+
+  function selectMonth(nextMonth: string) {
+    onMonthChange?.(nextMonth)
+  }
 
   const normalizedPoints = useMemo(() => points.map(point => ({
     ...point,
@@ -75,7 +102,7 @@ export function DrilldownTimeChart({ points, emptyText, initialLevel = 'year' }:
     ) : null}
 
     {selectedYear != null ? (
-      <button className="text-button timeline-back" type="button" onClick={() => setSelectedYear(null)}>
+      <button className="text-button timeline-back" type="button" onClick={clearYear}>
         ← Back to years
       </button>
     ) : null}
@@ -89,7 +116,7 @@ export function DrilldownTimeChart({ points, emptyText, initialLevel = 'year' }:
             secondary={`${point.months} active month${point.months === 1 ? '' : 's'}`}
             value={valueOf(point)}
             max={max}
-            onClick={() => setSelectedYear(point.year)}
+            onClick={() => selectYear(point.year)}
           />
         ))
         : monthlyPoints.map(point => (
@@ -99,6 +126,8 @@ export function DrilldownTimeChart({ points, emptyText, initialLevel = 'year' }:
             secondary={point.secondary}
             value={valueOf(point)}
             max={max}
+            onClick={onMonthChange ? () => selectMonth(point.month) : undefined}
+            active={month === point.month}
           />
         ))}
     </div>
@@ -113,12 +142,13 @@ export function DrilldownTimeChart({ points, emptyText, initialLevel = 'year' }:
   </>
 }
 
-function TimeBar({ label, secondary, value, max, onClick }: {
+function TimeBar({ label, secondary, value, max, onClick, active = false }: {
   label: string
   secondary?: string
   value: number
   max: number
   onClick?: () => void
+  active?: boolean
 }) {
   const content = <>
     <div className="bar-label"><strong>{label}</strong>{secondary ? <span>{secondary}</span> : null}</div>
@@ -127,7 +157,7 @@ function TimeBar({ label, secondary, value, max, onClick }: {
   </>
 
   return onClick
-    ? <button type="button" className="bar-row bar-row-button" onClick={onClick}>{content}</button>
+    ? <button type="button" className={`bar-row bar-row-button${active ? ' active' : ''}`} aria-pressed={active || undefined} onClick={onClick}>{content}</button>
     : <div className="bar-row">{content}</div>
 }
 

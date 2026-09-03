@@ -352,6 +352,7 @@ if (url === '/api/me/reports/preview') {
           page: 0,
           pageSize: 25,
           totalPages: 1,
+          facets: { technologies: [], projectTypes: [], ownership: [] },
         })
       }
       if (url.startsWith('/api/me/activity')) {
@@ -401,6 +402,10 @@ if (url === '/api/me/reports/preview') {
     ]) {
       expect(screen.getByRole('button', { name: section })).toBeInTheDocument()
     }
+
+    expect(screen.getByText('Explore')).toBeInTheDocument()
+    expect(screen.getByText('Insights')).toBeInTheDocument()
+    expect(screen.getByText('Settings')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Activity' }))
     expect(screen.getByRole('heading', { name: 'Activity', level: 1 })).toBeInTheDocument()

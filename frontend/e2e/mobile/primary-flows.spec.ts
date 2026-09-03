@@ -55,16 +55,45 @@ async function installApiFixtures(page: Page) {
       medianCommitSize: 18,
       additions: 3100,
       deletions: 1400,
+      commitSizeStatisticsAvailable: true,
+      lineStatisticsCommitCount: 126,
       firstActivityAt: '2025-01-01T00:00:00Z',
-      lastActivityAt: '2026-08-01T00:00:00Z',
+      lastActivityAt: '2026-08-16T00:00:00Z',
       commitsPerYear: [
-        { year: 2025, commits: 46 },
-        { year: 2026, commits: 80 },
+        { year: 2025, commits: 46, additions: 900, deletions: 400, changedLines: 1300, lineStatisticsCommitCount: 46, activeProjects: 5, projects: ['repo-1'] },
+        { year: 2026, commits: 80, additions: 2200, deletions: 1000, changedLines: 3200, lineStatisticsCommitCount: 80, activeProjects: 7, projects: ['repo-1'] },
       ],
       commitsPerMonth: [
-        { month: '2026-06', commits: 18, activeProjects: 4 },
-        { month: '2026-07', commits: 27, activeProjects: 6 },
-        { month: '2026-08', commits: 35, activeProjects: 7 },
+        { month: '2026-06', commits: 18, additions: 400, deletions: 180, changedLines: 580, lineStatisticsCommitCount: 18, activeProjects: 4, projects: ['repo-1'] },
+        { month: '2026-07', commits: 27, additions: 700, deletions: 300, changedLines: 1000, lineStatisticsCommitCount: 27, activeProjects: 6, projects: ['repo-1'] },
+        { month: '2026-08', commits: 35, additions: 1100, deletions: 520, changedLines: 1620, lineStatisticsCommitCount: 35, activeProjects: 7, projects: ['repo-1'] },
+      ],
+      commitsPerWeek: [
+        { week: '2026-08-03', commits: 15, additions: 480, deletions: 220, changedLines: 700, lineStatisticsCommitCount: 15, activeProjects: 1, projects: ['repo-1'] },
+        { week: '2026-08-10', commits: 20, additions: 620, deletions: 300, changedLines: 920, lineStatisticsCommitCount: 20, activeProjects: 1, projects: ['repo-1'] },
+      ],
+      projectsOverTime: [
+        {
+          repositoryId: 'repo-1',
+          repositoryName: 'mobile-dashboard',
+          firstActivityAt: '2025-01-01T00:00:00Z',
+          lastActivityAt: '2026-08-16T00:00:00Z',
+          commits: 126,
+          projectType: 'Web application',
+          technology: 'React',
+          projectTypes: ['Web application'],
+          technologies: ['React', 'TypeScript'],
+          monthlyActivity: [
+            { period: '2025-05', commits: 46, additions: 900, deletions: 400, changedLines: 1300, lineStatisticsCommitCount: 46 },
+            { period: '2026-06', commits: 18, additions: 400, deletions: 180, changedLines: 580, lineStatisticsCommitCount: 18 },
+            { period: '2026-07', commits: 27, additions: 700, deletions: 300, changedLines: 1000, lineStatisticsCommitCount: 27 },
+            { period: '2026-08', commits: 35, additions: 1100, deletions: 520, changedLines: 1620, lineStatisticsCommitCount: 35 },
+          ],
+          weeklyActivity: [
+            { period: '2026-08-03', parentMonth: '2026-08', commits: 15, additions: 480, deletions: 220, changedLines: 700, lineStatisticsCommitCount: 15 },
+            { period: '2026-08-10', parentMonth: '2026-08', commits: 20, additions: 620, deletions: 300, changedLines: 920, lineStatisticsCommitCount: 20 },
+          ],
+        },
       ],
     })
 
@@ -86,6 +115,19 @@ async function installApiFixtures(page: Page) {
       page: Number(url.searchParams.get('page') ?? 0),
       pageSize: 25,
       totalPages: 6,
+      facets: {
+        technologies: [
+          { key: 'react', name: 'React', count: 18 },
+          { key: 'typescript', name: 'TypeScript', count: 14 },
+        ],
+        projectTypes: [
+          { key: 'web-app', name: 'Web application', count: 12 },
+        ],
+        ownership: [
+          { key: 'own', name: 'Own', count: 100 },
+          { key: 'external', name: 'External', count: 26 },
+        ],
+      },
     })
 
     if (path === '/api/me/technologies') return json(route, [
@@ -104,8 +146,8 @@ async function installApiFixtures(page: Page) {
         privacyProvenance: 'PUBLIC_ONLY',
         rationale: {},
         timeline: [
-          { month: '2026-07', projectCount: 6, activityCount: 18 },
-          { month: '2026-08', projectCount: 7, activityCount: 24 },
+          { month: '2026-07', projectCount: 6, commits: 18, changedLines: 1000, lineStatisticsCommitCount: 18 },
+          { month: '2026-08', projectCount: 7, commits: 24, changedLines: 1620, lineStatisticsCommitCount: 24 },
         ],
         representativeProjects: [
           {
@@ -223,8 +265,9 @@ test('primary v1 flows remain usable at phone width without wide-table dependenc
   await expectNoHorizontalOverflow(page)
 
   await openSection(page, 'Activity')
-  await expect(page.locator('.bar-chart').first()).toBeVisible()
-  await expect(page.getByText('126').first()).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Changed lines over time' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /2026/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Activity statistics' })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
   await openSection(page, 'Projects')
@@ -235,8 +278,10 @@ test('primary v1 flows remain usable at phone width without wide-table dependenc
   await expectNoHorizontalOverflow(page)
 
   await openSection(page, 'Technologies')
-  await expect(page.getByRole('button', { name: /React/ })).toBeVisible()
-  await expect(page.getByText('STRONG', { exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Remove Technology: React' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Edit filters' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Activity in projects using React' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Projects matching this selection' })).toBeVisible()
   await expect(page.locator('table')).toHaveCount(0)
   await expectNoHorizontalOverflow(page)
 
@@ -266,5 +311,73 @@ test('primary v1 flows remain usable at phone width without wide-table dependenc
   await expect(page.getByRole('button', { name: 'Create external client token' })).toBeVisible()
   await expect(page.getByText('Type DELETE_MY_DATA to confirm')).toBeVisible()
   await expect(page.locator('table')).toHaveCount(0)
+  await expectNoHorizontalOverflow(page)
+})
+
+
+test('Explore analysis keeps filters compact and primary content reachable on phone width', async ({ page }) => {
+  authenticated = true
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible()
+
+  await openSection(page, 'Technologies')
+
+  const editFilters = page.getByRole('button', { name: 'Edit filters' })
+  await expect(editFilters).toBeVisible()
+  await expect(editFilters).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByRole('button', { name: 'Remove Technology: React' })).toBeVisible()
+
+  const technologySelect = page.getByLabel('Technology')
+  await expect(technologySelect).not.toBeVisible()
+  await editFilters.click()
+  await expect(editFilters).toHaveAttribute('aria-expanded', 'true')
+  await expect(technologySelect).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Done' })).toBeVisible()
+  await page.getByRole('button', { name: 'Done' }).click()
+  await expect(technologySelect).not.toBeVisible()
+
+  const overTime = page.getByRole('heading', { name: 'Activity in projects using React' })
+  const matchingProjects = page.getByRole('heading', { name: 'Projects matching this selection' })
+  await expect(overTime).toBeVisible()
+  await expect(matchingProjects).toBeVisible()
+  await expect(page.getByText('mobile-dashboard', { exact: true }).first()).toBeVisible()
+  const order = await page.evaluate(() => {
+    const over = Array.from(document.querySelectorAll('h2')).find(node => node.textContent?.includes('Activity in projects using React'))
+    const projects = Array.from(document.querySelectorAll('h2')).find(node => node.textContent === 'Projects matching this selection')
+    const evidence = Array.from(document.querySelectorAll('summary')).find(node => node.textContent?.includes('Evidence and statistics'))
+    return {
+      overTop: over?.getBoundingClientRect().top ?? Number.MAX_SAFE_INTEGER,
+      projectsTop: projects?.getBoundingClientRect().top ?? Number.MAX_SAFE_INTEGER,
+      evidenceTop: evidence?.getBoundingClientRect().top ?? Number.MAX_SAFE_INTEGER,
+    }
+  })
+  expect(order.overTop).toBeLessThan(order.projectsTop)
+  expect(order.projectsTop).toBeLessThan(order.evidenceTop)
+  await expectNoHorizontalOverflow(page)
+
+  await openSection(page, 'Activity')
+  const timelineHeading = page.getByRole('heading', { name: 'Changed lines over time' })
+  const statsHeading = page.getByRole('heading', { name: 'Activity statistics' })
+  await expect(timelineHeading).toBeVisible()
+  await expect(statsHeading).toBeVisible()
+  const timelineBeforeStats = await page.evaluate(() => {
+    const timeline = Array.from(document.querySelectorAll('h2')).find(node => node.textContent === 'Changed lines over time')
+    const stats = Array.from(document.querySelectorAll('h2')).find(node => node.textContent === 'Activity statistics')
+    return Boolean(timeline && stats && (timeline.compareDocumentPosition(stats) & Node.DOCUMENT_POSITION_FOLLOWING))
+  })
+  expect(timelineBeforeStats).toBe(true)
+
+  await page.getByRole('button', { name: /2026/ }).click()
+  await expect(page.getByRole('button', { name: /August 2026/ })).toBeVisible()
+  await page.getByRole('button', { name: /August 2026/ }).click()
+  await expect(page.getByRole('button', { name: /Week of Aug 3/ })).toBeVisible()
+  await page.getByRole('button', { name: /Week of Aug 3/ }).click()
+  await expect(page.getByText('Projects during this week')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'mobile-dashboard' })).toBeVisible()
+
+  await page.getByRole('button', { name: '← Back to 2026' }).click()
+  await expect(page.getByRole('button', { name: /August 2026/ })).toBeVisible()
+  await page.getByRole('button', { name: '← Back to years' }).click()
+  await expect(page.getByRole('button', { name: /2026/ })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 })

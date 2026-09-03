@@ -43,6 +43,14 @@ public class TechnologyTimelineRepository {
                         number(row[3]), number(row[4]), number(row[5]))).toList();
     }
 
+    /**
+     * Builds activity metrics for repositories where a technology has been observed.
+     *
+     * <p>The technology evidence is repository-level evidence. Contribution and weekly activity are
+     * attributed to that technology when they belong to the same repository. The resulting timeline
+     * therefore means "activity in projects where this technology has been observed"; it must not be
+     * interpreted as proof that each individual commit or changed line used the technology.</p>
+     */
     public List<MetricActivityRow> calculateMetricActivity(UUID userId) {
         record Key(String technologyKey, YearMonth month) {}
         class Mutable {

@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import type { AnalysisScope } from '../analysis/AnalysisScope'
+import { analysisScopeToSearchParams } from '../analysis/AnalysisScopeUrl'
 
 export type ActivityPeriod = '12m' | '24m' | '5y' | 'all'
 export type ActivityMetric = 'lines' | 'commits'
@@ -31,6 +33,8 @@ export type ProjectLifecycle = {
   commits: number
   projectType: string
   technology: string
+  projectTypes: string[]
+  technologies: string[]
   monthlyActivity: ProjectPeriodActivity[]
   weeklyActivity: ProjectPeriodActivity[]
 }
@@ -78,8 +82,10 @@ const normalizePeriod = <T extends Record<string, unknown>>(value: T) => ({
   projects: Array.isArray(value.projects) ? value.projects as string[] : [],
 })
 
-export function useActivityView(period: ActivityPeriod): State {
+export function useActivityView(period: ActivityPeriod, scope?: AnalysisScope): State {
   const [state, setState] = useState<State>({ status: 'loading', data: null, error: null })
+
+  const scopeKey = scope ? analysisScopeToSearchParams(scope).toString() : ''
 
   useEffect(() => {
     const controller = new AbortController()
@@ -87,9 +93,15 @@ export function useActivityView(period: ActivityPeriod): State {
 
     async function load() {
       setState({ status: 'loading', data: null, error: null })
-      const query = new URLSearchParams()
-      if (range.from) query.set('from', range.from)
-      if (range.to) query.set('to', range.to)
+      const query = new URLSearchParams(scopeKey)
+      const scopeFrom = query.get('from')
+      const scopeTo = query.get('to')
+      const effectiveFrom = laterDate(range.from, scopeFrom)
+      const effectiveTo = earlierDate(range.to, scopeTo)
+      query.delete('from')
+      query.delete('to')
+      if (effectiveFrom) query.set('from', effectiveFrom)
+      if (effectiveTo) query.set('to', effectiveTo)
 
       try {
         const response = await fetch(`/api/me/activity${query.size ? `?${query}` : ''}`, {
@@ -125,6 +137,12 @@ export function useActivityView(period: ActivityPeriod): State {
             commits: project.commits ?? 0,
             projectType: project.projectType ?? 'Unclassified',
             technology: project.technology ?? 'Unclassified',
+            projectTypes: Array.isArray(project.projectTypes) && project.projectTypes.length
+              ? project.projectTypes
+              : project.projectType ? [project.projectType] : [],
+            technologies: Array.isArray(project.technologies) && project.technologies.length
+              ? project.technologies
+              : project.technology ? [project.technology] : [],
             monthlyActivity: (project.monthlyActivity ?? []).map(value => ({
               period: value.period ?? (value as { month?: string }).month ?? '',
               parentMonth: value.parentMonth ?? null,
@@ -159,7 +177,19 @@ export function useActivityView(period: ActivityPeriod): State {
 
     void load()
     return () => controller.abort()
-  }, [period])
+  }, [period, scopeKey])
 
   return state
+}
+
+function laterDate(a: string | null, b: string | null): string | null {
+  if (!a) return b
+  if (!b) return a
+  return a >= b ? a : b
+}
+
+function earlierDate(a: string | null, b: string | null): string | null {
+  if (!a) return b
+  if (!b) return a
+  return a <= b ? a : b
 }

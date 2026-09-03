@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { AnalysisScope } from '../analysis/AnalysisScope'
+import { analysisScopeToSearchParams } from '../analysis/AnalysisScopeUrl'
 
 export type ContributionSummary = {
   total: number
@@ -20,12 +22,18 @@ type State =
   | { status: 'error'; error: string }
   | { status: 'ready'; data: ContributionSummary }
 
-export function useContributions(): State {
+export function useContributions(scope: AnalysisScope): State {
+  const paramsKey = useMemo(() => {
+    const params = analysisScopeToSearchParams(scope)
+    params.set('limit', '100')
+    return params.toString()
+  }, [scope])
   const [state, setState] = useState<State>({ status: 'loading' })
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch('/api/me/contributions?limit=100', {
+    setState({ status: 'loading' })
+    fetch(`/api/me/contributions?${paramsKey}`, {
       credentials: 'include', headers: { Accept: 'application/json' }, signal: controller.signal,
     })
       .then(async (response) => {
@@ -47,7 +55,7 @@ export function useContributions(): State {
         })
       })
     return () => controller.abort()
-  }, [])
+  }, [paramsKey])
 
   return state
 }

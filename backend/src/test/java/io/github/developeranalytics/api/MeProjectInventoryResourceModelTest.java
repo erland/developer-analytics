@@ -41,11 +41,19 @@ class MeProjectInventoryResourceModelTest {
                 51,
                 1,
                 25,
-                3
+                3,
+                new MeProjectInventoryResource.Facets(
+                        List.of(new MeProjectInventoryResource.FacetValue("java", "Java", 42)),
+                        List.of(new MeProjectInventoryResource.FacetValue("backend-service", "Backend service", 17)),
+                        List.of(new MeProjectInventoryResource.FacetValue("own", "Own", 12))
+                )
         );
 
         assertEquals(3, response.totalPages());
         assertEquals("Backend service", response.items().getFirst().categories().getFirst().name());
         assertEquals("Java", response.items().getFirst().technologies().getFirst().name());
+        assertEquals(42, response.facets().technologies().getFirst().count());
+        assertEquals("Backend service", response.facets().projectTypes().getFirst().name());
+        assertEquals("own", response.facets().ownership().getFirst().key());
     }
 }

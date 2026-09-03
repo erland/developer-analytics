@@ -37,6 +37,23 @@ public class RepositoryTechnologyEvidenceRepository {
             .setParameter("userId", userId).setParameter("repositoryId", repositoryId).getResultList();
     }
 
+
+    public List<TechnologyFacetRow> summarizeForRepositories(UUID userId, List<UUID> repositoryIds) {
+        if (repositoryIds == null || repositoryIds.isEmpty()) return List.of();
+        return entityManager.createQuery(
+                "select e.technology.technologyKey, e.technology.displayName, count(distinct e.repository.id) " +
+                "from RepositoryTechnologyEvidence e where e.user.id=:userId and e.repository.id in :repositoryIds " +
+                "group by e.technology.technologyKey, e.technology.displayName order by e.technology.displayName",
+                Object[].class)
+            .setParameter("userId", userId)
+            .setParameter("repositoryIds", repositoryIds)
+            .getResultList().stream()
+            .map(row -> new TechnologyFacetRow((String) row[0], (String) row[1], ((Number) row[2]).longValue()))
+            .toList();
+    }
+
+    public record TechnologyFacetRow(String key, String name, long count) {}
+
     public List<TechnologyEvidenceSummaryRow> summarizeForUser(UUID userId,
                                                                 java.time.OffsetDateTime recentThreshold) {
         List<Object[]> rows = entityManager.createQuery(

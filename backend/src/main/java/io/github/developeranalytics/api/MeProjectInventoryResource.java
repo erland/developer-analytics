@@ -12,6 +12,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,11 +41,22 @@ public class MeProjectInventoryResource {
             @QueryParam("ownership") String ownership,
             @QueryParam("visibility") String visibility,
             @QueryParam("activity") String activity,
-            @QueryParam("category") String category,
-            @QueryParam("technology") String technology
+            @QueryParam("category") List<String> legacyCategories,
+            @QueryParam("projectType") List<String> projectTypes,
+            @QueryParam("technology") List<String> selectedTechnologies,
+            @QueryParam("from") String from,
+            @QueryParam("to") String to,
+            @QueryParam("year") Integer year,
+            @QueryParam("month") String month,
+            @QueryParam("week") String week
     ) {
         CurrentUser current =
                 currentUserService.requireCurrentUser(sessionToken);
+
+        var period = AnalysisPeriod.resolve(from, to, year, month, week);
+        List<String> selectedCategories = new ArrayList<>();
+        if (legacyCategories != null) selectedCategories.addAll(legacyCategories);
+        if (projectTypes != null) selectedCategories.addAll(projectTypes);
 
         var result = inventory.find(
                 current.user().getId(),
@@ -54,8 +66,10 @@ public class MeProjectInventoryResource {
                 ownership,
                 visibility,
                 activity,
-                category,
-                technology
+                selectedCategories,
+                selectedTechnologies,
+                period.from(),
+                period.to()
         );
 
         List<Item> items = result.items().stream()
@@ -65,14 +79,30 @@ public class MeProjectInventoryResource {
                 ))
                 .toList();
 
+        var matchingRepositoryIds = result.matchingRepositoryIds();
+        var facetCategories = categories.summarizeForRepositories(matchingRepositoryIds).stream()
+                .map(row -> new FacetValue(row.key(), row.name(), row.count()))
+                .toList();
+        var facetTechnologies = technologies.summarizeForRepositories(current.user().getId(), matchingRepositoryIds).stream()
+                .map(row -> new FacetValue(row.key(), row.name(), row.count()))
+                .toList();
+        long ownCount = 0;
+        long externalCount = 0;
+        for (var row : inventory.ownershipFacets(matchingRepositoryIds)) {
+            if ("OWNED_BY_USER".equals(row.key())) ownCount += row.count();
+            else externalCount += row.count();
+        }
+        var ownershipFacets = new ArrayList<FacetValue>();
+        if (ownCount > 0) ownershipFacets.add(new FacetValue("own", "Own", ownCount));
+        if (externalCount > 0) ownershipFacets.add(new FacetValue("external", "External", externalCount));
+
         return new Response(
                 items,
                 result.total(),
                 result.page(),
                 result.pageSize(),
-                (int) Math.ceil(
-                        result.total() / (double) result.pageSize()
-                )
+                (int) Math.ceil(result.total() / (double) result.pageSize()),
+                new Facets(facetTechnologies, facetCategories, ownershipFacets)
         );
     }
 
@@ -115,8 +145,17 @@ public class MeProjectInventoryResource {
             long total,
             int page,
             int pageSize,
-            int totalPages
+            int totalPages,
+            Facets facets
     ) {}
+
+    public record Facets(
+            List<FacetValue> technologies,
+            List<FacetValue> projectTypes,
+            List<FacetValue> ownership
+    ) {}
+
+    public record FacetValue(String key, String name, long count) {}
 
     public record Item(
             UUID id,
