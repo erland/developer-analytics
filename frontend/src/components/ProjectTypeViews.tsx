@@ -32,10 +32,9 @@ export function ProjectTypeViews() {
     if (projectTypes.status !== 'ready' || projectTypes.data.length === 0) return
 
     const requestedKey = scope.projectTypes[0]
-    const requestedExists = requestedKey
-      ? projectTypes.data.some((item) => item.categoryKey === requestedKey)
-      : false
+    if (!requestedKey) return
 
+    const requestedExists = projectTypes.data.some((item) => item.categoryKey === requestedKey)
     if (!requestedExists) {
       replaceScope(createAnalysisScope({ ...scope, projectTypes: [projectTypes.data[0].categoryKey] }))
     }
