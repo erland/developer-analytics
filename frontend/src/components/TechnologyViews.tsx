@@ -112,7 +112,7 @@ function TechnologyDetail({
             ...scope,
             from: undefined,
             to: undefined,
-            year;
+            year,
             month: undefined,
             week: undefined,
           }))}
