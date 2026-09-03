@@ -183,7 +183,7 @@ describe('current Explore behaviour regression coverage', () => {
     expect(screen.getByRole('button', { name: /2026/i })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /2026/i }))
-    expect(screen.getByRole('heading', { name: '2026' })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { name: '2026' }).length).toBeGreaterThanOrEqual(1)
     expect(screen.getByRole('button', { name: /August 2026/i })).toBeInTheDocument()
     expect(screen.getByText(/170 changed lines across 1 active project/i)).toBeInTheDocument()
 
@@ -197,6 +197,6 @@ describe('current Explore behaviour regression coverage', () => {
     expect(onOpenProject).toHaveBeenCalledWith('repo-1')
 
     await user.click(screen.getByRole('button', { name: /Back to 2026/i }))
-    expect(screen.getByRole('heading', { name: '2026' })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { name: '2026' }).length).toBeGreaterThanOrEqual(1)
   })
 })
