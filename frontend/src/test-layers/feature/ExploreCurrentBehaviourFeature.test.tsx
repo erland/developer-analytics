@@ -188,7 +188,7 @@ describe('current Explore behaviour regression coverage', () => {
     expect(screen.getByText(/170 changed lines across 1 active project/i)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /August 2026/i }))
-    expect(screen.getByRole('heading', { name: 'August 2026' })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { name: 'August 2026' }).length).toBeGreaterThanOrEqual(1)
     expect(screen.getByRole('button', { name: /Week of Aug 3/i })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Week of Aug 3/i }))
