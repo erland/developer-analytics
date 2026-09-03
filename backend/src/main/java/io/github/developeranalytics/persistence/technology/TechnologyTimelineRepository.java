@@ -3,6 +3,7 @@ package io.github.developeranalytics.persistence.technology;
 import io.github.developeranalytics.domain.aggregate.TechnologyActivityMonth;
 import io.github.developeranalytics.domain.model.Contribution;
 import io.github.developeranalytics.domain.model.RepositoryVisibility;
+import io.github.developeranalytics.persistence.MonthValueConverter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -38,7 +39,7 @@ public class TechnologyTimelineRepository {
                 "group by e.technology.technologyKey, function('date_trunc', 'month', c.occurredAt)", Object[].class)
                 .setParameter("userId", userId).setParameter("publicVisibility", RepositoryVisibility.PUBLIC)
                 .setParameter("privateVisibility", RepositoryVisibility.PRIVATE).getResultList().stream()
-                .map(row -> new ActivitySourceRow((String) row[0], toLocalDate(row[1]), number(row[2]),
+                .map(row -> new ActivitySourceRow((String) row[0], MonthValueConverter.toMonth(row[1]), number(row[2]),
                         number(row[3]), number(row[4]), number(row[5]))).toList();
     }
 
@@ -80,7 +81,7 @@ public class TechnologyTimelineRepository {
                 "group by t.technology_key, date_trunc('month', w.week_start)", Object[].class)
                 .setParameter("userId", userId).getResultList();
         for(Object[] row:lineRows){
-            Key key=new Key((String)row[0],YearMonth.from(toLocalDate(row[1]))); Mutable value=grouped.computeIfAbsent(key,k->new Mutable());
+            Key key=new Key((String)row[0],YearMonth.from(MonthValueConverter.toMonth(row[1]))); Mutable value=grouped.computeIfAbsent(key,k->new Mutable());
             value.changedLines+=longNumber(row[2]); value.lineStatisticsCommitCount+=number(row[3]);
         }
 
@@ -114,14 +115,6 @@ public class TechnologyTimelineRepository {
 
     private int number(Object value){return value==null?0:((Number)value).intValue();}
     private long longNumber(Object value){return value==null?0L:((Number)value).longValue();}
-    private LocalDate toLocalDate(Object value){
-        if(value instanceof java.sql.Timestamp v)return v.toLocalDateTime().toLocalDate().withDayOfMonth(1);
-        if(value instanceof OffsetDateTime v)return v.toLocalDate().withDayOfMonth(1);
-        if(value instanceof java.time.LocalDateTime v)return v.toLocalDate().withDayOfMonth(1);
-        if(value instanceof LocalDate v)return v.withDayOfMonth(1);
-        if(value instanceof java.sql.Date v)return v.toLocalDate().withDayOfMonth(1);
-        throw new IllegalStateException("Unsupported month value: "+value);
-    }
 
     public record ActivitySourceRow(String technologyKey,LocalDate yearMonth,int repositoryCount,int activityCount,int publicRepositoryCount,int privateRepositoryCount){}
     public record MetricActivityRow(String technologyKey,String month,int commits,long changedLines,int lineStatisticsCommitCount,int activeProjectCount){}
