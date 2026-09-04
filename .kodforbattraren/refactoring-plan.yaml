@@ -19,7 +19,8 @@ steps:
 - id: R-001
   order: 1
   title: Skydda activity-use-caset med characterization tests
-  goal: Få beteendebaserat testskydd för de viktigaste aggregation- och filterfallen före extraction.
+  goal: Få beteendebaserat testskydd för de viktigaste aggregation- och filterfallen
+    före extraction.
   status: completed
   change_classification: refactoring
   finding_ids:
@@ -40,7 +41,8 @@ steps:
 - id: R-002
   order: 2
   title: Extrahera activity application service
-  goal: Flytta query-, aggregation- och labelansvar ur REST-resursen med oförändrat API-beteende.
+  goal: Flytta query-, aggregation- och labelansvar ur REST-resursen med oförändrat
+    API-beteende.
   status: completed
   change_classification: refactoring
   finding_ids:
@@ -108,8 +110,9 @@ steps:
 - id: R-005A
   order: 5
   title: Generera frontend-lockfil i nätverksansluten CI
-  goal: Låt Developer Analytics egen npm 11.6.0-installation generera den exakta package-lock.json som behövs för R-005.
-  status: verification_pending
+  goal: Låt Developer Analytics egen npm 11.6.0-installation generera den exakta package-lock.json
+    som behövs för R-005.
+  status: completed
   change_classification: refactoring
   finding_ids:
   - F-004
@@ -127,12 +130,13 @@ steps:
   - Frontendjobbet genererar package-lock.json med npm 11.6.0.
   - CI laddar upp lockfilen som en kortlivad artefakt utan att ändra applikationsbeteendet.
   verification:
-  - Run GitHub Actions frontend validation and confirm artifact developer-analytics-frontend-package-lock exists.
+  - Run GitHub Actions frontend validation and confirm artifact developer-analytics-frontend-package-lock
+    exists.
 - id: R-005
   order: 6
   title: Lås frontendens dependency-resolution
   goal: Göra lokala och CI-installationer reproducerbara.
-  status: planned
+  status: verification_pending
   change_classification: refactoring
   finding_ids:
   - F-004
@@ -154,7 +158,8 @@ steps:
 - id: R-006
   order: 7
   title: Extrahera minimal gemensam frontend request-mekanik
-  goal: Minska verklig duplication i credentials/status/error-hantering utan att bygga ett nytt API-ramverk.
+  goal: Minska verklig duplication i credentials/status/error-hantering utan att bygga
+    ett nytt API-ramverk.
   status: planned
   change_classification: refactoring
   finding_ids:

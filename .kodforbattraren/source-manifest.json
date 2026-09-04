@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "captured_at": "2026-09-04T04:41:18Z",
+  "captured_at": "2026-09-04T11:35:38Z",
   "source": {
     "mode": "zip",
     "base_name": "developer-analytics-main(1).zip",
@@ -24,8 +24,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "size": 15951,
-      "sha256": "2e724f5f31242a6e3648486f4072db845f1a99028c81c39f0adfc76c98eb0795"
+      "size": 15941,
+      "sha256": "7c9662a5e9d17185f7dd3bb38b7b0e165a564ad77d4ee2bb82cfd2b37a22cabf"
     },
     {
       "path": ".github/workflows/dependabot-auto-merge.yml",
@@ -134,8 +134,8 @@
     },
     {
       "path": "backend/src/main/java/io/github/developeranalytics/api/MeActivityResource.java",
-      "size": 19554,
-      "sha256": "f8c7ec8853a044185856eaab25fa2239476930e4dce0a27e18a793c85b3941af"
+      "size": 5414,
+      "sha256": "771bfb4f9d9c54748e4859145b266cbb386cded8bbe29fd15f967db64a419625"
     },
     {
       "path": "backend/src/main/java/io/github/developeranalytics/api/MeAiAssessmentsResource.java",
@@ -169,8 +169,8 @@
     },
     {
       "path": "backend/src/main/java/io/github/developeranalytics/api/MeContributionsResource.java",
-      "size": 6278,
-      "sha256": "b8ee81ce27519ef6f9fb9caf3374715220c8f93fb7d02844a28da5e1e4afe1af"
+      "size": 6292,
+      "sha256": "e6f1397a55daa2d00e7cf4b2f09edb8fa447636ad9ab28fa68c14e81eb22767e"
     },
     {
       "path": "backend/src/main/java/io/github/developeranalytics/api/MeDataDeletionResource.java",
@@ -209,8 +209,8 @@
     },
     {
       "path": "backend/src/main/java/io/github/developeranalytics/api/MeProjectTypesResource.java",
-      "size": 4001,
-      "sha256": "b389c6284f92352cd7bf3c9156b931a6c8102f445a3cc29daa574c622663f5dd"
+      "size": 4015,
+      "sha256": "e8a5ff006583625cfe365505baacde47b11ffdc98352ceb5e8311e69d5bb8962"
     },
     {
       "path": "backend/src/main/java/io/github/developeranalytics/api/MeReportExportResource.java",
@@ -264,8 +264,8 @@
     },
     {
       "path": "backend/src/main/java/io/github/developeranalytics/api/MeTechnologiesResource.java",
-      "size": 6568,
-      "sha256": "5ab5833ef3120f313419b655da42ea6f707557a632177b68fe3ff8f54d945a55"
+      "size": 6582,
+      "sha256": "b7f5c3a1c15b62b26a831a900d13152aab59059458c90d29e383a4dca729d78b"
     },
     {
       "path": "backend/src/main/java/io/github/developeranalytics/api/MeTechnologyAssessmentResource.java",
@@ -304,8 +304,8 @@
     },
     {
       "path": "backend/src/main/java/io/github/developeranalytics/api/external/ExternalAnalysisResource.java",
-      "size": 24906,
-      "sha256": "5f66c02122cdade7b3705ad7361ad37ebe34c325a45112c065c732e627d0f405"
+      "size": 18325,
+      "sha256": "5a974e44daf0ec5ad343ba350c0e0f2f019017448d5da13280d731fc0977d1b0"
     },
     {
       "path": "backend/src/main/java/io/github/developeranalytics/auth/AuthenticationService.java",
@@ -748,6 +748,11 @@
       "sha256": "998da8c8fc9e7f108227d161a2753966d9c8441250d13a661d532e22dc9bda8a"
     },
     {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/activity/ActivityApplicationService.java",
+      "size": 18221,
+      "sha256": "f43d21cdd05e4b4ba611bfeb2fb4aa3707eb590beaeb06bce034a35d93551835"
+    },
+    {
       "path": "backend/src/main/java/io/github/developeranalytics/service/connection/DisconnectDataDisposition.java",
       "size": 153,
       "sha256": "912b6876cf0883783c44a4bc1ee4671ad76dacb3b50a28de69f03e682c3887e0"
@@ -786,6 +791,11 @@
       "path": "backend/src/main/java/io/github/developeranalytics/service/discovery/GitHubWeeklyActivityService.java",
       "size": 4343,
       "sha256": "0bb38afa35c8f5f63324497e3ee9bf8b158a3019c6404f9bd269fa41cbeec504"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/external/ExternalAnalysisApplicationService.java",
+      "size": 9297,
+      "sha256": "3e0499a1b36fe91351d227295cc07e46c14360bb0f3c69de06358d0f91b4e540"
     },
     {
       "path": "backend/src/main/java/io/github/developeranalytics/service/insight/UserAiInsightService.java",
@@ -1188,14 +1198,14 @@
       "sha256": "63a16bb25263e542e3313ee61b7f408d1870e993184c5f33c6b31422503d69b8"
     },
     {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeActivityResourceCharacterizationTest.java",
+      "size": 8536,
+      "sha256": "b485965e0844ed41895e0411fff801685ea7b8c7c31e7386d849dcb6ccd0dc09"
+    },
+    {
       "path": "backend/src/test/java/io/github/developeranalytics/api/MeActivityResourceModelTest.java",
       "size": 2314,
       "sha256": "34c86acec8b22b8473d6fe351f112f9cc115c24c852049f5e6439238ab8cb689"
-    },
-    {
-      "path": "backend/src/test/java/io/github/developeranalytics/api/MeActivityResourceQueryTest.java",
-      "size": 1139,
-      "sha256": "03b37ead5e74333df61a9e33d1b1fb22f7efb1391f148f3a0f7e8b54617db856"
     },
     {
       "path": "backend/src/test/java/io/github/developeranalytics/api/MeAiAssessmentsResourceModelTest.java",
@@ -1271,6 +1281,11 @@
       "path": "backend/src/test/java/io/github/developeranalytics/api/external/ExternalAnalysisContractTest.java",
       "size": 2040,
       "sha256": "4f1dcf0f8c14e45da1d61833bfac2f6c890b2965a82866681bcdb1c4b17ac65e"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/external/ExternalAnalysisPrivacyCharacterizationTest.java",
+      "size": 5609,
+      "sha256": "f4f33a3a66507d90a262f4943532a8fbaa8a0d75b3f1a82a25a40ff54a9c43ea"
     },
     {
       "path": "backend/src/test/java/io/github/developeranalytics/auth/AuthenticationInitialSyncContractTest.java",
@@ -1549,8 +1564,8 @@
     },
     {
       "path": "backend/src/test/java/io/github/developeranalytics/support/TestFixtureService.java",
-      "size": 3069,
-      "sha256": "f9e638708e42435f264dea50d242580021859065c58bba18796e2d73d357f261"
+      "size": 6592,
+      "sha256": "c7631b442b1d9df795683e3f8c30d512db0374cf89fa0169b0333f58a91f1b75"
     },
     {
       "path": "backend/src/test/resources/application.properties",
@@ -2054,8 +2069,8 @@
     },
     {
       "path": "frontend/Dockerfile",
-      "size": 644,
-      "sha256": "e796e1f1d42d20b4d28cb681973d710d3f1cd2a22094cf535dfcfed6304d9917"
+      "size": 666,
+      "sha256": "1c8ceafb41018ac6fec06718f042837982888f478d834555dc3ba99882aae41a"
     },
     {
       "path": "frontend/README.md",
@@ -2078,9 +2093,14 @@
       "sha256": "ee14fd8fa4c1f119bd7157d8b832336c56ba3e29e974eb391ec006f8b505140d"
     },
     {
+      "path": "frontend/package-lock.json",
+      "size": 134753,
+      "sha256": "46bd538cfaf904cd3e3e662bcf82d18365b116a9957c821e58ddc1500f0df8c0"
+    },
+    {
       "path": "frontend/package.json",
-      "size": 1338,
-      "sha256": "1b2043d5e2e6f39006f841d0e200090b8853f6c5358503532cad1a5c3d62e68e"
+      "size": 1372,
+      "sha256": "2a63a9e11d58e23d525cb35b08c8a15326531958ae65c319069eeb1a1f927a47"
     },
     {
       "path": "frontend/playwright.mobile.config.ts",
@@ -2574,8 +2594,8 @@
     },
     {
       "path": "scripts/test-large-account-acceptance.sh",
-      "size": 11188,
-      "sha256": "423d87d9657197c4018e601c47d741ce9257fc4c6c6b62acc5d4dab2f87c2d71"
+      "size": 11232,
+      "sha256": "a4c4f881c1ab6ee16c9f8c80690fce5d76f09b256bd28c773d2a53a056c2577a"
     },
     {
       "path": "scripts/test-postgres-backup-restore.sh",
