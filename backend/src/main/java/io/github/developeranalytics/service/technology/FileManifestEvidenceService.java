@@ -120,8 +120,12 @@ public class FileManifestEvidenceService {
         );
     }
 
-    private boolean matchesFilePattern(String normalizedPath, String rawPattern) {
+    boolean matchesFilePattern(String normalizedPath, String rawPattern) {
         String pattern = rawPattern.toLowerCase(Locale.ROOT);
+
+        if (pattern.startsWith("*.")) {
+            return normalizedPath.endsWith(pattern.substring(1));
+        }
 
         if (pattern.endsWith("/")) {
             return normalizedPath.startsWith(pattern)
