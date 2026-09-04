@@ -4,10 +4,7 @@ import io.github.developeranalytics.auth.external.ExternalClientAuthService;
 import io.github.developeranalytics.auth.external.ExternalClientAuthService.ExternalClientPrincipal;
 import io.github.developeranalytics.domain.external.ExternalClientToken;
 import io.github.developeranalytics.domain.model.*;
-import io.github.developeranalytics.domain.technology.UserTechnologyAssessment;
-import io.github.developeranalytics.persistence.project.ProjectTypeAnalyticsRepository;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
-import io.github.developeranalytics.persistence.technology.UserTechnologyAssessmentRepository;
 import io.github.developeranalytics.service.external.ExternalAnalysisApplicationService;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -23,8 +20,6 @@ public class ExternalAnalysisResource {
 
     @Inject ExternalClientAuthService externalAuth;
     @Inject SourceRepositoryRepository repositories;
-    @Inject UserTechnologyAssessmentRepository technologyAssessments;
-    @Inject ProjectTypeAnalyticsRepository projectTypes;
     @Inject EntityManager entityManager;
     @Inject ExternalAnalysisApplicationService externalAnalysis;
 
@@ -64,22 +59,17 @@ public class ExternalAnalysisResource {
                 Long.class
         ).setParameter("userId", userId).getSingleResult();
 
-        List<TechnologySummary> technologies =
-                technologyAssessments.findForUser(userId).stream()
-                        .filter(a ->
-                                principal.privacyScope().allowsPrivateAggregates()
-                                || a.getPrivacyProvenance() ==
-                                        DataPrivacyProvenance.PUBLIC_ONLY)
-                        .limit(10)
-                        .map(this::technologySummary)
-                        .toList();
+        List<TechnologySummary> technologies = externalAnalysis
+                .technologies(userId, principal.privacyScope(), 10)
+                .stream()
+                .map(this::technologySummary)
+                .toList();
 
-        List<ProjectTypeSummary> categories =
-                projectTypeSummaries(
-                        userId,
-                        principal.privacyScope(),
-                        10
-                );
+        List<ProjectTypeSummary> categories = externalAnalysis
+                .projectTypes(userId, principal.privacyScope(), 10)
+                .stream()
+                .map(this::projectTypeSummary)
+                .toList();
 
         return new Profile(
                 "v1",
@@ -161,15 +151,12 @@ public class ExternalAnalysisResource {
                 authorization,
                 ExternalClientToken.Scope.TECHNOLOGIES_READ
         );
-        UUID userId = principal.user().getId();
-        int safeLimit = Math.max(1, Math.min(limit, 100));
 
-        return technologyAssessments.findForUser(userId).stream()
-                .filter(a ->
-                        principal.privacyScope().allowsPrivateAggregates()
-                        || a.getPrivacyProvenance() ==
-                                DataPrivacyProvenance.PUBLIC_ONLY)
-                .limit(safeLimit)
+        return externalAnalysis.technologies(
+                        principal.user().getId(),
+                        principal.privacyScope(),
+                        limit)
+                .stream()
                 .map(this::technologySummary)
                 .toList();
     }
@@ -184,14 +171,14 @@ public class ExternalAnalysisResource {
                 authorization,
                 ExternalClientToken.Scope.PROJECT_TYPES_READ
         );
-        UUID userId = principal.user().getId();
-        int safeLimit = Math.max(1, Math.min(limit, 100));
 
-        return projectTypeSummaries(
-                userId,
-                principal.privacyScope(),
-                safeLimit
-        );
+        return externalAnalysis.projectTypes(
+                        principal.user().getId(),
+                        principal.privacyScope(),
+                        limit)
+                .stream()
+                .map(this::projectTypeSummary)
+                .toList();
     }
 
     @GET
@@ -292,61 +279,28 @@ public class ExternalAnalysisResource {
         );
     }
 
-    private List<ProjectTypeSummary> projectTypeSummaries(
-            UUID userId,
-            ExternalClientToken.PrivacyScope privacyScope,
-            int limit
-    ) {
-        if (privacyScope.allowsPrivateAggregates()) {
-            return projectTypes.categorySummaries(userId).stream()
-                    .limit(limit)
-                    .map(row -> new ProjectTypeSummary(
-                            row.categoryKey(),
-                            row.categoryName(),
-                            row.projectCount()
-                    ))
-                    .toList();
-        }
-
-        return entityManager.createQuery(
-                "select c.category.categoryKey, c.category.displayName, " +
-                "count(distinct c.repository.id) " +
-                "from RepositoryProjectCategory c " +
-                "where c.repository.user.id=:userId " +
-                "and c.repository.includedInAnalysis=true " +
-                "and c.repository.visibility=:publicVisibility " +
-                "group by c.category.categoryKey, c.category.displayName " +
-                "order by count(distinct c.repository.id) desc",
-                Object[].class
-        )
-        .setParameter("userId", userId)
-        .setParameter(
-                "publicVisibility",
-                RepositoryVisibility.PUBLIC
-        )
-        .setMaxResults(limit)
-        .getResultList()
-        .stream()
-        .map(row -> new ProjectTypeSummary(
-                (String) row[0],
-                (String) row[1],
-                ((Number) row[2]).intValue()
-        ))
-        .toList();
-    }
-
     private TechnologySummary technologySummary(
-            UserTechnologyAssessment assessment
+            ExternalAnalysisApplicationService.TechnologySummaryResult result
     ) {
         return new TechnologySummary(
-                assessment.getTechnology().getTechnologyKey(),
-                assessment.getTechnology().getDisplayName(),
-                assessment.getStrength().name(),
-                assessment.getScore(),
-                assessment.getRepositoryCount(),
-                assessment.getFirstObservedAt(),
-                assessment.getLastObservedAt(),
-                assessment.getPrivacyProvenance().name()
+                result.key(),
+                result.name(),
+                result.evidenceLevel(),
+                result.evidenceScore(),
+                result.projectCount(),
+                result.firstObservedAt(),
+                result.lastObservedAt(),
+                result.privacyProvenance()
+        );
+    }
+
+    private ProjectTypeSummary projectTypeSummary(
+            ExternalAnalysisApplicationService.ProjectTypeSummaryResult result
+    ) {
+        return new ProjectTypeSummary(
+                result.key(),
+                result.name(),
+                result.projectCount()
         );
     }
 
