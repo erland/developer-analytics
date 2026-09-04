@@ -7,7 +7,6 @@ import io.github.developeranalytics.domain.technology.UserTechnologyAssessment;
 import io.github.developeranalytics.persistence.technology.RepositoryTechnologyEvidenceRepository;
 import io.github.developeranalytics.persistence.technology.TechnologyTimelineRepository;
 import io.github.developeranalytics.persistence.technology.UserTechnologyAssessmentRepository;
-import io.github.developeranalytics.service.correction.UserCorrectionService;
 import io.github.developeranalytics.service.technology.TechnologyEvidenceStrengthService;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -31,7 +30,6 @@ public class MeTechnologiesResource {
     @Inject UserTechnologyAssessmentRepository assessments;
     @Inject TechnologyTimelineRepository timelines;
     @Inject RepositoryTechnologyEvidenceRepository evidence;
-    @Inject UserCorrectionService corrections;
     @Inject TechnologyEvidenceStrengthService strengthService;
 
     @GET
@@ -58,8 +56,6 @@ public class MeTechnologiesResource {
                         .collect(Collectors.groupingBy(TechnologyTimelineRepository.MetricActivityRow::technologyKey));
         try {
             return currentAssessments.stream()
-                    .filter(assessment -> !corrections.isTechnologySuppressed(
-                            userId, assessment.getTechnology().getTechnologyKey()))
                     .map(assessment -> toEntry(userId, assessment,
                             activityByTechnology.getOrDefault(
                                     assessment.getTechnology().getTechnologyKey(), List.of())))
