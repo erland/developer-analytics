@@ -24,10 +24,6 @@ vi.mock('../../hooks/useActivityView', () => ({
   useActivityView: () => mocks.activityState,
 }))
 
-vi.mock('../../hooks/useCorrections', () => ({
-  setTechnologySuppressed: vi.fn(),
-}))
-
 vi.mock('../../hooks/useMatchingProjects', () => ({
   useMatchingProjects: (scope: { technologies: string[]; projectTypes?: string[]; year?: number; month?: string }, page: number, pageSize: number) => {
     mocks.matchingProjectsSpy(scope, page, pageSize)
@@ -240,14 +236,7 @@ describe('current Explore behaviour regression coverage', () => {
     expect(evidenceDetails).toHaveAttribute('open')
     expect(within(evidenceDetails as HTMLElement).getByText('Evidence types')).toBeInTheDocument()
     expect(within(evidenceDetails as HTMLElement).getByText('Public data only')).toBeInTheDocument()
-
-    const advancedSummary = screen.getByText('Advanced')
-    const advancedDetails = advancedSummary.closest('details')
-    expect(advancedDetails).not.toBeNull()
-    expect(advancedDetails).not.toHaveAttribute('open')
-    await user.click(advancedSummary)
-    expect(advancedDetails).toHaveAttribute('open')
-    expect(screen.getByRole('button', { name: 'Suppress technology inference' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Suppress technology inference' })).not.toBeInTheDocument()
 
     const technologyFilter = screen.getByRole('combobox', { name: 'Technology' })
     expect(technologyFilter).toHaveValue('java')
