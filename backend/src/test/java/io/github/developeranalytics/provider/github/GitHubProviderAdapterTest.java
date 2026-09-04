@@ -29,6 +29,7 @@ class GitHubProviderAdapterTest {
                 "\"private\":true," +
                 "\"fork\":false," +
                 "\"archived\":false," +
+                "\"size\":1234," +
                 "\"created_at\":\"2026-08-01T10:00:00Z\"," +
                 "\"updated_at\":\"2026-08-30T07:00:00Z\"," +
                 "\"pushed_at\":\"2026-08-30T06:59:00Z\"," +
@@ -43,6 +44,7 @@ class GitHubProviderAdapterTest {
         assertEquals(ProviderRepository.OwnerType.USER, repository.ownerType());
         assertEquals(ProviderRepository.Visibility.PRIVATE, repository.visibility());
         assertEquals("developer-analytics", repository.name());
+        assertEquals(1234L * 1024L, repository.repositorySizeBytes());
         assertFalse(repository.fork());
         assertFalse(repository.archived());
     }
