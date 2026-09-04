@@ -21,13 +21,17 @@ export function SyncMonitoringPanel() {
     } catch (error) { setRetryMessage(error instanceof Error ? error.message : 'Unable to retry repository analysis') }
   }
 
-  const summary = [`${jobs.completed}/${jobs.totalRepositories} completed`]
+  const summary = [`${jobs.completed}/${jobs.totalRepositories} repositories completed`]
+  if (jobs.analysisStepsTotal > 0 && jobs.analysisStepsCompleted < jobs.analysisStepsTotal) {
+    summary.push(`${jobs.analysisStepsCompleted}/${jobs.analysisStepsTotal} analysis steps`)
+  }
   if (jobs.running) summary.push(`${jobs.running} running`)
   if (jobs.failed) summary.push(`${jobs.failed} failed`)
 
   return <details className="dashboard-section secondary-details sync-monitoring-details" aria-labelledby="sync-progress-heading">
     <summary><span id="sync-progress-heading">Analysis progress</span><span className="secondary-details-summary-meta">{summary.join(' · ')}</span></summary>
     <div className="secondary-details-content">
+      {jobs.analysisStepsTotal > 0 ? <div className="sync-current"><strong>Pipeline progress</strong><span>{jobs.analysisStepsCompleted} of {jobs.analysisStepsTotal} steps completed</span><progress aria-label="Analysis pipeline progress" max={jobs.analysisStepsTotal} value={jobs.analysisStepsCompleted} /></div> : null}
       <div className="sync-status-grid">
         <Status label="Queued" value={jobs.queued} />
         <Status label="Pending" value={jobs.waiting} />
@@ -35,7 +39,7 @@ export function SyncMonitoringPanel() {
         <Status label="Completed" value={jobs.completed} />
         <Status label="Failed" value={jobs.failed} />
       </div>
-      {current ? <div className="sync-current"><strong>Current: {current.repositoryName ?? humanizeJob(current.jobType)}</strong><span>{humanizeJob(current.jobType)} · attempt {current.attemptCount}/{current.maxAttempts}</span>{currentRun ? <span>{currentRun.contributionsSeen} contributions · {currentRun.pagesProcessed} pages processed</span> : null}</div> : <p className="empty-state">No background analysis job is running right now.</p>}
+      {current ? <div className="sync-current"><strong>Current: {current.repositoryName ?? humanizeJob(current.jobType)}</strong><span>{current.analysisStep && current.analysisStepsTotal ? `Step ${current.analysisStep}/${current.analysisStepsTotal} · ` : ''}{humanizeJob(current.jobType)} · attempt {current.attemptCount}/{current.maxAttempts}</span>{currentRun ? <span>{currentRun.contributionsSeen} contributions · {currentRun.pagesProcessed} pages processed</span> : null}</div> : <p className="empty-state">No background analysis job is running right now.</p>}
       <div className="sync-errors-heading"><h3>Recent synchronisation errors</h3><span>{errors.length} shown</span></div>
       {errors.length ? <div className="sync-error-list">{errors.map((job) => <article className="sync-error-row" key={job.id}><div><strong>{job.repositoryName ?? humanizeJob(job.jobType)}</strong><span>{humanizeJob(job.jobType)} · {errorStatus(job)} · attempt {job.attemptCount}/{job.maxAttempts}</span><code>{job.lastError}</code><span>{formatDateTime(job.completedAt ?? job.startedAt ?? job.createdAt)}</span></div>{job.repositoryId ? <button type="button" className="secondary-action" onClick={() => void retry(job)}>Retry repository</button> : null}</article>)}</div> : <p className="empty-state">No synchronisation errors recorded.</p>}
       {retryMessage ? <p role="status" className="settings-intro">{retryMessage}</p> : null}
