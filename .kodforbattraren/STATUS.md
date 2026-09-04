@@ -9,6 +9,8 @@
 - Privacy-scope förs explicit över use-case-gränsen; policysemantiken är oförändrad.
 - GitHub Actions-run `33848355442` bekräftade att External Analysis-testerna nu passerar. De tre dashboard-activity-testerna föll däremot med 401 eftersom RestAssured skickade `Accept: */*` och routevalet då kunde välja External Analysis-varianten.
 - `MeActivityResourceCharacterizationTest` skickar nu explicit `Accept: application/json`, samma kontrakt som frontendens faktiska fetch-anrop använder.
+- GitHub Actions-run `33848775904` visade att backend validation och External Analysis privacy-testerna passerar, men large-account acceptance-testet fick 401 på `/api/me/activity?period=all` eftersom dess `curl`-anrop saknade `Accept`-header och därmed blev tvetydigt mellan dashboard-JSON och External Analysis-medietyp.
+- `scripts/test-large-account-acceptance.sh` skickar nu centralt `Accept: application/json` i `timed_get()`, så alla dashboard-API-anrop i acceptanstestet använder samma mediekontrakt som frontend.
 - Lokal testlagerkontroll passerar: authorization 7, privacy 19, persistence 10, unit 66.
 - Full Maven/Quarkus-svit behöver bekräftas av GitHub Actions.
 - **R-005 är fortfarande blockerad** på att skapa en verklig `package-lock.json` i en npm-registryansluten miljö.

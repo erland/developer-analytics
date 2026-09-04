@@ -37,5 +37,5 @@ next_step:
 delivery:
   last_completed_step_id: R-003
   verification_status: verification_pending
-  verification_summary: 'R-004 routingkorrigeringen bekräftades delvis av CI 33848355442: External Analysis privacy-testerna passerar. Dashboard activity-characterization-testerna har nu explicit Accept application/json, samma som frontend, för att undvika tvetydigt */*. R-005 är fortsatt blockerad av npm-registryåtkomst.'
-updated_at: '2026-09-04T07:30:00Z'
+  verification_summary: 'CI 33848775904 bekräftade att backend validation och External Analysis privacy-testerna passerar. Large-account acceptance-testets timed_get skickar nu explicit Accept application/json för att undvika samma route-ambiguitet vid curl-anrop. Full acceptansverifiering väntar på ny CI. R-005 är fortsatt blockerad av npm-registryåtkomst.'
+updated_at: '2026-09-04T07:40:00Z'

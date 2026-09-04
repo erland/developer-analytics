@@ -54,6 +54,7 @@ timed_get() {
   local elapsed
   elapsed="$(
     curl --fail --silent --show-error \
+      --header "Accept: application/json" \
       --cookie "developer_analytics_session=${SESSION_TOKEN}" \
       --output "${output}" \
       --write-out '%{time_total}' \
