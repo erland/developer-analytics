@@ -1,3 +1,5 @@
+import './CumulativeContributionChart.css'
+
 type Point = {
   period: string
   additions: number
