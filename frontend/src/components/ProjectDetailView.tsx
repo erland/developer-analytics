@@ -3,19 +3,27 @@ import { type ProjectDetail, useProjectDetail } from '../hooks/useProjectDetail'
 import { setProjectExcludedFromAiProfile } from '../hooks/useCorrections'
 import { useSyncMonitoring } from '../hooks/useSyncMonitoring'
 import { DrilldownTimeChart } from './DrilldownTimeChart'
+import { CumulativeContributionChart } from './CumulativeContributionChart'
 import { SummaryFacts } from './SummaryFacts'
 
-export function ProjectDetailView({ repositoryId, onBack }: { repositoryId: string; onBack: () => void }) {
+type Props = {
+  repositoryId: string
+  onBack: () => void
+  onOpenTechnology?: (technologyKey: string) => void
+  onOpenProjectType?: (categoryKey: string) => void
+}
+
+export function ProjectDetailView({ repositoryId, onBack, onOpenTechnology, onOpenProjectType }: Props) {
   const detail = useProjectDetail(repositoryId)
   return <>
     <button className="text-button detail-back" type="button" onClick={onBack}>← Back to projects</button>
     {detail.status === 'loading' ? <section className="dashboard-loading" aria-live="polite"><div className="loading-indicator" aria-hidden="true" /><p>Loading project details…</p></section> : null}
     {detail.status === 'error' ? <section className="dashboard-error" role="alert"><h2>Project detail could not be loaded.</h2><p>{detail.error}</p></section> : null}
-    {detail.status === 'ready' ? <Detail data={detail.data} repositoryId={repositoryId} /> : null}
+    {detail.status === 'ready' ? <Detail data={detail.data} repositoryId={repositoryId} onOpenTechnology={onOpenTechnology} onOpenProjectType={onOpenProjectType} /> : null}
   </>
 }
 
-function Detail({ data, repositoryId }: { data: ProjectDetail; repositoryId: string }) {
+function Detail({ data, repositoryId, onOpenTechnology, onOpenProjectType }: { data: ProjectDetail; repositoryId: string; onOpenTechnology?: (technologyKey: string) => void; onOpenProjectType?: (categoryKey: string) => void }) {
   const [refreshing, setRefreshing] = useState(false)
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null)
   const syncMonitoring = useSyncMonitoring(repositoryId)
@@ -26,9 +34,8 @@ function Detail({ data, repositoryId }: { data: ProjectDetail; repositoryId: str
       const response = await fetch(`/api/me/sync/github/repositories/${repositoryId}/refresh-analysis`, { method: 'POST', credentials: 'include', headers: { Accept: 'application/json' } })
       if (!response.ok) throw new Error(`Refresh request failed with HTTP ${response.status}`)
       setRefreshMessage('Repository analysis queued. Refresh this view after the background jobs complete.')
-    } catch (error) {
-      setRefreshMessage(error instanceof Error ? error.message : 'Unable to refresh repository analysis')
-    } finally { setRefreshing(false) }
+    } catch (error) { setRefreshMessage(error instanceof Error ? error.message : 'Unable to refresh repository analysis') }
+    finally { setRefreshing(false) }
   }
 
   async function toggleAiProfileExclusion() {
@@ -38,24 +45,23 @@ function Detail({ data, repositoryId }: { data: ProjectDetail; repositoryId: str
 
   return <>
     <section className="project-detail-hero"><div><p className="eyebrow">Project detail</p><h2>{data.metadata.name}</h2><p>{data.metadata.description || 'No repository description.'}</p></div><div className="inventory-badges"><span>{data.metadata.visibility.toLowerCase()}</span><span>{ownershipLabel(data.metadata.ownershipRelation)}</span>{data.metadata.fork ? <span>fork</span> : null}{data.metadata.archived ? <span>archived</span> : null}</div></section>
-    <SummaryFacts
-      ariaLabel="Project activity summary"
-      items={[
-        { label: 'Commits', value: formatNumber(data.activity.commits) },
-        { label: 'Pull requests', value: formatNumber(data.activity.pullRequests) },
-        { label: 'Reviews', value: formatNumber(data.activity.reviews) },
-        { label: 'Issues', value: formatNumber(data.activity.issues) },
-        { label: 'Additions', value: `+${formatNumber(data.activity.additions)}` },
-        { label: 'Deletions', value: `−${formatNumber(data.activity.deletions)}` },
-      ]}
-    />
+    <SummaryFacts ariaLabel="Project activity summary" items={[
+      { label: 'Commits', value: formatNumber(data.activity.commits) },
+      { label: 'Lines changed', value: formatNumber(data.activity.additions + data.activity.deletions) },
+      { label: 'Net lines contributed', value: formatSigned(data.activity.additions - data.activity.deletions) },
+      { label: 'Pull requests', value: formatNumber(data.activity.pullRequests) },
+      { label: 'Reviews', value: formatNumber(data.activity.reviews) },
+      { label: 'Issues', value: formatNumber(data.activity.issues) },
+    ]} />
 
     <section className="dashboard-section"><span className="card-kicker">Metadata</span><h2>Repository</h2><dl className="detail-grid"><DetailItem label="Provider" value={data.metadata.provider} /><DetailItem label="Full name" value={data.metadata.fullName ?? 'Unknown'} /><DetailItem label="Owner" value={data.metadata.ownerLogin ?? 'Unknown'} /><DetailItem label="Last activity" value={formatDate(data.metadata.lastActivityAt)} /></dl>{data.metadata.topics.length ? <div className="chip-list">{data.metadata.topics.map(topic => <span className="inventory-tag" key={topic}>{topic}</span>)}</div> : null}{data.metadata.htmlUrl ? <p className="detail-link"><a href={data.metadata.htmlUrl} target="_blank" rel="noreferrer">Open repository ↗</a></p> : null}</section>
 
     <section className="dashboard-section"><span className="card-kicker">Activity</span><h2>Commit activity over time</h2><DrilldownTimeChart points={data.activity.timeline.map(point => ({ month: point.month, commits: point.commits, changedLines: point.changedLines, lineStatisticsCommitCount: point.lineStatisticsCommitCount }))} emptyText="No commit activity recorded." /></section>
 
-    <section className="dashboard-section"><span className="card-kicker">Technologies</span><h2>Technologies</h2>{data.technologies.length ? <div className="chip-list">{data.technologies.map(item => <div className="evidence-chip" key={item.technologyKey}><strong>{item.technologyName}</strong><span>{item.strength.toLowerCase()}</span></div>)}</div> : <p className="empty-state">No technologies identified yet.</p>}</section>
-    <section className="dashboard-section"><span className="card-kicker">Classification</span><h2>Project categories</h2>{data.categories.length ? <div className="chip-list">{data.categories.map(category => <div className="evidence-chip" key={`${category.categoryKey}-${category.source}`}><strong>{category.categoryName}</strong><span>{category.confidence.toLowerCase()} · automatic</span></div>)}</div> : <p className="empty-state">No project categories yet.</p>}</section>
+    <CumulativeContributionChart points={data.activity.timeline.map(point => ({ period: point.month, additions: point.additions, deletions: point.deletions }))} title="Cumulative code contribution in this project" description="Approximate net code built up by your observed commits in this repository. The curve starts with your first collected line statistics and accumulates additions minus deletions." />
+
+    <section className="dashboard-section"><span className="card-kicker">Technologies</span><h2>Technologies</h2>{data.technologies.length ? <div className="chip-list">{data.technologies.map(item => onOpenTechnology ? <button type="button" className="evidence-chip clickable-evidence" key={item.technologyKey} onClick={() => onOpenTechnology(item.technologyKey)}><strong>{item.technologyName}</strong><span>{item.strength.toLowerCase()}</span></button> : <div className="evidence-chip" key={item.technologyKey}><strong>{item.technologyName}</strong><span>{item.strength.toLowerCase()}</span></div>)}</div> : <p className="empty-state">No technologies identified yet.</p>}</section>
+    <section className="dashboard-section"><span className="card-kicker">Classification</span><h2>Project categories</h2>{data.categories.length ? <div className="chip-list">{data.categories.map(category => onOpenProjectType ? <button type="button" className="evidence-chip clickable-evidence" key={`${category.categoryKey}-${category.source}`} onClick={() => onOpenProjectType(category.categoryKey)}><strong>{category.categoryName}</strong><span>{category.confidence.toLowerCase()} · automatic</span></button> : <div className="evidence-chip" key={`${category.categoryKey}-${category.source}`}><strong>{category.categoryName}</strong><span>{category.confidence.toLowerCase()} · automatic</span></div>)}</div> : <p className="empty-state">No project categories yet.</p>}</section>
     <section className="dashboard-section"><span className="card-kicker">Contributors</span><h2>Repository contributors</h2><SummaryFacts ariaLabel="Contributor summary" className="summary-facts-embedded" items={[{ label: 'Total contributors', value: data.contributors.total ?? 'Not collected' }, { label: 'People', value: data.contributors.humans ?? 'Not collected' }, { label: 'Bots', value: data.contributors.bots ?? 'Not collected' }]} /></section>
 
     <section className="detail-assessment-grid"><article className="dashboard-section"><span className="card-kicker">Project significance</span><h2>{data.assessment?.significanceLevel ?? 'Not calculated'}</h2>{data.assessment ? <span className="privacy-provenance">{data.assessment.privacyProvenance === 'PUBLIC_ONLY' ? 'Public data only' : 'Contains private data'}</span> : null}<div className="detail-score">{data.assessment?.significanceScore ?? '—'}</div><AssessmentRationale value={data.assessment?.significanceRationale} /></article><article className="dashboard-section"><span className="card-kicker">User involvement</span><h2>{data.assessment?.involvementLevel ?? 'Not calculated'}</h2><div className="detail-score">{data.assessment?.involvementScore ?? '—'}</div><AssessmentRationale value={data.assessment?.involvementRationale} /></article></section>
@@ -71,4 +77,5 @@ function AssessmentRationale({ value }: { value?: Record<string, unknown> }) { i
 function humanize(value: string) { return value.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()) }
 function ownershipLabel(value: string) { return value === 'OWNED_BY_USER' ? 'own' : 'external' }
 function formatNumber(value: number) { return new Intl.NumberFormat().format(value) }
+function formatSigned(value: number) { return `${value >= 0 ? '+' : '−'}${formatNumber(Math.abs(value))}` }
 function formatDate(value: string | null) { if (!value) return 'Unknown'; return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(value)) }
