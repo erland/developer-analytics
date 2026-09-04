@@ -37,4 +37,25 @@ class MeActivityResourceModelTest {
         assertEquals(710, response.commitsPerYear().getFirst().changedLines());
         assertEquals(40, response.lineStatisticsCommitCount());
     }
+    @Test
+    void projectLifecycleKeepsAllTechnologiesAndProjectTypesAlongsidePrimaryLabels() {
+        var lifecycle = new MeActivityResource.ProjectLifecycle(
+                java.util.UUID.randomUUID(),
+                "demo",
+                OffsetDateTime.parse("2026-01-01T00:00:00Z"),
+                OffsetDateTime.parse("2026-08-20T00:00:00Z"),
+                12,
+                "Backend service",
+                "Java",
+                List.of("Backend service", "CLI"),
+                List.of("Java", "Quarkus", "PostgreSQL"),
+                List.of(),
+                List.of()
+        );
+
+        assertEquals("Java", lifecycle.technology());
+        assertEquals(List.of("Java", "Quarkus", "PostgreSQL"), lifecycle.technologies());
+        assertEquals(List.of("Backend service", "CLI"), lifecycle.projectTypes());
+    }
+
 }

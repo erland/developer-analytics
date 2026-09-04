@@ -1,5 +1,6 @@
 package io.github.developeranalytics.api;
 
+import io.github.developeranalytics.persistence.technology.TechnologyTimelineRepository;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -48,4 +49,16 @@ class MeTechnologiesResourceModelTest {
         assertEquals(3, entry.timeline().getFirst().projectCount());
         assertEquals("demo", entry.representativeProjects().getFirst().repositoryName());
     }
+    @Test
+    void technologyTimelineOnlyKeepsPeriodsWithActualActivity() {
+        assertFalse(MeTechnologiesResource.hasActivity(
+                new TechnologyTimelineRepository.MetricActivityRow("java", "2025-01", 0, 0, 0, 0)));
+        assertTrue(MeTechnologiesResource.hasActivity(
+                new TechnologyTimelineRepository.MetricActivityRow("java", "2025-02", 1, 0, 0, 1)));
+        assertTrue(MeTechnologiesResource.hasActivity(
+                new TechnologyTimelineRepository.MetricActivityRow("java", "2025-03", 0, 10, 1, 0)));
+        assertTrue(MeTechnologiesResource.hasActivity(
+                new TechnologyTimelineRepository.MetricActivityRow("java", "2025-04", 0, 0, 1, 0)));
+    }
+
 }

@@ -42,6 +42,8 @@ public class MeProjectTypesResource {
         int totalCommits = rows.stream().mapToInt(ProjectTypeAnalyticsRepository.CategoryActivityRow::commitCount).sum();
 
         List<TimelinePoint> timeline = rows.stream()
+                .filter(MeProjectTypesResource::hasActivity)
+                .sorted(Comparator.comparing(ProjectTypeAnalyticsRepository.CategoryActivityRow::month))
                 .map(row -> new TimelinePoint(
                         row.month(), row.commitCount(), row.changedLines(),
                         row.lineStatisticsCommitCount(), row.activeProjectCount()))
@@ -56,6 +58,13 @@ public class MeProjectTypesResource {
 
         return new Entry(summary.categoryKey(), summary.categoryName(), summary.projectCount(),
                 totalCommits, timeline, representatives);
+    }
+
+    static boolean hasActivity(ProjectTypeAnalyticsRepository.CategoryActivityRow row) {
+        return row.commitCount() > 0
+                || row.changedLines() > 0
+                || row.lineStatisticsCommitCount() > 0
+                || row.activeProjectCount() > 0;
     }
 
     public record Entry(

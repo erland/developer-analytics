@@ -22,5 +22,9 @@ class MeActivityResourceQueryTest {
         assertFalse(source.contains(":toDate is null"));
         assertTrue(source.contains("if (fromDate != null)"));
         assertTrue(source.contains("if (toDate != null)"));
+        assertTrue(source.contains("projectInventory.find"));
+        assertTrue(source.contains("c.repository.id in :repositoryIds"));
+        assertTrue(source.contains("matchingRepositoryIds.contains(repositoryId)"));
+        assertTrue(source.contains("AnalysisPeriod.resolve(from, to, year, month, week)"));
     }
 }

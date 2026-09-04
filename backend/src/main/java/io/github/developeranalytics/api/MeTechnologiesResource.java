@@ -80,6 +80,7 @@ public class MeTechnologiesResource {
                         project.ownershipRelation(), project.lastActivityAt(), project.evidenceCount()))
                 .toList();
         var timeline = activity.stream()
+                .filter(MeTechnologiesResource::hasActivity)
                 .sorted(Comparator.comparing(TechnologyTimelineRepository.MetricActivityRow::month))
                 .map(month -> new TimelinePoint(month.month(), month.commits(), month.changedLines(),
                         month.lineStatisticsCommitCount(), month.activeProjectCount()))
@@ -91,6 +92,13 @@ public class MeTechnologiesResource {
                 assessment.getIndependentEvidenceTypes(), assessment.getFirstObservedAt(),
                 assessment.getLastObservedAt(), assessment.getRecentRepositoryCount(),
                 assessment.getPrivacyProvenance().name(), assessment.getRationale(), timeline, projects);
+    }
+
+    static boolean hasActivity(TechnologyTimelineRepository.MetricActivityRow row) {
+        return row.commits() > 0
+                || row.changedLines() > 0
+                || row.lineStatisticsCommitCount() > 0
+                || row.activeProjectCount() > 0;
     }
 
     public record Entry(String technologyKey, String technologyName, String technologyCategory,

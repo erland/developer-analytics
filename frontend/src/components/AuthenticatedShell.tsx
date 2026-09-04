@@ -3,7 +3,6 @@ import type { SessionUser } from '../hooks/useAuthenticatedSession'
 import { useDataFreshness } from '../hooks/useDataFreshness'
 import { OverviewDashboard } from './OverviewDashboard'
 import { ActivityView } from './ActivityView'
-import { TimelineView } from './TimelineView'
 import { ProjectInventoryView } from './ProjectInventoryView'
 import { TechnologyViews } from './TechnologyViews'
 import { ProjectTypeViews } from './ProjectTypeViews'
@@ -13,22 +12,18 @@ import { AiInsightsView } from './AiInsightsView'
 import { AccountView } from './AccountView'
 import { ContributionsView } from './ContributionsView'
 import { ProjectDetailView } from './ProjectDetailView'
+import { useProjectDetailNavigation } from '../hooks/useProjectDetailNavigation'
+import { useAnalysisScope } from '../hooks/useAnalysisScope'
+import { countActiveAnalysisFilters } from '../analysis/AnalysisScope'
 
-const sections = [
-  'Overview',
-  'Activity',
-  'Timeline',
-  'Projects',
-  'Technologies',
-  'Project types',
-  'Contributions',
-  'AI insights',
-  'Reports',
-  'Privacy/data sources',
-  'Account',
+const navigationGroups = [
+  { label: null, items: ['Overview'] },
+  { label: 'Explore', items: ['Activity', 'Projects', 'Technologies', 'Project types', 'Contributions'] },
+  { label: 'Insights', items: ['AI insights', 'Reports'] },
+  { label: 'Settings', items: ['Privacy/data sources', 'Account'] },
 ] as const
 
-type Section = (typeof sections)[number]
+type Section = (typeof navigationGroups)[number]['items'][number]
 
 type Props = {
   user: SessionUser
@@ -37,13 +32,15 @@ type Props = {
 export function AuthenticatedShell({ user }: Props) {
   const [section, setSection] = useState<Section>('Overview')
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const { selectedProjectId, openProject, closeProject, clearProject } = useProjectDetailNavigation()
   const freshness = useDataFreshness(true)
+  const { scope } = useAnalysisScope()
+  const activeExploreFilterCount = countActiveAnalysisFilters(scope)
 
   const displayName = user.displayName.trim() || user.login
 
   function selectSection(next: Section) {
-    setSelectedProjectId(null)
+    clearProject()
     setSection(next)
     setMobileOpen(false)
   }
@@ -82,16 +79,36 @@ export function AuthenticatedShell({ user }: Props) {
           aria-label="Primary"
         >
           <nav>
-            {sections.map((item) => (
-              <button
-                key={item}
-                type="button"
-                className={`nav-item ${section === item ? 'nav-item-active' : ''}`}
-                aria-current={section === item ? 'page' : undefined}
-                onClick={() => selectSection(item)}
-              >
-                {item}
-              </button>
+            {navigationGroups.map((group, index) => (
+              <div className="nav-group" key={group.label ?? 'overview'}>
+                {group.label ? (
+                  <div className="nav-group-label">
+                    <span>{group.label}</span>
+                    {group.label === 'Explore' && activeExploreFilterCount > 0 ? (
+                      <span
+                        className="nav-filter-count"
+                        aria-label={`${activeExploreFilterCount} active ${activeExploreFilterCount === 1 ? 'filter' : 'filters'}`}
+                      >
+                        {activeExploreFilterCount}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
+                <div className="nav-group-items">
+                  {group.items.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      className={`nav-item ${section === item ? 'nav-item-active' : ''}`}
+                      aria-current={section === item ? 'page' : undefined}
+                      onClick={() => selectSection(item)}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+                {index === 0 ? <div className="nav-group-divider" aria-hidden="true" /> : null}
+              </div>
             ))}
           </nav>
 
@@ -125,13 +142,11 @@ export function AuthenticatedShell({ user }: Props) {
           </div>
 
           {selectedProjectId ? (
-            <ProjectDetailView repositoryId={selectedProjectId} onBack={() => setSelectedProjectId(null)} />
+            <ProjectDetailView repositoryId={selectedProjectId} onBack={closeProject} />
           ) : section === 'Overview' ? (
             <OverviewDashboard displayName={displayName} />
           ) : section === 'Activity' ? (
-            <ActivityView />
-          ) : section === 'Timeline' ? (
-            <TimelineView onOpenProject={setSelectedProjectId} />
+            <ActivityView onOpenProject={openProject} />
           ) : section === 'Projects' ? (
             <ProjectInventoryView />
           ) : section === 'Technologies' ? (
@@ -139,7 +154,7 @@ export function AuthenticatedShell({ user }: Props) {
           ) : section === 'Project types' ? (
             <ProjectTypeViews />
           ) : section === 'Contributions' ? (
-            <ContributionsView onOpenProject={setSelectedProjectId} />
+            <ContributionsView />
           ) : section === 'AI insights' ? (
             <AiInsightsView />
           ) : section === 'Reports' ? (

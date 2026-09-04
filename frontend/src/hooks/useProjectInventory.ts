@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react'
+import { type AnalysisScope } from '../analysis/AnalysisScope'
+import { analysisScopeToSearchParams } from '../analysis/AnalysisScopeUrl'
 
-export type InventoryFilters = {
+export type ProjectInventoryQuery = {
   page: number
   pageSize: number
-  search: string
-  ownership: string
-  visibility: string
   activity: string
-  category: string
-  technology: string
+  scope: AnalysisScope
 }
 
 export type InventoryItem = {
@@ -23,12 +21,23 @@ export type InventoryItem = {
   technologies: Array<{ key: string; name: string }>
 }
 
+export type InventoryFacetValue = {
+  key: string
+  name: string
+  count: number
+}
+
 export type InventoryResponse = {
   items: InventoryItem[]
   total: number
   page: number
   pageSize: number
   totalPages: number
+  facets: {
+    technologies: InventoryFacetValue[]
+    projectTypes: InventoryFacetValue[]
+    ownership: InventoryFacetValue[]
+  }
 }
 
 type State =
@@ -36,42 +45,37 @@ type State =
   | { status: 'ready'; data: InventoryResponse; error: null }
   | { status: 'error'; data: null; error: string }
 
-export const initialInventoryFilters: InventoryFilters = {
+export const initialProjectInventoryQuery: ProjectInventoryQuery = {
   page: 0,
   pageSize: 25,
-  search: '',
-  ownership: '',
-  visibility: '',
   activity: '',
-  category: '',
-  technology: '',
+  scope: {
+    technologies: [],
+    projectTypes: [],
+  },
 }
 
-export function useProjectInventory(filters: InventoryFilters): State {
+export function useProjectInventory(query: ProjectInventoryQuery): State {
   const [state, setState] = useState<State>({
     status: 'loading',
     data: null,
     error: null,
   })
+  const params = analysisScopeToSearchParams(query.scope)
+  params.set('page', String(query.page))
+  params.set('pageSize', String(query.pageSize))
+  if (query.activity) params.set('activity', query.activity)
+  const requestSearch = params.toString()
 
   useEffect(() => {
     const controller = new AbortController()
-    const params = new URLSearchParams()
-
-    params.set('page', String(filters.page))
-    params.set('pageSize', String(filters.pageSize))
-
-    for (const [key, value] of Object.entries(filters)) {
-      if (key === 'page' || key === 'pageSize') continue
-      if (value) params.set(key, String(value))
-    }
 
     async function load() {
       setState({ status: 'loading', data: null, error: null })
 
       try {
         const response = await fetch(
-          `/api/me/project-inventory?${params}`,
+          `/api/me/project-inventory?${requestSearch}`,
           {
             credentials: 'include',
             headers: { Accept: 'application/json' },
@@ -97,7 +101,7 @@ export function useProjectInventory(filters: InventoryFilters): State {
 
     void load()
     return () => controller.abort()
-  }, [filters])
+  }, [requestSearch])
 
   return state
 }

@@ -21,20 +21,26 @@ export function SyncMonitoringPanel() {
     } catch (error) { setRetryMessage(error instanceof Error ? error.message : 'Unable to retry repository analysis') }
   }
 
-  return <section className="dashboard-section" aria-labelledby="sync-progress-heading">
-    <div className="section-heading-row"><div><span className="card-kicker">Synchronisation</span><h2 id="sync-progress-heading">Analysis progress</h2></div><span>{jobs.totalRepositories} repositories</span></div>
-    <div className="sync-status-grid">
-      <Status label="Queued" value={jobs.queued} />
-      <Status label="Pending" value={jobs.waiting} />
-      <Status label="Running" value={jobs.running} />
-      <Status label="Completed" value={jobs.completed} />
-      <Status label="Failed" value={jobs.failed} />
+  const summary = [`${jobs.completed}/${jobs.totalRepositories} completed`]
+  if (jobs.running) summary.push(`${jobs.running} running`)
+  if (jobs.failed) summary.push(`${jobs.failed} failed`)
+
+  return <details className="dashboard-section secondary-details sync-monitoring-details" aria-labelledby="sync-progress-heading">
+    <summary><span id="sync-progress-heading">Analysis progress</span><span className="secondary-details-summary-meta">{summary.join(' · ')}</span></summary>
+    <div className="secondary-details-content">
+      <div className="sync-status-grid">
+        <Status label="Queued" value={jobs.queued} />
+        <Status label="Pending" value={jobs.waiting} />
+        <Status label="Running" value={jobs.running} />
+        <Status label="Completed" value={jobs.completed} />
+        <Status label="Failed" value={jobs.failed} />
+      </div>
+      {current ? <div className="sync-current"><strong>Current: {current.repositoryName ?? humanizeJob(current.jobType)}</strong><span>{humanizeJob(current.jobType)} · attempt {current.attemptCount}/{current.maxAttempts}</span>{currentRun ? <span>{currentRun.contributionsSeen} contributions · {currentRun.pagesProcessed} pages processed</span> : null}</div> : <p className="empty-state">No background analysis job is running right now.</p>}
+      <div className="sync-errors-heading"><h3>Recent synchronisation errors</h3><span>{errors.length} shown</span></div>
+      {errors.length ? <div className="sync-error-list">{errors.map((job) => <article className="sync-error-row" key={job.id}><div><strong>{job.repositoryName ?? humanizeJob(job.jobType)}</strong><span>{humanizeJob(job.jobType)} · {errorStatus(job)} · attempt {job.attemptCount}/{job.maxAttempts}</span><code>{job.lastError}</code><span>{formatDateTime(job.completedAt ?? job.startedAt ?? job.createdAt)}</span></div>{job.repositoryId ? <button type="button" className="secondary-action" onClick={() => void retry(job)}>Retry repository</button> : null}</article>)}</div> : <p className="empty-state">No synchronisation errors recorded.</p>}
+      {retryMessage ? <p role="status" className="settings-intro">{retryMessage}</p> : null}
     </div>
-    {current ? <div className="sync-current"><strong>Current: {current.repositoryName ?? humanizeJob(current.jobType)}</strong><span>{humanizeJob(current.jobType)} · attempt {current.attemptCount}/{current.maxAttempts}</span>{currentRun ? <span>{currentRun.contributionsSeen} contributions · {currentRun.pagesProcessed} pages processed</span> : null}</div> : <p className="empty-state">No background analysis job is running right now.</p>}
-    <div className="sync-errors-heading"><h3>Recent synchronisation errors</h3><span>{errors.length} shown</span></div>
-    {errors.length ? <div className="sync-error-list">{errors.map((job) => <article className="sync-error-row" key={job.id}><div><strong>{job.repositoryName ?? humanizeJob(job.jobType)}</strong><span>{humanizeJob(job.jobType)} · {errorStatus(job)} · attempt {job.attemptCount}/{job.maxAttempts}</span><code>{job.lastError}</code><span>{formatDateTime(job.completedAt ?? job.startedAt ?? job.createdAt)}</span></div>{job.repositoryId ? <button type="button" className="secondary-action" onClick={() => void retry(job)}>Retry repository</button> : null}</article>)}</div> : <p className="empty-state">No synchronisation errors recorded.</p>}
-    {retryMessage ? <p role="status" className="settings-intro">{retryMessage}</p> : null}
-  </section>
+  </details>
 }
 
 function Status({ label, value }: { label: string; value: number }) { return <div><span>{label}</span><strong>{value}</strong></div> }

@@ -25,6 +25,22 @@ public class RepositoryProjectCategoryRepository {
             .getResultList();
     }
 
+
+    public List<CategoryFacetRow> summarizeForRepositories(List<UUID> repositoryIds) {
+        if (repositoryIds == null || repositoryIds.isEmpty()) return List.of();
+        return entityManager.createQuery(
+                "select c.category.categoryKey, c.category.displayName, count(distinct c.repository.id) " +
+                "from RepositoryProjectCategory c where c.repository.id in :repositoryIds " +
+                "group by c.category.categoryKey, c.category.displayName order by c.category.displayName",
+                Object[].class)
+            .setParameter("repositoryIds", repositoryIds)
+            .getResultList().stream()
+            .map(row -> new CategoryFacetRow((String) row[0], (String) row[1], ((Number) row[2]).longValue()))
+            .toList();
+    }
+
+    public record CategoryFacetRow(String key, String name, long count) {}
+
     public void deleteDeterministicForRepository(UUID repositoryId) {
         entityManager.createQuery(
                 "delete from RepositoryProjectCategory c " +
