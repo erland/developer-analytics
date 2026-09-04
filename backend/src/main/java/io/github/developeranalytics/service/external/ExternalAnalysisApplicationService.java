@@ -7,7 +7,9 @@ import io.github.developeranalytics.domain.model.DataPrivacyProvenance;
 import io.github.developeranalytics.domain.model.RepositoryVisibility;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.persistence.correction.UserAnalysisCorrectionRepository;
+import io.github.developeranalytics.persistence.project.ProjectTypeAnalyticsRepository;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
+import io.github.developeranalytics.persistence.technology.UserTechnologyAssessmentRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -22,6 +24,8 @@ public class ExternalAnalysisApplicationService {
 
     @Inject SourceRepositoryRepository repositories;
     @Inject UserAnalysisCorrectionRepository corrections;
+    @Inject UserTechnologyAssessmentRepository technologyAssessments;
+    @Inject ProjectTypeAnalyticsRepository projectTypes;
     @Inject EntityManager entityManager;
 
     @Transactional
@@ -37,6 +41,68 @@ public class ExternalAnalysisApplicationService {
                         repository.getOwnershipRelation().name(), repository.getLastActivityAt(),
                         categoryKeys(repository.getId()), technologyKeys(repository.getId()),
                         excludedFromAiProfile(userId, repository.getId())))
+                .toList();
+    }
+
+    @Transactional
+    public List<TechnologySummaryResult> technologies(
+            UUID userId,
+            ExternalClientToken.PrivacyScope privacyScope,
+            int limit
+    ) {
+        int safeLimit = Math.max(1, Math.min(limit, 100));
+        return technologyAssessments.findForUser(userId).stream()
+                .filter(assessment -> privacyScope.allowsPrivateAggregates()
+                        || assessment.getPrivacyProvenance() == DataPrivacyProvenance.PUBLIC_ONLY)
+                .limit(safeLimit)
+                .map(assessment -> new TechnologySummaryResult(
+                        assessment.getTechnology().getTechnologyKey(),
+                        assessment.getTechnology().getDisplayName(),
+                        assessment.getStrength().name(),
+                        assessment.getScore(),
+                        assessment.getRepositoryCount(),
+                        assessment.getFirstObservedAt(),
+                        assessment.getLastObservedAt(),
+                        assessment.getPrivacyProvenance().name()))
+                .toList();
+    }
+
+    @Transactional
+    public List<ProjectTypeSummaryResult> projectTypes(
+            UUID userId,
+            ExternalClientToken.PrivacyScope privacyScope,
+            int limit
+    ) {
+        int safeLimit = Math.max(1, Math.min(limit, 100));
+        if (privacyScope.allowsPrivateAggregates()) {
+            return projectTypes.categorySummaries(userId).stream()
+                    .limit(safeLimit)
+                    .map(row -> new ProjectTypeSummaryResult(
+                            row.categoryKey(),
+                            row.categoryName(),
+                            row.projectCount()))
+                    .toList();
+        }
+
+        return entityManager.createQuery(
+                "select c.category.categoryKey, c.category.displayName, " +
+                "count(distinct c.repository.id) " +
+                "from RepositoryProjectCategory c " +
+                "where c.repository.user.id=:userId " +
+                "and c.repository.includedInAnalysis=true " +
+                "and c.repository.visibility=:publicVisibility " +
+                "group by c.category.categoryKey, c.category.displayName " +
+                "order by count(distinct c.repository.id) desc",
+                Object[].class)
+                .setParameter("userId", userId)
+                .setParameter("publicVisibility", RepositoryVisibility.PUBLIC)
+                .setMaxResults(safeLimit)
+                .getResultList()
+                .stream()
+                .map(row -> new ProjectTypeSummaryResult(
+                        (String) row[0],
+                        (String) row[1],
+                        ((Number) row[2]).intValue()))
                 .toList();
     }
 
@@ -152,6 +218,11 @@ public class ExternalAnalysisApplicationService {
     public record ProjectResult(UUID id, String name, String visibility, String ownership,
                                 OffsetDateTime lastActivityAt, List<String> projectTypes,
                                 List<String> technologies, boolean excludedFromAiProfile) {}
+    public record TechnologySummaryResult(String key, String name, String evidenceLevel,
+                                          int evidenceScore, int projectCount,
+                                          OffsetDateTime firstObservedAt, OffsetDateTime lastObservedAt,
+                                          String privacyProvenance) {}
+    public record ProjectTypeSummaryResult(String key, String name, int projectCount) {}
     public record ActivityResult(int contributionCount, int activeProjectCount,
                                  Map<String, Integer> contributionTypes,
                                  List<ActivityMonthResult> monthly, String privacyProvenance) {}
