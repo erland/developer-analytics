@@ -36,7 +36,7 @@ class MeProjectDetailResourceModelTest {
                         10, 2, 1, 1, 100, 40,
                         OffsetDateTime.parse("2026-01-01T08:00:00Z"),
                         OffsetDateTime.parse("2026-08-20T08:00:00Z"),
-                        List.of(new MeProjectDetailResource.ActivityPoint("2026-08", 4, 140, 4))
+                        List.of(new MeProjectDetailResource.ActivityPoint("2026-08", 4, 100, 40, 140, 4))
                 ),
                 List.of(),
                 List.of(),
@@ -60,6 +60,8 @@ class MeProjectDetailResourceModelTest {
 
         assertEquals(70, detail.assessment().significanceScore());
         assertEquals(85, detail.assessment().involvementScore());
+        assertEquals(100, detail.activity().timeline().getFirst().additions());
+        assertEquals(40, detail.activity().timeline().getFirst().deletions());
         assertEquals(140, detail.activity().timeline().getFirst().changedLines());
         assertEquals("SYNCED", detail.synchronisation().status());
     }
