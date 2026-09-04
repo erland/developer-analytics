@@ -35,7 +35,7 @@ public class RepositoryAnalysisOrchestrator {
         int repositoryJobsQueued = 0;
         int alreadyQueued = 0;
         for (SourceRepository repository : candidates) {
-            QueueCounts counts = enqueueRepositoryJobs(user, repository.getId());
+            QueueCounts counts = enqueueRepositoryJobs(user, repository);
             repositoryJobsQueued += counts.queued();
             alreadyQueued += counts.alreadyQueued();
         }
@@ -63,14 +63,15 @@ public class RepositoryAnalysisOrchestrator {
                     "Repository is not included in analysis");
         }
 
-        QueueCounts counts = enqueueRepositoryJobs(user, repositoryId);
+        QueueCounts counts = enqueueRepositoryJobs(user, repository);
         int aggregateJobsQueued = counts.queued() > 0
                 ? enqueueAggregateJobs(user)
                 : 0;
         return new QueueResult(1, counts.queued(), counts.alreadyQueued(), aggregateJobsQueued);
     }
 
-    private QueueCounts enqueueRepositoryJobs(AppUser user, UUID repositoryId) {
+    private QueueCounts enqueueRepositoryJobs(AppUser user, SourceRepository repository) {
+        UUID repositoryId = repository.getId();
         int queued = 0;
         int alreadyQueued = 0;
 
@@ -78,7 +79,11 @@ public class RepositoryAnalysisOrchestrator {
                 jobs.enqueueContributionDiscovery(user, repositoryId),
                 jobs.enqueueLanguageEvidence(user, repositoryId),
                 jobs.enqueueFileManifestEvidence(user, repositoryId),
-                jobs.enqueueDeterministicClassification(user, repositoryId)
+                jobs.enqueueDeterministicClassification(
+                        user,
+                        repositoryId,
+                        repository.getLastActivityAt()
+                )
         };
 
         for (BackgroundJob job : repositoryJobs) {
