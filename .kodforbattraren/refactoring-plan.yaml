@@ -19,8 +19,7 @@ steps:
 - id: R-001
   order: 1
   title: Skydda activity-use-caset med characterization tests
-  goal: Få beteendebaserat testskydd för de viktigaste aggregation- och filterfallen
-    före extraction.
+  goal: Få beteendebaserat testskydd för de viktigaste aggregation- och filterfallen före extraction.
   status: completed
   change_classification: refactoring
   finding_ids:
@@ -41,8 +40,7 @@ steps:
 - id: R-002
   order: 2
   title: Extrahera activity application service
-  goal: Flytta query-, aggregation- och labelansvar ur REST-resursen med oförändrat
-    API-beteende.
+  goal: Flytta query-, aggregation- och labelansvar ur REST-resursen med oförändrat API-beteende.
   status: completed
   change_classification: refactoring
   finding_ids:
@@ -87,7 +85,7 @@ steps:
   order: 4
   title: Etablera use-case-gräns för externa analys-API:t
   goal: Separera privacy-/analysregler och persistence från REST-transport i små delsteg.
-  status: verification_pending
+  status: completed
   change_classification: refactoring
   finding_ids:
   - F-002
@@ -107,15 +105,39 @@ steps:
   - External API-kontrakt är oförändrat.
   verification:
   - cd backend && mvn --batch-mode --no-transfer-progress verify
-- id: R-005
+- id: R-005A
   order: 5
-  title: Lås frontendens dependency-resolution
-  goal: Göra lokala och CI-installationer reproducerbara.
-  status: blocked
+  title: Generera frontend-lockfil i nätverksansluten CI
+  goal: Låt Developer Analytics egen npm 11.6.0-installation generera den exakta package-lock.json som behövs för R-005.
+  status: verification_pending
   change_classification: refactoring
   finding_ids:
   - F-004
-  depends_on: []
+  depends_on:
+  - R-004
+  scope:
+  - frontend CI dependency installation
+  - temporary package-lock artifact
+  out_of_scope:
+  - committing the lockfile
+  - switching CI/Docker to npm ci
+  - dependency upgrades
+  risk: low
+  done_when:
+  - Frontendjobbet genererar package-lock.json med npm 11.6.0.
+  - CI laddar upp lockfilen som en kortlivad artefakt utan att ändra applikationsbeteendet.
+  verification:
+  - Run GitHub Actions frontend validation and confirm artifact developer-analytics-frontend-package-lock exists.
+- id: R-005
+  order: 6
+  title: Lås frontendens dependency-resolution
+  goal: Göra lokala och CI-installationer reproducerbara.
+  status: planned
+  change_classification: refactoring
+  finding_ids:
+  - F-004
+  depends_on:
+  - R-005A
   scope:
   - frontend package lock
   - frontend CI install command
@@ -130,10 +152,9 @@ steps:
   - cd frontend && npm ci
   - cd frontend && npm run lint && npm run typecheck && npm test && npm run build
 - id: R-006
-  order: 6
+  order: 7
   title: Extrahera minimal gemensam frontend request-mekanik
-  goal: Minska verklig duplication i credentials/status/error-hantering utan att bygga
-    ett nytt API-ramverk.
+  goal: Minska verklig duplication i credentials/status/error-hantering utan att bygga ett nytt API-ramverk.
   status: planned
   change_classification: refactoring
   finding_ids:

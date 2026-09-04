@@ -5,37 +5,33 @@ source:
   zip:
     base_name: developer-analytics-main(1).zip
     base_sha256: 4314be6f435c256811cb21d7336202f670a1aa79c43f19b50066c2aff92c27f8
-    last_output_name: developer-analytics-kodforbattraren-step-R-001-fix1.zip
-    last_output_sha256: 91a0ac794512a65c06595b8dbe1c17542aa8cdf76352c94f87c5d3bcc93c3cc3
+    last_output_name: developer-analytics-kodforbattraren-R-004-routing-fix3.zip
+    last_output_sha256: 72867b43aa50da43050f4d994aae9fc1a42f3b5a3c3572fa621e9e43377a23e0
 progress:
-  current_step_id: R-005
+  current_step_id: R-005A
   completed_step_ids:
   - R-001
   - R-002
   - R-003
+  - R-004
   skipped_step_ids: []
-  blocked_step_ids:
-  - R-005
+  blocked_step_ids: []
 findings:
   F-001: resolved
-  F-002: verification_pending
+  F-002: resolved
   F-003: planned
-  F-004: blocked
-blockers:
-- id: B-R005-NPM-REGISTRY
+  F-004: in_progress
+blockers: []
+plan_changes:
+- type: split
   step_id: R-005
-  reason: Körmiljön kan inte nå registry.npmjs.org, så en korrekt package-lock.json
-    kan inte genereras eller valideras här.
-  safe_preparation: frontend/package.json pinnar nu packageManager till npm@11.6.0,
-    samma npm-version som CI redan använder.
-  resume_when: Kör npm 11.6.0 i en miljö med npm-registryåtkomst och generera package-lock.json;
-    byt därefter CI och Dockerfile från npm install till npm ci och kör frontendvalideringen.
-plan_changes: []
+  reason: Den lokala körmiljön saknar npm-registryåtkomst. R-005 delas därför så projektets egen nätverksanslutna CI först genererar en exakt lockfil som artefakt, innan npm ci införs.
+  inserted_step_id: R-005A
 next_step:
-  recommended: R-005
-  reason: R-005 måste slutföras med en verklig npm-lockfil innan R-006 får starta.
+  recommended: R-005A
+  reason: Kör CI på denna ZIP och bekräfta/download frontend-lockartefakten; därefter kan R-005 slutföras med exakt lockfil och npm ci.
 delivery:
-  last_completed_step_id: R-003
+  last_completed_step_id: R-004
   verification_status: verification_pending
-  verification_summary: 'CI 33848775904 bekräftade att backend validation och External Analysis privacy-testerna passerar. Large-account acceptance-testets timed_get skickar nu explicit Accept application/json för att undvika samma route-ambiguitet vid curl-anrop. Full acceptansverifiering väntar på ny CI. R-005 är fortsatt blockerad av npm-registryåtkomst.'
-updated_at: '2026-09-04T07:40:00Z'
+  verification_summary: R-004 är verifierat grönt enligt användarens senaste CI-körning. R-005A har lagts in för att låta frontendjobbet generera package-lock.json med npm 11.6.0 och ladda upp den som kortlivad artefakt; artefakten väntar på CI-verifiering.
+updated_at: '2026-09-04T08:20:00Z'
