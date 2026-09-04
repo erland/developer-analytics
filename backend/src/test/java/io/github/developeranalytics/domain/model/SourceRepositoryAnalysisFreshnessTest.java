@@ -38,6 +38,18 @@ class SourceRepositoryAnalysisFreshnessTest {
     }
 
     @Test
+    void activityDiscoveredWhilePipelineRunsRemainsStaleAfterOlderPipelineCompletes() {
+        SourceRepository repository = new SourceRepository(null, "github", "1", "owner", "repo");
+        OffsetDateTime queuedActivity = OffsetDateTime.of(2026, 9, 1, 12, 0, 0, 0, ZoneOffset.UTC);
+        repository.setLastActivityAt(queuedActivity);
+
+        repository.setLastActivityAt(queuedActivity.plusHours(1));
+        repository.markAnalysisCompleted(queuedActivity.plusHours(2), queuedActivity);
+
+        assertTrue(repository.needsAnalysisRefresh());
+    }
+
+    @Test
     void repositoryWithoutActivityCanStillBeFreshAfterAnalysis() {
         SourceRepository repository = new SourceRepository(null, "github", "1", "owner", "empty-repo");
 
