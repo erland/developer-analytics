@@ -103,8 +103,10 @@ public class GitHubProviderAdapter implements SourceControlProvider {
                 name.equals("docker-compose.yml") || name.equals("docker-compose.yaml") || name.equals("compose.yml") ||
                 name.equals("compose.yaml") || name.equals("package.swift") || name.equals("pyproject.toml") ||
                 name.equals("requirements.txt") || name.equals(".terraform.lock.hcl") || name.endsWith(".tf") ||
-                name.equals("chart.yaml") || name.equals("kustomization.yaml") || path.startsWith(".github/workflows/") ||
-                path.contains("/.github/workflows/") || path.startsWith("db/migration/") || path.contains("/db/migration/");
+                name.equals("chart.yaml") || name.equals("kustomization.yaml") || name.equals("androidmanifest.xml") ||
+                name.equals("project.pbxproj") || name.equals("platformio.ini") || name.endsWith(".ino") ||
+                path.startsWith(".github/workflows/") || path.contains("/.github/workflows/") ||
+                path.startsWith("db/migration/") || path.contains("/db/migration/");
     }
 
     private String encodePath(String path) {
@@ -154,8 +156,6 @@ public class GitHubProviderAdapter implements SourceControlProvider {
                     ProviderContribution.State.UNKNOWN, null, null, null, null));
         }
 
-        // Commits are the core activity source. PR/review/issue APIs are useful enrichment,
-        // but a repository-specific permission restriction must not discard a successful commit sync.
         if (page == 1) {
             JsonNode pullsArray = optionalPullRequests(fullName, accessToken);
             for (JsonNode node : pullsArray) {
