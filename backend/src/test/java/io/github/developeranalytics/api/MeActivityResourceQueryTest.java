@@ -14,17 +14,20 @@ class MeActivityResourceQueryTest {
 
     @Test
     void allTimeQueryDoesNotBindUntypedNullDateParameters() throws Exception {
-        String source = Files.readString(Path.of(
+        String resourceSource = Files.readString(Path.of(
                 "src/main/java/io/github/developeranalytics/api/MeActivityResource.java"
         ));
+        String serviceSource = Files.readString(Path.of(
+                "src/main/java/io/github/developeranalytics/service/activity/ActivityApplicationService.java"
+        ));
 
-        assertFalse(source.contains(":fromDate is null"));
-        assertFalse(source.contains(":toDate is null"));
-        assertTrue(source.contains("if (fromDate != null)"));
-        assertTrue(source.contains("if (toDate != null)"));
-        assertTrue(source.contains("projectInventory.find"));
-        assertTrue(source.contains("c.repository.id in :repositoryIds"));
-        assertTrue(source.contains("matchingRepositoryIds.contains(repositoryId)"));
-        assertTrue(source.contains("AnalysisPeriod.resolve(from, to, year, month, week)"));
+        assertFalse(serviceSource.contains(":fromDate is null"));
+        assertFalse(serviceSource.contains(":toDate is null"));
+        assertTrue(serviceSource.contains("if (fromDate != null)"));
+        assertTrue(serviceSource.contains("if (toDate != null)"));
+        assertTrue(serviceSource.contains("projectInventory.find"));
+        assertTrue(serviceSource.contains("c.repository.id in :repositoryIds"));
+        assertTrue(serviceSource.contains("matchingRepositoryIds.contains(repositoryId)"));
+        assertTrue(resourceSource.contains("AnalysisPeriod.resolve(from, to, year, month, week)"));
     }
 }

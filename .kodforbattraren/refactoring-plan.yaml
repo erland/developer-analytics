@@ -5,137 +5,150 @@ project:
   repository: null
 source_snapshot:
   mode: zip
-  captured_at: "2026-09-04T04:41:18Z"
-  base_identifier: "developer-analytics-main(1).zip:4314be6f435c256811cb21d7336202f670a1aa79c43f19b50066c2aff92c27f8"
+  captured_at: '2026-09-04T04:41:18Z'
+  base_identifier: developer-analytics-main(1).zip:4314be6f435c256811cb21d7336202f670a1aa79c43f19b50066c2aff92c27f8
 objectives:
-  - Minska lagerövertramp i centrala API-flöden utan att ändra externt beteende.
-  - Förbättra testbarheten före strukturella förändringar.
-  - Göra frontendens nätverkskod och dependency-installation mer reproducerbar stegvis.
+- Minska lagerövertramp i centrala API-flöden utan att ändra externt beteende.
+- Förbättra testbarheten före strukturella förändringar.
+- Göra frontendens nätverkskod och dependency-installation mer reproducerbar stegvis.
 constraints:
-  - Bevara API-kontrakt och användarbeteende under refaktoreringsstegen.
-  - Ingen ramverksmigration eller mikroserviceuppdelning.
-  - Privacy-regler får inte försvagas.
+- Bevara API-kontrakt och användarbeteende under refaktoreringsstegen.
+- Ingen ramverksmigration eller mikroserviceuppdelning.
+- Privacy-regler får inte försvagas.
 steps:
-  - id: R-001
-    order: 1
-    title: Skydda activity-use-caset med characterization tests
-    goal: Få beteendebaserat testskydd för de viktigaste aggregation- och filterfallen före extraction.
-    status: blocked
-    change_classification: refactoring
-    finding_ids: [F-001]
-    depends_on: []
-    scope:
-      - backend activity aggregation/filter behavior
-      - tests for MeActivityResource/application behavior
-    out_of_scope:
-      - API contract changes
-      - production restructuring
-    risk: low
-    done_when:
-      - Kritiska activity-fall verifieras genom beteende i stället för enbart källtextinspektion.
-      - Befintlig verifiering är oförsvagad.
-    verification:
-      - cd backend && mvn --batch-mode --no-transfer-progress test
-  - id: R-002
-    order: 2
-    title: Extrahera activity application service
-    goal: Flytta query-, aggregation- och labelansvar ur REST-resursen med oförändrat API-beteende.
-    status: planned
-    change_classification: refactoring
-    finding_ids: [F-001]
-    depends_on: [R-001]
-    scope:
-      - MeActivityResource
-      - nytt/fokuserat application service-lager för activity
-    out_of_scope:
-      - frontend
-      - response contract changes
-    risk: medium
-    done_when:
-      - MeActivityResource fokuserar på transport/auth/input-output.
-      - Activity-logik kan testas utan REST-resursens interna implementation.
-      - Tester passerar.
-    verification:
-      - cd backend && mvn --batch-mode --no-transfer-progress verify
-  - id: R-003
-    order: 3
-    title: Ersätt implementationstätt activity-querytest
-    goal: Ta bort beroendet av källtextsträngar när motsvarande beteende är skyddat.
-    status: planned
-    change_classification: refactoring
-    finding_ids: [F-001]
-    depends_on: [R-002]
-    scope:
-      - MeActivityResourceQueryTest
-      - activity service tests
-    out_of_scope:
-      - query performance redesign
-    risk: low
-    done_when:
-      - Inget activity-test behöver läsa Java-källfilen för att verifiera querystruktur.
-      - Motsvarande regressioner skyddas beteendemässigt.
-    verification:
-      - cd backend && mvn --batch-mode --no-transfer-progress test
-  - id: R-004
-    order: 4
-    title: Etablera use-case-gräns för externa analys-API:t
-    goal: Separera privacy-/analysregler och persistence från REST-transport i små delsteg.
-    status: planned
-    change_classification: refactoring
-    finding_ids: [F-002]
-    depends_on: [R-003]
-    scope:
-      - ExternalAnalysisResource
-      - external analysis application services
-      - privacy characterization tests
-    out_of_scope:
-      - external API contract changes
-      - privacy policy changes
-    risk: high
-    done_when:
-      - Privacy-känsliga use cases har explicit testskydd.
-      - REST-resursen äger inte direkt persistence/aggregation för migrerade use cases.
-      - External API-kontrakt är oförändrat.
-    verification:
-      - cd backend && mvn --batch-mode --no-transfer-progress verify
-  - id: R-005
-    order: 5
-    title: Lås frontendens dependency-resolution
-    goal: Göra lokala och CI-installationer reproducerbara.
-    status: planned
-    change_classification: refactoring
-    finding_ids: [F-004]
-    depends_on: []
-    scope:
-      - frontend package lock
-      - frontend CI install command
-    out_of_scope:
-      - dependency upgrades
-    risk: low
-    done_when:
-      - En npm-lockfil finns och matchar package.json.
-      - CI använder npm ci.
-      - Frontendvalideringen passerar.
-    verification:
-      - cd frontend && npm ci
-      - cd frontend && npm run lint && npm run typecheck && npm test && npm run build
-  - id: R-006
-    order: 6
-    title: Extrahera minimal gemensam frontend request-mekanik
-    goal: Minska verklig duplication i credentials/status/error-hantering utan att bygga ett nytt API-ramverk.
-    status: planned
-    change_classification: refactoring
-    finding_ids: [F-003]
-    depends_on: [R-005]
-    scope:
-      - liten gemensam request-helper
-      - ett första begränsat urval hooks
-    out_of_scope:
-      - massmigrering av alla hooks i ett steg
-      - nytt state-management-bibliotek
-    risk: medium
-    done_when:
-      - Gemensam mekanik har ett tydligt litet API och egna tester.
-      - Migrerade hooks behåller sitt beteende.
-    verification:
-      - cd frontend && npm run lint && npm run typecheck && npm test && npm run build
+- id: R-001
+  order: 1
+  title: Skydda activity-use-caset med characterization tests
+  goal: Få beteendebaserat testskydd för de viktigaste aggregation- och filterfallen
+    före extraction.
+  status: completed
+  change_classification: refactoring
+  finding_ids:
+  - F-001
+  depends_on: []
+  scope:
+  - backend activity aggregation/filter behavior
+  - tests for MeActivityResource/application behavior
+  out_of_scope:
+  - API contract changes
+  - production restructuring
+  risk: low
+  done_when:
+  - Kritiska activity-fall verifieras genom beteende i stället för enbart källtextinspektion.
+  - Befintlig verifiering är oförsvagad.
+  verification:
+  - cd backend && mvn --batch-mode --no-transfer-progress test
+- id: R-002
+  order: 2
+  title: Extrahera activity application service
+  goal: Flytta query-, aggregation- och labelansvar ur REST-resursen med oförändrat
+    API-beteende.
+  status: blocked
+  change_classification: refactoring
+  finding_ids:
+  - F-001
+  depends_on:
+  - R-001
+  scope:
+  - MeActivityResource
+  - nytt/fokuserat application service-lager för activity
+  out_of_scope:
+  - frontend
+  - response contract changes
+  risk: medium
+  done_when:
+  - MeActivityResource fokuserar på transport/auth/input-output.
+  - Activity-logik kan testas utan REST-resursens interna implementation.
+  - Tester passerar.
+  verification:
+  - cd backend && mvn --batch-mode --no-transfer-progress verify
+- id: R-003
+  order: 3
+  title: Ersätt implementationstätt activity-querytest
+  goal: Ta bort beroendet av källtextsträngar när motsvarande beteende är skyddat.
+  status: planned
+  change_classification: refactoring
+  finding_ids:
+  - F-001
+  depends_on:
+  - R-002
+  scope:
+  - MeActivityResourceQueryTest
+  - activity service tests
+  out_of_scope:
+  - query performance redesign
+  risk: low
+  done_when:
+  - Inget activity-test behöver läsa Java-källfilen för att verifiera querystruktur.
+  - Motsvarande regressioner skyddas beteendemässigt.
+  verification:
+  - cd backend && mvn --batch-mode --no-transfer-progress test
+- id: R-004
+  order: 4
+  title: Etablera use-case-gräns för externa analys-API:t
+  goal: Separera privacy-/analysregler och persistence från REST-transport i små delsteg.
+  status: planned
+  change_classification: refactoring
+  finding_ids:
+  - F-002
+  depends_on:
+  - R-003
+  scope:
+  - ExternalAnalysisResource
+  - external analysis application services
+  - privacy characterization tests
+  out_of_scope:
+  - external API contract changes
+  - privacy policy changes
+  risk: high
+  done_when:
+  - Privacy-känsliga use cases har explicit testskydd.
+  - REST-resursen äger inte direkt persistence/aggregation för migrerade use cases.
+  - External API-kontrakt är oförändrat.
+  verification:
+  - cd backend && mvn --batch-mode --no-transfer-progress verify
+- id: R-005
+  order: 5
+  title: Lås frontendens dependency-resolution
+  goal: Göra lokala och CI-installationer reproducerbara.
+  status: planned
+  change_classification: refactoring
+  finding_ids:
+  - F-004
+  depends_on: []
+  scope:
+  - frontend package lock
+  - frontend CI install command
+  out_of_scope:
+  - dependency upgrades
+  risk: low
+  done_when:
+  - En npm-lockfil finns och matchar package.json.
+  - CI använder npm ci.
+  - Frontendvalideringen passerar.
+  verification:
+  - cd frontend && npm ci
+  - cd frontend && npm run lint && npm run typecheck && npm test && npm run build
+- id: R-006
+  order: 6
+  title: Extrahera minimal gemensam frontend request-mekanik
+  goal: Minska verklig duplication i credentials/status/error-hantering utan att bygga
+    ett nytt API-ramverk.
+  status: planned
+  change_classification: refactoring
+  finding_ids:
+  - F-003
+  depends_on:
+  - R-005
+  scope:
+  - liten gemensam request-helper
+  - ett första begränsat urval hooks
+  out_of_scope:
+  - massmigrering av alla hooks i ett steg
+  - nytt state-management-bibliotek
+  risk: medium
+  done_when:
+  - Gemensam mekanik har ett tydligt litet API och egna tester.
+  - Migrerade hooks behåller sitt beteende.
+  verification:
+  - cd frontend && npm run lint && npm run typecheck && npm test && npm run build
