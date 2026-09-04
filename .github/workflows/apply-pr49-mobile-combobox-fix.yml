@@ -1,0 +1,40 @@
+name: Apply PR 49 mobile combobox fix
+
+on:
+  push:
+    branches:
+      - zip-github/work-7de8338d-df96-44ff-88b9-b82466d9d0d8
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: zip-github/work-7de8338d-df96-44ff-88b9-b82466d9d0d8
+      - name: Use combobox accessible role
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('frontend/e2e/mobile/primary-flows.spec.ts')
+          text = path.read_text()
+          old = "  const technologySelect = page.getByLabel('Technology', { exact: true })"
+          new = "  const technologySelect = page.getByRole('combobox', { name: 'Technology' })"
+          if old not in text:
+              raise SystemExit('Expected Technology label selector not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Commit fix and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/apply-pr49-mobile-combobox-fix.yml
+          git add frontend/e2e/mobile/primary-flows.spec.ts
+          git commit -m "Use combobox role in mobile filter test"
+          git push origin HEAD:zip-github/work-7de8338d-df96-44ff-88b9-b82466d9d0d8
