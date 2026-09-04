@@ -1,0 +1,2 @@
+DELETE FROM user_analysis_correction
+WHERE correction_type IN ('PROJECT_CATEGORY_REJECTED', 'TECHNOLOGY_INFERENCE_SUPPRESSED');
