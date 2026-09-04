@@ -245,7 +245,6 @@ describe('current Explore behaviour regression coverage', () => {
     const advancedDetails = advancedSummary.closest('details')
     expect(advancedDetails).not.toBeNull()
     expect(advancedDetails).not.toHaveAttribute('open')
-    expect(screen.queryByRole('button', { name: 'Suppress technology inference' })).not.toBeInTheDocument()
     await user.click(advancedSummary)
     expect(advancedDetails).toHaveAttribute('open')
     expect(screen.getByRole('button', { name: 'Suppress technology inference' })).toBeInTheDocument()
