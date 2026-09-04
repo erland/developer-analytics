@@ -2,6 +2,7 @@
   "categories": [
     {"key":"web-application","name":"Web application","description":"User-facing browser application","aliases":["web app","frontend application"],"sortOrder":10},
     {"key":"mobile-application","name":"Mobile application","description":"Application targeting mobile or tv/mobile-family platforms","aliases":["mobile app","ios app","android app","tvos app"],"sortOrder":20},
+    {"key":"embedded-iot","name":"Embedded/IoT","description":"Software targeting embedded devices, microcontrollers or connected-device hardware","aliases":["embedded","iot","microcontroller","arduino"],"sortOrder":25},
     {"key":"game","name":"Game","description":"Interactive game or game-related project","aliases":["video game"],"sortOrder":30},
     {"key":"backend-service","name":"Backend service","description":"Server-side application or service","aliases":["backend","service"],"sortOrder":40},
     {"key":"api","name":"API","description":"API-first service or API implementation","aliases":["web api","rest api"],"sortOrder":50},

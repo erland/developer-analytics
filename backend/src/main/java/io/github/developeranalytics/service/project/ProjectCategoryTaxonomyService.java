@@ -23,10 +23,6 @@ public class ProjectCategoryTaxonomyService {
 
     @Transactional
     public int seedBuiltInTaxonomyIfEmpty() {
-        if (!repository.findActive().isEmpty()) {
-            return 0;
-        }
-
         try (InputStream in = Thread.currentThread()
                 .getContextClassLoader()
                 .getResourceAsStream("project-category-taxonomy.json")) {
@@ -40,13 +36,18 @@ public class ProjectCategoryTaxonomyService {
             int created = 0;
 
             for (JsonNode node : root.path("categories")) {
+                String key = node.path("key").asText();
+                if (repository.findByKey(key).isPresent()) {
+                    continue;
+                }
+
                 List<String> aliases = new ArrayList<>();
                 for (JsonNode alias : node.path("aliases")) {
                     aliases.add(alias.asText());
                 }
 
                 repository.persist(new ProjectCategory(
-                        node.path("key").asText(),
+                        key,
                         node.path("name").asText(),
                         node.path("description").asText(null),
                         aliases,

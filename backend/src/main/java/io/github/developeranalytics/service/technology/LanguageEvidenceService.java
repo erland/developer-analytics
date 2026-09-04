@@ -79,7 +79,7 @@ public class LanguageEvidenceService {
                     findLanguageTechnology(technologies, language.getKey());
 
             if (technology == null) {
-                continue;
+                technology = catalogueService.ensureLanguageTechnology(language.getKey());
             }
 
             RepositoryTechnologyEvidence evidence =
