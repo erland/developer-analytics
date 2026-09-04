@@ -8,6 +8,8 @@ export type SyncJob = {
   repositoryName: string | null
   attemptCount: number
   maxAttempts: number
+  analysisStep: number | null
+  analysisStepsTotal: number | null
   progressPercent: number | null
   lastError: string | null
   createdAt: string | null
@@ -23,6 +25,8 @@ export type SyncJobOverview = {
   completed: number
   failed: number
   totalRepositories: number
+  analysisStepsCompleted: number
+  analysisStepsTotal: number
   activeJobs: SyncJob[]
 }
 
@@ -55,6 +59,8 @@ const emptyJobs: SyncJobOverview = {
   completed: 0,
   failed: 0,
   totalRepositories: 0,
+  analysisStepsCompleted: 0,
+  analysisStepsTotal: 0,
   activeJobs: [],
 }
 
@@ -66,15 +72,22 @@ function normalizeJobs(value: unknown): SyncJobOverview {
   const running = typeof jobs.running === 'number' ? jobs.running : 0
   const completed = typeof jobs.completed === 'number' ? jobs.completed : 0
   const failed = typeof jobs.failed === 'number' ? jobs.failed : 0
+  const totalRepositories = typeof jobs.totalRepositories === 'number'
+    ? jobs.totalRepositories
+    : queued + waiting + running + completed + failed
   return {
     queued,
     waiting,
     running,
     completed,
     failed,
-    totalRepositories: typeof jobs.totalRepositories === 'number'
-      ? jobs.totalRepositories
-      : queued + waiting + running + completed + failed,
+    totalRepositories,
+    analysisStepsCompleted: typeof jobs.analysisStepsCompleted === 'number'
+      ? jobs.analysisStepsCompleted
+      : completed * 4,
+    analysisStepsTotal: typeof jobs.analysisStepsTotal === 'number'
+      ? jobs.analysisStepsTotal
+      : totalRepositories * 4,
     activeJobs: Array.isArray(jobs.activeJobs) ? jobs.activeJobs : [],
   }
 }
