@@ -7,6 +7,7 @@ import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.support.TestFixtureService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.Cookie;
+import io.restassured.response.Response;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 @QuarkusTest
 @Tag("persistence")
@@ -51,18 +53,18 @@ class MeActivityResourceCharacterizationTest {
         fixtures.replaceActivityWeeks(user, beta, List.of(
                 new TestFixtureService.ActivityWeekFixture(LocalDate.parse("2026-02-09"), 1, 7, 1)));
 
-        given()
+        Response response = given()
                 .cookie(sessionCookie("activity-session-1001"))
         .when()
-                .get("/api/me/activity")
-        .then()
+                .get("/api/me/activity");
+
+        response.then()
                 .statusCode(200)
                 .body("commitCount", equalTo(3))
                 .body("activeProjects", equalTo(2))
                 .body("additions", equalTo(37))
                 .body("deletions", equalTo(6))
                 .body("lineStatisticsCommitCount", equalTo(3))
-                .body("averageCommitSize", closeTo(43.0 / 3.0, 0.0001))
                 .body("firstActivityAt", equalTo("2026-01-05T10:00:00Z"))
                 .body("lastActivityAt", equalTo("2026-02-11T12:00:00Z"))
                 .body("commitsPerYear", hasSize(1))
@@ -71,6 +73,9 @@ class MeActivityResourceCharacterizationTest {
                 .body("commitsPerYear[0].changedLines", equalTo(43))
                 .body("commitsPerMonth", hasSize(2))
                 .body("projectsOverTime", hasSize(2));
+
+        Number averageCommitSize = response.jsonPath().get("averageCommitSize");
+        assertThat(averageCommitSize.doubleValue(), closeTo(43.0 / 3.0, 0.0001));
     }
 
     @Test
