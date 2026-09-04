@@ -48,8 +48,7 @@ public class MeProjectDetailResource {
         }
         var categories=categoryAssignments.findForRepository(repositoryId).stream().map(assignment->new Category(
                 assignment.getCategory().getCategoryKey(),assignment.getCategory().getDisplayName(),assignment.getSource().name(),
-                assignment.getConfidence().name(),assignment.getRationale(),assignment.getPrivacyProvenance().name(),
-                corrections.isProjectCategoryRejected(current.user().getId(),repository.getId(),assignment.getCategory().getCategoryKey()))).toList();
+                assignment.getConfidence().name(),assignment.getRationale(),assignment.getPrivacyProvenance().name(),false)).toList();
         ProjectSignificanceAssessment assessment=significance.find(current.user().getId(),repositoryId)
                 .orElseGet(()->significanceService.calculateAndStore(current.user(),repository));
         return new Detail(
@@ -70,7 +69,7 @@ public class MeProjectDetailResource {
         List<Object[]> rows=entityManager.createQuery(
                 "select c.occurredAt,c.type from Contribution c where c.user.id=:userId and c.repository.id=:repositoryId order by c.occurredAt",
                 Object[].class).setParameter("userId",userId).setParameter("repositoryId",repositoryId).getResultList();
-        class MonthActivity{int commits;long changedLines;int lineStatisticsCommitCount;}
+        class MonthActivity{int commits;long additions;long deletions;long changedLines;int lineStatisticsCommitCount;}
         Map<YearMonth,MonthActivity> perMonth=new TreeMap<>();
         int commits=0,pullRequests=0,reviews=0,issues=0;OffsetDateTime first=null,last=null;
         for(Object[] row:rows){
@@ -86,10 +85,14 @@ public class MeProjectDetailResource {
         }
         for(RepositoryUserActivityWeekRepository.WeekRow week:weeklyActivity.findForRepository(userId,repositoryId)){
             MonthActivity month=perMonth.computeIfAbsent(YearMonth.from(week.weekStart()),x->new MonthActivity());
-            month.changedLines+=week.changedLines();month.lineStatisticsCommitCount+=week.commits();
+            month.additions+=week.additions();
+            month.deletions+=week.deletions();
+            month.changedLines+=week.changedLines();
+            month.lineStatisticsCommitCount+=week.commits();
         }
         List<ActivityPoint> timeline=perMonth.entrySet().stream().map(entry->new ActivityPoint(
-                entry.getKey().toString(),entry.getValue().commits,entry.getValue().changedLines,entry.getValue().lineStatisticsCommitCount)).toList();
+                entry.getKey().toString(),entry.getValue().commits,entry.getValue().additions,entry.getValue().deletions,
+                entry.getValue().changedLines,entry.getValue().lineStatisticsCommitCount)).toList();
         long additions=repository.getUserAdditions()==null?0:repository.getUserAdditions();
         long deletions=repository.getUserDeletions()==null?0:repository.getUserDeletions();
         if(repository.getUserCommitCount()!=null)commits=repository.getUserCommitCount();
@@ -99,7 +102,7 @@ public class MeProjectDetailResource {
     public record Detail(Metadata metadata,Activity activity,List<TechnologyEvidence> technologies,List<Category> categories,Assessment assessment,Synchronisation synchronisation,Contributors contributors){}
     public record Metadata(UUID id,String provider,String name,String fullName,String description,String htmlUrl,String visibility,String ownershipRelation,String ownerLogin,boolean fork,boolean archived,List<String> topics,OffsetDateTime lastActivityAt,boolean excludedFromAiProfile){}
     public record Activity(int commits,int pullRequests,int reviews,int issues,long additions,long deletions,OffsetDateTime firstActivityAt,OffsetDateTime lastActivityAt,List<ActivityPoint> timeline){}
-    public record ActivityPoint(String month,int commits,long changedLines,int lineStatisticsCommitCount){}
+    public record ActivityPoint(String month,int commits,long additions,long deletions,long changedLines,int lineStatisticsCommitCount){}
     public record TechnologyEvidence(String technologyKey,String technologyName,String strength){}
     public record Contributors(Integer total,Integer humans,Integer bots,Integer userCommits){}
     public record Category(String categoryKey,String categoryName,String source,String confidence,Map<String,Object> rationale,String privacyProvenance,boolean rejectedByUser){}
