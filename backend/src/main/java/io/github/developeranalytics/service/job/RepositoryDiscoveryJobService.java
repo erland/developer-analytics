@@ -10,6 +10,7 @@ import jakarta.transaction.Transactional;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -52,12 +53,25 @@ public class RepositoryDiscoveryJobService {
             AppUser user,
             UUID repositoryId
     ) {
+        return enqueueDeterministicClassification(user, repositoryId, null);
+    }
+
+    @Transactional
+    public BackgroundJob enqueueDeterministicClassification(
+            AppUser user,
+            UUID repositoryId,
+            OffsetDateTime analysisActivityAt
+    ) {
+        Map<String, String> extraPayload = analysisActivityAt == null
+                ? Map.of()
+                : Map.of("analysisActivityAt", analysisActivityAt.toString());
         return enqueueDeduplicated(
                 user,
                 repositoryId,
                 DeterministicProjectClassificationJobHandler.JOB_TYPE,
                 130,
-                "project-classification:"
+                "project-classification:",
+                extraPayload
         );
     }
 
@@ -151,8 +165,25 @@ public class RepositoryDiscoveryJobService {
             int priority,
             String deduplicationPrefix
     ) {
-        String deduplicationKey =
-                deduplicationPrefix + repositoryId;
+        return enqueueDeduplicated(
+                user,
+                repositoryId,
+                jobType,
+                priority,
+                deduplicationPrefix,
+                Map.of()
+        );
+    }
+
+    private BackgroundJob enqueueDeduplicated(
+            AppUser user,
+            UUID repositoryId,
+            String jobType,
+            int priority,
+            String deduplicationPrefix,
+            Map<String, String> extraPayload
+    ) {
+        String deduplicationKey = deduplicationPrefix + repositoryId;
 
         if (jobs.existsActiveDeduplicatedJob(
                 user.getId(),
@@ -161,14 +192,16 @@ public class RepositoryDiscoveryJobService {
             return null;
         }
 
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("provider", "github");
+        payload.put("repositoryId", repositoryId.toString());
+        payload.putAll(extraPayload);
+
         BackgroundJob job = BackgroundJob.queuedDeduplicated(
                 user,
                 jobType,
                 priority,
-                Map.of(
-                        "provider", "github",
-                        "repositoryId", repositoryId.toString()
-                ),
+                payload,
                 5,
                 OffsetDateTime.now(ZoneOffset.UTC),
                 deduplicationKey
