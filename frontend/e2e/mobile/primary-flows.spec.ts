@@ -327,7 +327,7 @@ test('Explore analysis keeps filters compact and primary content reachable on ph
   await expect(editFilters).toHaveAttribute('aria-expanded', 'false')
   await expect(page.getByRole('button', { name: 'Remove Technology: React' })).toBeVisible()
 
-  const technologySelect = page.getByLabel('Technology', { exact: true })
+  const technologySelect = page.getByRole('combobox', { name: 'Technology' })
   await expect(technologySelect).not.toBeVisible()
   await editFilters.click()
   const doneFilters = page.getByRole('button', { name: 'Done' })
