@@ -381,7 +381,13 @@ public class GitHubProviderAdapter implements SourceControlProvider {
                 isPrivate ? ProviderRepository.Visibility.PRIVATE : ProviderRepository.Visibility.PUBLIC,
                 node.path("fork").asBoolean(false), node.path("archived").asBoolean(false),
                 parseDate(node, "created_at"), parseDate(node, "updated_at"), parseDate(node, "pushed_at"),
-                node.hasNonNull("description") ? node.get("description").asText() : null, mapTopics(node));
+                node.hasNonNull("description") ? node.get("description").asText() : null, mapTopics(node), repositorySizeBytes(node));
+    }
+
+    private Long repositorySizeBytes(JsonNode node) {
+        if (!node.hasNonNull("size")) return null;
+        long kibibytes = node.get("size").asLong(-1L);
+        return kibibytes < 0 ? null : kibibytes * 1024L;
     }
 
     private List<String> mapTopics(JsonNode node) {
