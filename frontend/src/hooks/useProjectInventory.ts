@@ -17,6 +17,8 @@ export type InventoryItem = {
   ownershipRelation: string
   visibility: string
   lastActivityAt: string | null
+  codeSizeBytes: number | null
+  repositorySizeBytes: number | null
   categories: Array<{ key: string; name: string }>
   technologies: Array<{ key: string; name: string }>
 }
