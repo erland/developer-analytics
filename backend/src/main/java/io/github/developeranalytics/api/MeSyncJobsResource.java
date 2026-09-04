@@ -78,10 +78,10 @@ public class MeSyncJobsResource {
                     .filter(job -> ANALYSIS_STAGE.containsKey(job.getJobType()))
                     .count();
 
-            if (!repository.needsAnalysisRefresh()) {
-                analysisStepsCompleted += ANALYSIS_STEPS_PER_REPOSITORY;
-            } else if (activeAnalysisJobs > 0) {
+            if (activeAnalysisJobs > 0) {
                 analysisStepsCompleted += Math.max(0, ANALYSIS_STEPS_PER_REPOSITORY - activeAnalysisJobs);
+            } else if (!repository.needsAnalysisRefresh()) {
+                analysisStepsCompleted += ANALYSIS_STEPS_PER_REPOSITORY;
             }
 
             if (repositoryJobs.stream().anyMatch(job -> job.getStatus().name().equals("RUNNING"))) {
