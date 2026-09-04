@@ -2,13 +2,17 @@ package io.github.developeranalytics.support;
 
 import io.github.developeranalytics.auth.CryptoTokens;
 import io.github.developeranalytics.domain.auth.UserSession;
+import io.github.developeranalytics.domain.external.ExternalClientToken;
 import io.github.developeranalytics.domain.model.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Set;
 
 @ApplicationScoped
 public class TestFixtureService {
@@ -61,6 +65,54 @@ public class TestFixtureService {
     }
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public Contribution createContribution(
+            AppUser user,
+            SourceRepository repository,
+            String providerContributionId,
+            Contribution.Type type,
+            OffsetDateTime occurredAt
+    ) {
+        AppUser managedUser = entityManager.getReference(AppUser.class, user.getId());
+        SourceRepository managedRepository = entityManager.getReference(SourceRepository.class, repository.getId());
+        Contribution contribution = new Contribution(
+                managedUser, managedRepository, "github", providerContributionId, type, occurredAt);
+        entityManager.persist(contribution);
+        entityManager.flush();
+        return contribution;
+    }
+
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public void replaceActivityWeeks(
+            AppUser user,
+            SourceRepository repository,
+            List<ActivityWeekFixture> weeks
+    ) {
+        entityManager.createNativeQuery(
+                        "delete from repository_user_activity_week where user_id=:userId and repository_id=:repositoryId")
+                .setParameter("userId", user.getId())
+                .setParameter("repositoryId", repository.getId())
+                .executeUpdate();
+        OffsetDateTime observedAt = OffsetDateTime.now();
+        for (ActivityWeekFixture week : weeks) {
+            entityManager.createNativeQuery(
+                            "insert into repository_user_activity_week " +
+                                    "(user_id,repository_id,week_start,commits,additions,deletions,observed_at) " +
+                                    "values (:userId,:repositoryId,:weekStart,:commits,:additions,:deletions,:observedAt)")
+                    .setParameter("userId", user.getId())
+                    .setParameter("repositoryId", repository.getId())
+                    .setParameter("weekStart", week.weekStart())
+                    .setParameter("commits", week.commits())
+                    .setParameter("additions", week.additions())
+                    .setParameter("deletions", week.deletions())
+                    .setParameter("observedAt", observedAt)
+                    .executeUpdate();
+        }
+        entityManager.flush();
+    }
+
+    public record ActivityWeekFixture(LocalDate weekStart, int commits, long additions, long deletions) {}
+
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public ProviderConnection createGitHubConnection(
             AppUser user,
             String externalId,
@@ -90,4 +142,27 @@ public class TestFixtureService {
         entityManager.flush();
         return connection;
     }
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public void setRepositoryVisibility(SourceRepository repository, RepositoryVisibility visibility) {
+        SourceRepository managed = entityManager.find(SourceRepository.class, repository.getId());
+        managed.setVisibility(visibility);
+        entityManager.flush();
+    }
+
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public ExternalClientToken createExternalClientToken(
+            AppUser user,
+            String name,
+            String rawToken,
+            Set<ExternalClientToken.Scope> scopes,
+            ExternalClientToken.PrivacyScope privacyScope
+    ) {
+        AppUser managedUser = entityManager.getReference(AppUser.class, user.getId());
+        ExternalClientToken token = new ExternalClientToken(
+                managedUser, name, CryptoTokens.sha256(rawToken), scopes, privacyScope);
+        entityManager.persist(token);
+        entityManager.flush();
+        return token;
+    }
+
 }

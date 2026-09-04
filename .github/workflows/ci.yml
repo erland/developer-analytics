@@ -37,7 +37,7 @@ jobs:
         run: npm install --global npm@11.6.0
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Check frontend test layers
         run: python3 ../scripts/check-frontend-test-layers.py
@@ -468,7 +468,7 @@ jobs:
         run: npm install --global npm@11.6.0
 
       - name: Install frontend dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Install Chromium for Playwright
         run: npx playwright install --with-deps chromium

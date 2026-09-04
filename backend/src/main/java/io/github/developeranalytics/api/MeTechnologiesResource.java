@@ -22,7 +22,7 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Path("/api/me/technologies")
+@Path("/api/me")
 @Produces(MediaType.APPLICATION_JSON)
 public class MeTechnologiesResource {
     private static final Logger LOG = Logger.getLogger(MeTechnologiesResource.class);
@@ -35,6 +35,7 @@ public class MeTechnologiesResource {
     @Inject TechnologyEvidenceStrengthService strengthService;
 
     @GET
+    @Path("/technologies")
     @Transactional
     public List<Entry> list(@CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken) {
         CurrentUser current = currentUserService.requireCurrentUser(sessionToken);

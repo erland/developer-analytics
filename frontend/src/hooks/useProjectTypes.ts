@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getJson } from '../api/request'
 
 export type ProjectTypeView = {
   categoryKey: string
@@ -35,11 +36,10 @@ export function useProjectTypes(): State {
     const controller = new AbortController()
     async function load() {
       try {
-        const response = await fetch('/api/me/project-types', {
-          credentials: 'include', headers: { Accept: 'application/json' }, signal: controller.signal,
+        const data = await getJson<ProjectTypeView[]>('/api/me/project-types', {
+          signal: controller.signal,
+          errorMessage: 'Project type request failed',
         })
-        if (!response.ok) throw new Error(`Project type request failed with HTTP ${response.status}`)
-        const data = (await response.json()) as ProjectTypeView[]
         setState({ status: 'ready', data, error: null })
       } catch (error) {
         if (controller.signal.aborted) return
