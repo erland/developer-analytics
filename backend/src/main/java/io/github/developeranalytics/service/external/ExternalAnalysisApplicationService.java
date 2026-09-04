@@ -35,7 +35,7 @@ public class ExternalAnalysisApplicationService {
                 .map(repository -> new ProjectResult(
                         repository.getId(), repository.getName(), repository.getVisibility().name(),
                         repository.getOwnershipRelation().name(), repository.getLastActivityAt(),
-                        categoryKeys(userId, repository.getId()), technologyKeys(userId, repository.getId()),
+                        categoryKeys(repository.getId()), technologyKeys(repository.getId()),
                         excludedFromAiProfile(userId, repository.getId())))
                 .toList();
     }
@@ -111,32 +111,20 @@ public class ExternalAnalysisApplicationService {
                 contributionTotals(totals), privacyProvenance(publicCount, privateCount));
     }
 
-    private List<String> categoryKeys(UUID userId, UUID repositoryId) {
+    private List<String> categoryKeys(UUID repositoryId) {
         return entityManager.createQuery(
                 "select distinct c.category.categoryKey from RepositoryProjectCategory c " +
-                "where c.repository.id=:repositoryId and not exists (" +
-                "select 1 from UserAnalysisCorrection correction where correction.user.id=:userId " +
-                "and correction.repository.id=:repositoryId " +
-                "and correction.type=io.github.developeranalytics.domain.correction.UserAnalysisCorrection.Type.PROJECT_CATEGORY_REJECTED " +
-                "and correction.correctionKey=c.category.categoryKey)", String.class)
+                "where c.repository.id=:repositoryId order by c.category.categoryKey", String.class)
                 .setParameter("repositoryId", repositoryId)
-                .setParameter("userId", userId)
                 .getResultList();
     }
 
-    private List<String> technologyKeys(UUID userId, UUID repositoryId) {
+    private List<String> technologyKeys(UUID repositoryId) {
         return entityManager.createQuery(
                 "select distinct e.technology.technologyKey from RepositoryTechnologyEvidence e " +
                 "where e.repository.id=:repositoryId order by e.technology.technologyKey", String.class)
                 .setParameter("repositoryId", repositoryId)
-                .getResultList().stream()
-                .filter(key -> !isTechnologySuppressed(userId, key))
-                .toList();
-    }
-
-    private boolean isTechnologySuppressed(UUID userId, String key) {
-        return corrections.exists(userId, null,
-                UserAnalysisCorrection.Type.TECHNOLOGY_INFERENCE_SUPPRESSED, key);
+                .getResultList();
     }
 
     private boolean excludedFromAiProfile(UUID userId, UUID repositoryId) {
