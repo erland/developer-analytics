@@ -37,6 +37,14 @@ public class DeterministicProjectClassificationJobHandler
                     "Repository not found for job user"));
 
         classification.classify(repository);
-        repository.markAnalysisCompleted(OffsetDateTime.now(ZoneOffset.UTC));
+
+        Object queuedActivity = job.getPayload().get("analysisActivityAt");
+        OffsetDateTime activityWatermark = queuedActivity == null
+                ? repository.getLastActivityAt()
+                : OffsetDateTime.parse(queuedActivity.toString());
+        repository.markAnalysisCompleted(
+                OffsetDateTime.now(ZoneOffset.UTC),
+                activityWatermark
+        );
     }
 }
