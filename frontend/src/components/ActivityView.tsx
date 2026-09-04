@@ -5,6 +5,7 @@ import { type ActivityData, type ActivityMetric, type ActivityPeriod, useActivit
 import { ActivityTimelineAnalysis, type ActivityColourBy } from './ActivityTimelineAnalysis'
 import { AnalysisFilters } from './AnalysisFilters'
 import { AnalysisEmptyState } from './AnalysisEmptyState'
+import { CumulativeContributionChart } from './CumulativeContributionChart'
 import { SummaryFacts } from './SummaryFacts'
 
 const periods: Array<{ value: ActivityPeriod; label: string }> = [
@@ -50,6 +51,11 @@ function ActivityContent({ data, metric, colourBy, onOpenProject }: { data: Acti
 
     <ActivityTimelineAnalysis data={data} metric={metric} colourBy={colourBy} onOpenProject={onOpenProject}/>
 
+    <CumulativeContributionChart
+      points={data.commitsPerMonth.map(point => ({ period: point.month, additions: point.additions, deletions: point.deletions }))}
+      description="Approximate net code built up by your observed commits during the selected analysis window. This complements the activity bars: bars show work volume, while this curve shows additions minus deletions accumulating over time."
+    />
+
     <section className="secondary-summary-section" aria-labelledby="activity-summary-heading">
       <span className="card-kicker">Summary</span>
       <h2 id="activity-summary-heading">Activity statistics</h2>
@@ -59,18 +65,17 @@ function ActivityContent({ data, metric, colourBy, onOpenProject }: { data: Acti
           { label: 'Commits', value: fmt(data.commitCount) },
           { label: 'Active projects', value: fmt(data.activeProjects) },
           { label: 'Average commit size', value: data.commitSizeStatisticsAvailable ? `${fmt(Math.round(data.averageCommitSize))} lines` : 'Not available' },
-          { label: 'Additions', value: data.commitSizeStatisticsAvailable ? `+${fmt(data.additions)}` : 'Not available' },
-          { label: 'Deletions', value: data.commitSizeStatisticsAvailable ? `−${fmt(data.deletions)}` : 'Not available' },
+          { label: 'Lines changed', value: data.commitSizeStatisticsAvailable ? fmt(data.additions + data.deletions) : 'Not available' },
+          { label: 'Net lines contributed', value: data.commitSizeStatisticsAvailable ? signed(data.additions - data.deletions) : 'Not available' },
           { label: 'Activity period', value: data.firstActivityAt && data.lastActivityAt ? `${formatDate(data.firstActivityAt)} – ${formatDate(data.lastActivityAt)}` : 'No activity in selected period' },
         ]}
       />
     </section>
-
   </>
 }
 
-
 const fmt = (value: number) => new Intl.NumberFormat().format(value)
+const signed = (value: number) => `${value >= 0 ? '+' : '−'}${fmt(Math.abs(value))}`
 const formatDate = (value: string) => new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(value))
 
 function hasActiveScope(scope: AnalysisScope): boolean {

@@ -32,49 +32,9 @@ public class MeAnalysisCorrectionsResource {
         CurrentUser current = currentUserService.requireCurrentUser(token);
         return correctionRepository.findForUser(current.user().getId())
                 .stream()
+                .filter(correction -> correction.getType() == UserAnalysisCorrection.Type.PROJECT_EXCLUDED_FROM_AI_PROFILE)
                 .map(Item::from)
                 .toList();
-    }
-
-    @PUT
-    @Path("/projects/{repositoryId}/categories/{categoryKey}")
-    public void rejectCategory(
-            @CookieParam(AuthenticationService.SESSION_COOKIE) String token,
-            @PathParam("repositoryId") UUID repositoryId,
-            @PathParam("categoryKey") String categoryKey,
-            Toggle toggle
-    ) {
-        CurrentUser current = currentUserService.requireCurrentUser(token);
-        var repository = repositories.findByIdForUser(
-                repositoryId,
-                current.user().getId()
-        ).orElseThrow(NotFoundException::new);
-
-        corrections.set(
-                current.user(),
-                repository,
-                UserAnalysisCorrection.Type.PROJECT_CATEGORY_REJECTED,
-                categoryKey,
-                requireToggle(toggle)
-        );
-    }
-
-    @PUT
-    @Path("/technologies/{technologyKey}")
-    public void suppressTechnology(
-            @CookieParam(AuthenticationService.SESSION_COOKIE) String token,
-            @PathParam("technologyKey") String technologyKey,
-            Toggle toggle
-    ) {
-        CurrentUser current = currentUserService.requireCurrentUser(token);
-
-        corrections.set(
-                current.user(),
-                null,
-                UserAnalysisCorrection.Type.TECHNOLOGY_INFERENCE_SUPPRESSED,
-                technologyKey,
-                requireToggle(toggle)
-        );
     }
 
     @PUT

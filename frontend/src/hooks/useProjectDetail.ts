@@ -30,6 +30,8 @@ export type ProjectDetail = {
     timeline: Array<{
       month: string
       commits: number
+      additions: number
+      deletions: number
       changedLines: number
       lineStatisticsCommitCount: number
     }>
@@ -82,7 +84,19 @@ export function useProjectDetail(repositoryId: string | null): State {
         })
         if (!response.ok) throw new Error(`Project detail request failed with HTTP ${response.status}`)
         const raw = (await response.json()) as ProjectDetail
-        const data: ProjectDetail = { ...raw, contributors: raw.contributors ?? { total: null, humans: null, bots: null, userCommits: null } }
+        const data: ProjectDetail = {
+          ...raw,
+          activity: {
+            ...raw.activity,
+            timeline: (raw.activity.timeline ?? []).map(point => ({
+              ...point,
+              additions: Number(point.additions ?? 0),
+              deletions: Number(point.deletions ?? 0),
+              changedLines: Number(point.changedLines ?? (Number(point.additions ?? 0) + Number(point.deletions ?? 0))),
+            })),
+          },
+          contributors: raw.contributors ?? { total: null, humans: null, bots: null, userCommits: null },
+        }
         setState({ status: 'ready', data, error: null })
       } catch (error) {
         if (controller.signal.aborted) return
