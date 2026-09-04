@@ -13,10 +13,11 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Queues the complete deterministic analysis pipeline for repositories that
- * the user has selected for analysis. Job priorities enforce this order:
- * contributions -> languages -> manifests/files -> project classification ->
- * user-level technology/timeline/significance recalculation.
+ * Queues the deterministic analysis pipeline for repositories that need it.
+ * Normal discovery refreshes are incremental: a repository is re-analysed only
+ * when it has never completed the current analysis version or GitHub reports
+ * activity newer than the repository's analysis watermark. Explicit per-repo
+ * refreshes still force the complete pipeline.
  */
 @ApplicationScoped
 public class RepositoryAnalysisOrchestrator {
@@ -26,18 +27,22 @@ public class RepositoryAnalysisOrchestrator {
 
     @Transactional
     public QueueResult enqueueAll(AppUser user) {
-        List<SourceRepository> candidates =
-                repositories.findAnalysisCandidates(user.getId());
+        List<SourceRepository> selected = repositories.findAnalysisCandidates(user.getId());
+        List<SourceRepository> candidates = selected.stream()
+                .filter(SourceRepository::needsAnalysisRefresh)
+                .toList();
 
         int repositoryJobsQueued = 0;
         int alreadyQueued = 0;
         for (SourceRepository repository : candidates) {
-            QueueCounts counts = enqueueRepositoryJobs(user, repository.getId());
+            QueueCounts counts = enqueueRepositoryJobs(user, repository);
             repositoryJobsQueued += counts.queued();
             alreadyQueued += counts.alreadyQueued();
         }
 
-        int aggregateJobsQueued = enqueueAggregateJobs(user);
+        int aggregateJobsQueued = repositoryJobsQueued > 0
+                ? enqueueAggregateJobs(user)
+                : 0;
         return new QueueResult(
                 candidates.size(),
                 repositoryJobsQueued,
@@ -58,12 +63,15 @@ public class RepositoryAnalysisOrchestrator {
                     "Repository is not included in analysis");
         }
 
-        QueueCounts counts = enqueueRepositoryJobs(user, repositoryId);
-        int aggregateJobsQueued = enqueueAggregateJobs(user);
+        QueueCounts counts = enqueueRepositoryJobs(user, repository);
+        int aggregateJobsQueued = counts.queued() > 0
+                ? enqueueAggregateJobs(user)
+                : 0;
         return new QueueResult(1, counts.queued(), counts.alreadyQueued(), aggregateJobsQueued);
     }
 
-    private QueueCounts enqueueRepositoryJobs(AppUser user, UUID repositoryId) {
+    private QueueCounts enqueueRepositoryJobs(AppUser user, SourceRepository repository) {
+        UUID repositoryId = repository.getId();
         int queued = 0;
         int alreadyQueued = 0;
 
@@ -71,7 +79,11 @@ public class RepositoryAnalysisOrchestrator {
                 jobs.enqueueContributionDiscovery(user, repositoryId),
                 jobs.enqueueLanguageEvidence(user, repositoryId),
                 jobs.enqueueFileManifestEvidence(user, repositoryId),
-                jobs.enqueueDeterministicClassification(user, repositoryId)
+                jobs.enqueueDeterministicClassification(
+                        user,
+                        repositoryId,
+                        repository.getLastActivityAt()
+                )
         };
 
         for (BackgroundJob job : repositoryJobs) {

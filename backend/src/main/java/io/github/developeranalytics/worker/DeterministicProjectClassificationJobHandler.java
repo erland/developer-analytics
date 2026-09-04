@@ -6,6 +6,8 @@ import io.github.developeranalytics.persistence.repository.SourceRepositoryRepos
 import io.github.developeranalytics.service.project.DeterministicProjectClassificationService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -35,5 +37,14 @@ public class DeterministicProjectClassificationJobHandler
                     "Repository not found for job user"));
 
         classification.classify(repository);
+
+        Object queuedActivity = job.getPayload().get("analysisActivityAt");
+        OffsetDateTime activityWatermark = queuedActivity == null
+                ? repository.getLastActivityAt()
+                : OffsetDateTime.parse(queuedActivity.toString());
+        repository.markAnalysisCompleted(
+                OffsetDateTime.now(ZoneOffset.UTC),
+                activityWatermark
+        );
     }
 }

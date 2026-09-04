@@ -11,6 +11,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "source_repository")
 public class SourceRepository {
+    public static final int CURRENT_ANALYSIS_VERSION = 1;
+
     @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
@@ -51,6 +53,9 @@ public class SourceRepository {
     @Column(name = "user_deletions") private Long userDeletions;
     @Column(name = "contributor_stats_at") private OffsetDateTime contributorStatsAt;
     @Column(name = "contribution_scope_version", nullable = false) private int contributionScopeVersion;
+    @Column(name = "analysis_completed_at") private OffsetDateTime analysisCompletedAt;
+    @Column(name = "analyzed_activity_at") private OffsetDateTime analyzedActivityAt;
+    @Column(name = "analysis_version", nullable = false) private int analysisVersion;
 
     protected SourceRepository() {}
 
@@ -78,6 +83,27 @@ public class SourceRepository {
     public Long getUserDeletions() { return userDeletions; }
     public OffsetDateTime getContributorStatsAt() { return contributorStatsAt; }
     public int getContributionScopeVersion() { return contributionScopeVersion; }
+    public OffsetDateTime getAnalysisCompletedAt() { return analysisCompletedAt; }
+    public OffsetDateTime getAnalyzedActivityAt() { return analyzedActivityAt; }
+    public int getAnalysisVersion() { return analysisVersion; }
+
+    public boolean needsAnalysisRefresh() {
+        if (!includedInAnalysis) return false;
+        if (analysisCompletedAt == null || analysisVersion < CURRENT_ANALYSIS_VERSION) return true;
+        if (lastActivityAt == null) return false;
+        return analyzedActivityAt == null || lastActivityAt.isAfter(analyzedActivityAt);
+    }
+
+    public void markAnalysisCompleted(OffsetDateTime completedAt) {
+        markAnalysisCompleted(completedAt, lastActivityAt);
+    }
+
+    public void markAnalysisCompleted(OffsetDateTime completedAt, OffsetDateTime activityWatermark) {
+        analysisCompletedAt = completedAt;
+        analyzedActivityAt = activityWatermark;
+        analysisVersion = CURRENT_ANALYSIS_VERSION;
+    }
+
     public void markContributionScopeCurrent() { contributionScopeVersion = 2; }
     public void updateContributorStatistics(int contributors, int humans, int bots, int commits, int repositoryCommits, long additions, long deletions, OffsetDateTime observedAt) {
         this.contributorCount = contributors;
