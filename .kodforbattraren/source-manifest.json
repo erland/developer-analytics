@@ -1,0 +1,2601 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-09-04T04:41:18Z",
+  "source": {
+    "mode": "zip",
+    "base_name": "developer-analytics-main(1).zip",
+    "base_sha256": "4314be6f435c256811cb21d7336202f670a1aa79c43f19b50066c2aff92c27f8"
+  },
+  "files": [
+    {
+      "path": ".dockerignore",
+      "size": 771,
+      "sha256": "ec1b2dcf4cb82f1abbe8dcbc7b3be394d21cdf95dc4e36ad0c818e1ab3a0742e"
+    },
+    {
+      "path": ".editorconfig",
+      "size": 330,
+      "sha256": "495ed95eed07b65e86995cbe21d580167c8d045869cec9cd33ffce2b834b9217"
+    },
+    {
+      "path": ".github/dependabot.yml",
+      "size": 1640,
+      "sha256": "2062af7f72631ff7dcf6331e1b4e6f1e45e2c70463f1a68da235cad3ecf40cbd"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "size": 15951,
+      "sha256": "2e724f5f31242a6e3648486f4072db845f1a99028c81c39f0adfc76c98eb0795"
+    },
+    {
+      "path": ".github/workflows/dependabot-auto-merge.yml",
+      "size": 3778,
+      "sha256": "3fd28849df5d2730d67d62401886df33c58a0099a248a3e4fff149e4fac0bcd1"
+    },
+    {
+      "path": ".github/workflows/dependency-review.yml",
+      "size": 1708,
+      "sha256": "16e58384fd7ec93b2ea42ee4ca3c596f1eced734ee5ae5de0d0103be22217017"
+    },
+    {
+      "path": ".github/workflows/publish-images.yml",
+      "size": 7934,
+      "sha256": "cd7bffaf81a4d0bdaa21a6aeecaf4590f93f0a13dbc4f78a867aeecfce599c64"
+    },
+    {
+      "path": ".gitignore",
+      "size": 2697,
+      "sha256": "20a26d4f684f0f6953f2246951cc23f8c6e5d501e468a0a27010b0bbed563466"
+    },
+    {
+      "path": "LICENSE",
+      "size": 1089,
+      "sha256": "bd126d1e8b0bd3587449ec2e5fc6a0ae35e84563e2ce4db526978085f55acc6d"
+    },
+    {
+      "path": "README.md",
+      "size": 40078,
+      "sha256": "1f9c7bef2f625c68ce977c94addda4ffb64caf75bf022bd4b714a1f25cb47687"
+    },
+    {
+      "path": "backend/Dockerfile",
+      "size": 1925,
+      "sha256": "1523860a2a47d7dadc0fd99eb16c7159fda0968e97e36f03140d7719ae38b593"
+    },
+    {
+      "path": "backend/README.md",
+      "size": 27328,
+      "sha256": "8493160eaeb0c7ab8f9846fe906e5cbaba7b7f6213e963b400d56f15b105d1c3"
+    },
+    {
+      "path": "backend/pom.xml",
+      "size": 4667,
+      "sha256": "480e1045c0c30fc4b4b08106245a132c92f5cf5cc70f12cb1b1d103b4a214bfc"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/ai/AiAnalysisGateway.java",
+      "size": 4211,
+      "sha256": "13cf21abd4077cb14f163de8f48167f87eec57b12d6112e2e522c94b1822c534"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/ai/AiDataSensitivity.java",
+      "size": 135,
+      "sha256": "1681270932ff8d0eb9a7792746d3eb53098b26e0576c00010b63ed0e8a63fb0e"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/ai/AiPrivacyPolicy.java",
+      "size": 247,
+      "sha256": "1df44396937c3d030671d1ffa7b1752babb3bdfefcec72413ea682009a0e82e8"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/ai/AiPrivacyPolicyService.java",
+      "size": 2067,
+      "sha256": "fd184213a8d12855ce9180b06a6bb254816cb3c86ae7418413f6792db28771f7"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/ai/AiProvider.java",
+      "size": 3473,
+      "sha256": "be7703b89d7b282554f03b1a8e779488735c893ee37ebdcf2eb760451fb5350e"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/ai/AiProviderProducer.java",
+      "size": 1341,
+      "sha256": "0a3bdf9cad32d4ccb38541fc3f2350ddde7d3789f5f129d2f3f6674db1727012"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/ai/AiRequestContext.java",
+      "size": 429,
+      "sha256": "09dc0069998bf92fcb7cd69ba482c4471ee5ccee59cd492f015d42e6b258c179"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/ai/DisabledAiProvider.java",
+      "size": 1405,
+      "sha256": "093026246129f1caf8f812e5d20efccbea21ebface75ab68582acab16b67f196"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/ai/GeminiAiProvider.java",
+      "size": 18759,
+      "sha256": "15fdfba0559384db5dcaa43d02278299e7e3daf1ebb826e39a08ab1caa0cf212"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/AnalysisPeriod.java",
+      "size": 3765,
+      "sha256": "427c867f6477e181a3f81b8b1c8d645ea801de65ce92c03b4f6a144b98f3af08"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/ApplicationHealthResource.java",
+      "size": 2339,
+      "sha256": "aeb9684d23ea11bfacc93a4a020ef66d26e9cdaf4c1243dbfd93bbf25a17762b"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/AuthenticationResource.java",
+      "size": 3245,
+      "sha256": "7cca052d72306073a13ba0bd6b0791202f293c49ca85c5d2a89e4c458bd530eb"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeActivityResource.java",
+      "size": 19554,
+      "sha256": "f8c7ec8853a044185856eaab25fa2239476930e4dce0a27e18a793c85b3941af"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeAiAssessmentsResource.java",
+      "size": 5722,
+      "sha256": "a39c796492b57b297c5d3f7d5eb492fdb726a809acb0381a5c92d2f7b0749d1e"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeAiPrivacyResource.java",
+      "size": 2033,
+      "sha256": "8a3d3c880051ab0fd1cf032254c9d908e7897c7440dde66327ed10bc3b4427e2"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeAiStatusResource.java",
+      "size": 1624,
+      "sha256": "c52ed9acd8b6c89be465edcce77ed1e38c134856245b0d93d7ff449b38cd004e"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeAnalysisCorrectionsResource.java",
+      "size": 4801,
+      "sha256": "5edefa54cc3624754d435a2b0d069fee6f4c2d7a94085c939c838b7acb55eb99"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeConnectionsResource.java",
+      "size": 4614,
+      "sha256": "9d834f99de6883b624851d1e95b0127362456abf73fffc2d1b54a38c0ee24088"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeContributionSyncStatusResource.java",
+      "size": 3092,
+      "sha256": "614f635b81bc526bde3b6f0b93beb39c652c5727fe87680c607f12f7a4d454e4"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeContributionsResource.java",
+      "size": 6278,
+      "sha256": "b8ee81ce27519ef6f9fb9caf3374715220c8f93fb7d02844a28da5e1e4afe1af"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeDataDeletionResource.java",
+      "size": 2289,
+      "sha256": "005466258ffacaf8901a9ebbd450b52225bce10aa982f0be4f5285a2da393890"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeDataSourcesResource.java",
+      "size": 1678,
+      "sha256": "927fe13c53aeb3a2b5180ad0f122c76380deb75e123423a5e1ea091798a20f17"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeExternalClientsResource.java",
+      "size": 4538,
+      "sha256": "9cb52f9e222ab86e53d993406b595d67e8627f92000a09d11e5fd4286f48b376"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeProjectAiClassificationResource.java",
+      "size": 3649,
+      "sha256": "2d606af4df9c5c2775afd19b8c5c9e9d5dd4c0f9fd4a06aff3e0dbf3af72209d"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeProjectDetailResource.java",
+      "size": 8588,
+      "sha256": "cd2f506e73f62a27c6514067ded66202c07c1206d00280958b00af8d71efbc2e"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeProjectInventoryResource.java",
+      "size": 6575,
+      "sha256": "ee1cb7dead9dc2733ec4569fa93e00b779cff00f944767e2e2ad12379e62f727"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeProjectSignificanceResource.java",
+      "size": 3852,
+      "sha256": "5ecab79f06f28594bd3d9af8db5af4ed237e23ac8274673082ef6184abb977e9"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeProjectTypesResource.java",
+      "size": 4001,
+      "sha256": "b389c6284f92352cd7bf3c9156b931a6c8102f445a3cc29daa574c622663f5dd"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeReportExportResource.java",
+      "size": 6415,
+      "sha256": "7158669deaf6551d2ae48f7914a1555e2f84808979d5191dbdbe6d6206a7dfb0"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeRepositoriesResource.java",
+      "size": 2520,
+      "sha256": "2f47fe295250efa25dc303ffee03bd8eaf831c951857605976f549aec5a9b916"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeRepositoryProjectCategoryResource.java",
+      "size": 2151,
+      "sha256": "fd0e8d5f3e2e51b124c1fd8537cd932bc3a5ce42b4a2e0a6e43561c26d2529ee"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeRepositoryTechnologyEvidenceResource.java",
+      "size": 2397,
+      "sha256": "c1f73f26a22f7bc490e62d96682f6896912a44e0467a3ce436b41690639ca550"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeResource.java",
+      "size": 1289,
+      "sha256": "d779422075346316c89948b90471ef3ff7a8c10763c2cfebc9ab67810d2ecf43"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeSignificantExternalProjectsResource.java",
+      "size": 2811,
+      "sha256": "97aee76baefd70f44f2a982ef701c18e5c4d9c6e524e13df06c8d3d5f5a53309"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeSyncJobsResource.java",
+      "size": 5988,
+      "sha256": "162a47344e012fc6ed0570fa3c182e3a9fa3c07e81000a813a623826b02fd204"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeSyncRecoveryResource.java",
+      "size": 1564,
+      "sha256": "14d6dc3bc003161a82e9d78ca88a53954b8db61eccfa033d7562fe343512d4af"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeSyncResource.java",
+      "size": 4979,
+      "sha256": "8da50416ca74dd9bfd72de8abe5305889e24ef7a1be72cebeaa7ee0e6748030d"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeSyncStatusResource.java",
+      "size": 2689,
+      "sha256": "76da810df3c5d4392d0d1ee53d9089a01454ab92c4f725368222d872e54e837d"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeTechnologiesResource.java",
+      "size": 6568,
+      "sha256": "5ab5833ef3120f313419b655da42ea6f707557a632177b68fe3ff8f54d945a55"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeTechnologyAssessmentResource.java",
+      "size": 3074,
+      "sha256": "2d1a8298af21a79d38ff17e3a7407fc6ee1fffd0990d3285e4959c20fa82d8b8"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeTechnologyTimelineResource.java",
+      "size": 1461,
+      "sha256": "a5ebdce5e01f89c457f753aa9de51718988547eeee815aae40f15f849be26956"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/MeUserAiInsightsResource.java",
+      "size": 3755,
+      "sha256": "fea727f86ca2af8d87d96a0fa559f27d52aee864309ad2741a08e0a827acaf1b"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/ProjectCategoryTaxonomyResource.java",
+      "size": 1208,
+      "sha256": "aa6152ff97219a1fdb88dbbddff131952e1b7e25e395ba1b88878b596f1b0115"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/RestExceptionLoggingMapper.java",
+      "size": 2850,
+      "sha256": "923a07049d575529eda3b9cebceeff7aaace1eaf7af1bb7ceb2a91e9855a8660"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/TechnologyCatalogueResource.java",
+      "size": 1476,
+      "sha256": "fda61ca4a0a949ca5f4218d1bc7c31b3756fe7ac9ed3fadeddfe734054bd182b"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/external/ExternalAnalysisMediaType.java",
+      "size": 253,
+      "sha256": "a8004265dd76973ad53cca3d6e46bb0b7b30efa7929265281454aecf0a97ebf5"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/api/external/ExternalAnalysisResource.java",
+      "size": 24906,
+      "sha256": "5f66c02122cdade7b3705ad7361ad37ebe34c325a45112c065c732e627d0f405"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/auth/AuthenticationService.java",
+      "size": 8445,
+      "sha256": "386e1dbf3e14e68c8f7e934380a7253e14cbad3dfd71c65e0b784dd16f9bbc86"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/auth/CryptoTokens.java",
+      "size": 705,
+      "sha256": "2af906e38168e139ddc9cdbcdb29587bb73f0ba780be2d437515ecf9f2dca001"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/auth/CurrentUser.java",
+      "size": 241,
+      "sha256": "de3838866ea54e7e4f50b82bf3206b7951ed8da6d72e687f96f9d801e2b89868"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/auth/CurrentUserService.java",
+      "size": 1443,
+      "sha256": "5d1c39456c5c62cc66acafd8ea383b192cfb268701824a238f087d5883c7d86c"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/auth/GitHubOAuthClient.java",
+      "size": 3300,
+      "sha256": "90d3f9635e22b522fd982120ab9f93ae9edc486ebcf699c0d832800afe6e407a"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/auth/GitHubUserProfile.java",
+      "size": 115,
+      "sha256": "f4e69ad3070a3f804abf1c578843433d23c0aa3e9876a27a2881f54ff4729001"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/auth/external/ExternalClientAuthService.java",
+      "size": 2319,
+      "sha256": "1f99551474fa20b8fa5ece8187a8e45df54a7f39a5dd9df4196171f4dddc95cb"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/aggregate/RepositoryActivityMonth.java",
+      "size": 1656,
+      "sha256": "fcfd8ecc24e87beb5c9fdc9fcf24ff246fc1569ac0f7ac96a02b358a6a01e315"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/aggregate/TechnologyActivityMonth.java",
+      "size": 2204,
+      "sha256": "4ddf8d86be025a8a70332edda2a6adca37c8db6645220cf8afe990f642e3e2fe"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/aggregate/UserActivityMonth.java",
+      "size": 1774,
+      "sha256": "f3fd981d9ca3c2bc262ff7a142331bd358bef179b94307c285e774dc7e60cf63"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/auth/AuthLoginAttempt.java",
+      "size": 1775,
+      "sha256": "4561be3337d14444c0ebe6c69792f257d7ea04027d4d210760a79d6f4efe17d4"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/auth/UserSession.java",
+      "size": 1085,
+      "sha256": "a70c4ae70fc226107e4ddfc3b19feb816e7b00e9c93cc371bbcb46a5719ce9d4"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/correction/UserAnalysisCorrection.java",
+      "size": 2075,
+      "sha256": "58c7b50cc3dd0df62c9f32f11d8718f1599f42083ba2038f2efec8e9541d2a9c"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/external/ExternalClientToken.java",
+      "size": 3292,
+      "sha256": "dffebb38d874825f8a32803c723af0d554c1668fd550bd7d7f1e87cda44457ed"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/external/ReturnedAiAssessment.java",
+      "size": 3128,
+      "sha256": "8f1c845f39e908663b75fd9b1da9e674348be342de19da1ebadd65628a80d6b9"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/insight/UserAiInsight.java",
+      "size": 4134,
+      "sha256": "f728d6b53edce351e42db8de12700b6b18d27467e18b3d0751b957f19d3bcd8a"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/job/BackgroundJob.java",
+      "size": 4625,
+      "sha256": "7da4bbbf9b29b9b5877a698023a0ad194613224c3b23758f77a199d23dbdae89"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/job/BackgroundJobStatus.java",
+      "size": 141,
+      "sha256": "80e638fa64cd4d4fb8ebe9233e4cf7ff6b1ad913a61d04c00f49bbba605bd64c"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/model/AppUser.java",
+      "size": 1680,
+      "sha256": "b889bcb611efb01358cad8a37697ed824dfa19d5098561b4820e59f184db7d11"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/model/Contribution.java",
+      "size": 2750,
+      "sha256": "13f413b481b89b785599e8225eaa2a1449cc922aaa45304c853a6ba6c31ed3bf"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/model/ContributionSyncRun.java",
+      "size": 3908,
+      "sha256": "dbf33eff6cbc9a2758777af69c12fddd91ab88db7b0eeeed90692876e5717957"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/model/DataPrivacyProvenance.java",
+      "size": 705,
+      "sha256": "4360367c13f153e313922cafb58f6435c97fabd664d75238efdc7d76461af8cc"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/model/ProviderConnection.java",
+      "size": 4870,
+      "sha256": "c16028a3dbccacea4d3e19c2dfdeb644de995cf02af1bd1d299734cbd01069dd"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/model/ProviderIdentity.java",
+      "size": 2110,
+      "sha256": "a448715c422d528367483495640d0bce0703109ab5436995a869d2fc81654df5"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/model/RepositoryOwnerType.java",
+      "size": 114,
+      "sha256": "8bab2e91b396a0b659bc14c88b49b9ed7d0340489ddb15c74368052f12c92ba6"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/model/RepositoryOwnershipRelation.java",
+      "size": 140,
+      "sha256": "ba623b4e356119a034518d094e7a218ae72a39dc22e2466fd4c2ac9ce738d493"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/model/RepositorySyncRun.java",
+      "size": 3595,
+      "sha256": "3b5c025ac4edb3e6aa3ef9825c82b44861450a313a46fbcca3d3ce13ea5a2a33"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/model/RepositorySyncStatus.java",
+      "size": 149,
+      "sha256": "b1c0b99c7c47aa116cc9bed6dfee7bfa966399bcae19fea216d63fbe032bfba5"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/model/RepositoryVisibility.java",
+      "size": 105,
+      "sha256": "64d2ff24eb316e9d83db9f0d4c6eae353086dd4ebce4525198210d870d02e89f"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/model/SourceRepository.java",
+      "size": 8642,
+      "sha256": "f28a754085d139b48112b1448e59ada19d1133dcb3d89146dc158a75b48e738e"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/project/AiProjectClassification.java",
+      "size": 3315,
+      "sha256": "8a467cca7250b0aa781a0330502bbf15ae28302de8f5e85be2dee582dcc9eac6"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/project/ProjectCategory.java",
+      "size": 2716,
+      "sha256": "45f062c8e6e8050af894b9df852471b9673526644e018f58d12abe688d71b357"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/project/ProjectSignificanceAssessment.java",
+      "size": 6505,
+      "sha256": "d9bd5b15ebe88e221dcc4a239f8c17889ffc8993a012989515ca9c1dfa3fbd48"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/project/RepositoryProjectCategory.java",
+      "size": 2988,
+      "sha256": "c90eb4aed59c53f864583c6afdf576dba841d0118c897df255985a8ac138e031"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/project/RepositoryProjectCategoryId.java",
+      "size": 804,
+      "sha256": "52d112b94bb0803786eff40f105d925884f495d8b4ce1964d0ce22aaa59e79f8"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/report/CanonicalReport.java",
+      "size": 3284,
+      "sha256": "999b7937bb6ed979516c38198e38e2bf778c21a01d2d1c713df73289e49af983"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/technology/RepositoryTechnologyEvidence.java",
+      "size": 3690,
+      "sha256": "3fdf2ca9033268193c1fa80e01caccd058adb35140581e6c1541d10c317e0380"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/technology/TechnologyCatalogueEntry.java",
+      "size": 4420,
+      "sha256": "1e75b3e40393e9768c8767dc9bf7209a211f2935f53e94266d2e992e6db52119"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/technology/TechnologyCategory.java",
+      "size": 360,
+      "sha256": "11d30e1776278412f314cbb0785f9e720a78730a523ac9ab7f9f4c078c801f0c"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/technology/TechnologyEvidenceStrength.java",
+      "size": 166,
+      "sha256": "c532809e59a1396ecdbdd37ef57424c894b01e4b274550f987fff58b6a0139f2"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/technology/TechnologyEvidenceType.java",
+      "size": 133,
+      "sha256": "d1d633a6bbd825d5b4667b8ad4764d984078cae811fcf8f9e1d0775303689656"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/domain/technology/UserTechnologyAssessment.java",
+      "size": 4357,
+      "sha256": "4d83b10baf609f442cff0af00078cbc9f4608e547c1da00c7dc8c2a8c7b011fd"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/health/BackendLivenessCheck.java",
+      "size": 398,
+      "sha256": "f3a98ad5e1d840a91f99570e5d6fe81de7c8299b31d2cf7995ad953082a2cbf8"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/health/DatabaseReadinessCheck.java",
+      "size": 1088,
+      "sha256": "3c6966d2b745878b6813a66e7d5869c88020e7b4f3128b35402c076beef705dd"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/health/MigrationReadinessCheck.java",
+      "size": 1759,
+      "sha256": "fdcff2f5bc6551a54766186006c3772abab6dbe92f7f05c928058dadf900fdfe"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/health/WorkerProcessHealthCheck.java",
+      "size": 1357,
+      "sha256": "fb0a4bd293e67f7d922c50d264c0f49a5f79b2db67abf110071c46f895f3a5cb"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/observability/CorrelationIdFilter.java",
+      "size": 1717,
+      "sha256": "d270f8777ab15203b817fa21ba2a8137417213c3588251c6c3394482753e1bd7"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/observability/StructuredLog.java",
+      "size": 3275,
+      "sha256": "67e9690866fe808f2a347e81d0b090527364c898387612b87ab68db6d9b1555b"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/ApplicationMetadata.java",
+      "size": 979,
+      "sha256": "d2601f37276fce5113518a98e75aceb9c3c463faa5cc708dfcd264167468518b"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/MonthValueConverter.java",
+      "size": 1093,
+      "sha256": "b5839d0cc749d9e7e7f1b6d968f209eafc3cc57d1338ba254bc92628f2357c9e"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/auth/AuthenticationRepository.java",
+      "size": 3099,
+      "sha256": "23536708902b5974bd7604eb088c739d182c8b237588698d4c20f4320e768073"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/auth/ProviderConnectionRepository.java",
+      "size": 1765,
+      "sha256": "cda91d4a3629d3f49ff10fb322d79e2743e9e36766b3bb19ca0fb532922626e3"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/correction/UserAnalysisCorrectionRepository.java",
+      "size": 2939,
+      "sha256": "b0ed3fc060a268247f40fffc60d543ac0d490ea9971550a507cbb3e305ea204f"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/external/ExternalClientTokenRepository.java",
+      "size": 1787,
+      "sha256": "9c2840277384772811eb19b031eca7dc6b293ce84dc5a1a0a113ab32c7a3b28c"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/external/ReturnedAiAssessmentRepository.java",
+      "size": 1583,
+      "sha256": "ecf09a478a7368033a657743f4043e86b447fc18fa3128f6d4638dbdeb4338ee"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/insight/UserAiInsightRepository.java",
+      "size": 1838,
+      "sha256": "e07dfea64eabc669659cc1ea7fe5fdff87370787a8b814b09a01c129ff2ed7a0"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/project/AiProjectClassificationRepository.java",
+      "size": 2002,
+      "sha256": "d65000e3ca29706910d64fe499af86a64521616a3b356295ea32fdf7e601ba30"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/project/ProjectCategoryRepository.java",
+      "size": 1126,
+      "sha256": "4836ea0ca10293bd84a8d3e9479d0873d85dc75384c71b2d32076de0975f78fd"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/project/ProjectInventoryRepository.java",
+      "size": 7603,
+      "sha256": "cb656b395d534f94be502bc2517e310fef2bbe1e9cfbeeafb9830445dbcac8d0"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/project/ProjectSignificanceRepository.java",
+      "size": 6583,
+      "sha256": "3214eb57808be4803370fa95049c4e74148ab4c5c0ae18576a3d8e77da8dcfde"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/project/ProjectTypeAnalyticsRepository.java",
+      "size": 5971,
+      "sha256": "231b6d45991dab22b83e4ee4f6b9dd4e52a1c8366d1b1220e512825a9f28f125"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/project/RepositoryProjectCategoryRepository.java",
+      "size": 2308,
+      "sha256": "dc378e329d12b892d693829b0bfb6e3212035fb83a757b1befb342d7a12533bd"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/repository/BackgroundJobRepository.java",
+      "size": 4857,
+      "sha256": "35213dd2de6a16e7e043bbdad9f0e9121d7c94989a29eac47ee605a1a87265de"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/repository/ContributionRepository.java",
+      "size": 2212,
+      "sha256": "8be0594201dad676b05cc3aa1b9147bec1cb0f68d6eeb4a0594cd8b4fccdac77"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/repository/ContributionSyncRunRepository.java",
+      "size": 1953,
+      "sha256": "f8b0b54d07af65195097e4c325dbc405b6651636a149db4190fa8f7e0ca57641"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/repository/RepositorySyncRunRepository.java",
+      "size": 1294,
+      "sha256": "b81c1cb24c791760a47d411e314e2adb1442d1b15b06d7093a36d4ec42c20215"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/repository/RepositoryUserActivityWeekRepository.java",
+      "size": 4334,
+      "sha256": "42674f05df609d0924aafc30838c8eb53fd7ae7a53b2803fd6ab1be38f1f2358"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/repository/SourceRepositoryRepository.java",
+      "size": 4172,
+      "sha256": "cc8ca1c159092bf441b410cca93dcf846f14407237bdf8051e34277319f35daf"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/technology/RepositoryTechnologyEvidenceRepository.java",
+      "size": 6678,
+      "sha256": "361858c10378ef2cc525d92f80e2f06b1cd0844fd7408cedf1659f8bd9598747"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/technology/TechnologyCatalogueRepository.java",
+      "size": 2046,
+      "sha256": "e80ed5daec74472f0db71fd7691b11b3fbf3c6690061d7c1ef3145bb05ff42a2"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/technology/TechnologyTimelineRepository.java",
+      "size": 8573,
+      "sha256": "09e3757ebd5b4411db957259441a5782f67bd80c74de1d4ee199dac55cbbe35f"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/persistence/technology/UserTechnologyAssessmentRepository.java",
+      "size": 1539,
+      "sha256": "06bf1378033cf27ae7705ca0cbc53b49e49a047f2ace33826fe690c2b8ca43fe"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/provider/PagedResult.java",
+      "size": 363,
+      "sha256": "460036a16cf3849062f66190f147f49415ae09ea3470634a2ff625181de10374"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/provider/ProviderAccessToken.java",
+      "size": 403,
+      "sha256": "ddab54270f03cf1e21fa97126a288ff9e7b3bf74eb40c5f9e1c46ae0959610d5"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/provider/ProviderContribution.java",
+      "size": 484,
+      "sha256": "5e9fcba35822be3bced06ce710ae62b1f760cb4581988c7ff9d2995c54113c4c"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/provider/ProviderContributorStatistics.java",
+      "size": 384,
+      "sha256": "ff01e8b736123088cdf4a018f2f2c50e48b5657ccce2351044e2a69a18b3d947"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/provider/ProviderException.java",
+      "size": 490,
+      "sha256": "62dc70db6aa794ed5fee4f6dad534eb1bcb333cdeb385ad7426bc14a18652e14"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/provider/ProviderLanguageBreakdown.java",
+      "size": 466,
+      "sha256": "bf6720594f4f63c497d1ee32f2b048c1aceae335e086024613e2cd4d5bd0dbba"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/provider/ProviderRateLimit.java",
+      "size": 201,
+      "sha256": "4d9ab2ef163efca049e35e12769b40eb3333b09b8494bd4164252a831acad231"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/provider/ProviderRepository.java",
+      "size": 1553,
+      "sha256": "ba6eabe21415368e6aa9e7d34051cc1e3b58bd0234a895c4ab5bfffea2f49161"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/provider/ProviderRepositoryFile.java",
+      "size": 136,
+      "sha256": "7cbdc9c47c7cf6e3bb8a25874b635e35c412a0acc769aa0c6289584a6ee677e0"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/provider/ProviderRepositorySnapshot.java",
+      "size": 357,
+      "sha256": "58904e055ad8e039d04309ce1e6864da92ae172f1054db9dec72c47dd5dffae8"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/provider/ProviderUser.java",
+      "size": 161,
+      "sha256": "0ff0e4c66baa59fa61d02d301d54ca1cb13c36ef83416586a0eaf5699e0c2aff"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/provider/SourceControlProvider.java",
+      "size": 999,
+      "sha256": "ae4962ce73c3c7f1b53a5362329df9a081550870393abf64610578d34f2ac2ce"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/provider/SourceControlProviderRegistry.java",
+      "size": 714,
+      "sha256": "1fd81615e4798deca6bb40551d7517cc78f79508eb5e57df549d59516c57fcf8"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/provider/github/GitHubProviderAdapter.java",
+      "size": 25726,
+      "sha256": "d00dedff6936bd4d5b10c48f59b34eb5030ba9133d557caa8939ae854c799d19"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/security/CredentialCipher.java",
+      "size": 3797,
+      "sha256": "6bd75f6fe6b5a825ec5d39941691fe802280a3cbf6f6be952242687d2aa6c536"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/account/UserDataDeletionService.java",
+      "size": 2911,
+      "sha256": "998da8c8fc9e7f108227d161a2753966d9c8441250d13a661d532e22dc9bda8a"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/connection/DisconnectDataDisposition.java",
+      "size": 153,
+      "sha256": "912b6876cf0883783c44a4bc1ee4671ad76dacb3b50a28de69f03e682c3887e0"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/connection/ProviderConnectionService.java",
+      "size": 3018,
+      "sha256": "8eb696cb9b90c9244ec183244a8d5d15675ab270a3d7139b938e7bf4f3ab56e0"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/connection/ProviderCredentialService.java",
+      "size": 2658,
+      "sha256": "4ba4cf6c1003f19d759329113a9137e45d22ad239748cc8891542f4eb7b3d482"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/connection/ProviderDisconnectDataService.java",
+      "size": 3055,
+      "sha256": "0ccb9e4cef049077348b57075569078c8909b878328677e5c3efa0df27d2c7a6"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/correction/UserCorrectionService.java",
+      "size": 2621,
+      "sha256": "f9143b4e4b2602460ac7452bda284cd886d7d9057cf3bfecf43384fa0b2efded"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/discovery/GitHubContributionDiscoveryService.java",
+      "size": 8239,
+      "sha256": "db2ec452072dabee74fa0e3e8a964419599795913807f51034f10daeee7823c6"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/discovery/GitHubRepositoryDiscoveryService.java",
+      "size": 8806,
+      "sha256": "0f2b4f1d0e8eebe486c0ffac0958f189664ba5c8174d0aa5ac45980b72a593fc"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/discovery/GitHubWeeklyActivityService.java",
+      "size": 4343,
+      "sha256": "0bb38afa35c8f5f63324497e3ee9bf8b158a3019c6404f9bd269fa41cbeec504"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/insight/UserAiInsightService.java",
+      "size": 12353,
+      "sha256": "991bd1b2d352f44b55ef03b00a3801e304219b24fd26cfde6e4fea9ad5561d84"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/job/JobFailureClassifier.java",
+      "size": 2521,
+      "sha256": "2cab11a693cea99b75a2ac213f8a2a7661ac49b54d0a9fe5796325f5d2b0951b"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/job/RepositoryDiscoveryJobService.java",
+      "size": 5067,
+      "sha256": "75262c2d71fc2569d8178acd7f8445ffb4f361c22534cc3d0e443ce07d9636d7"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/project/AiProjectClassificationService.java",
+      "size": 7133,
+      "sha256": "cd10f9b877083a9c3f7fb3083fd81f94f394d88fec20127cd78b5a62ca668205"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/project/DeterministicProjectClassificationService.java",
+      "size": 8582,
+      "sha256": "99d20c75c88104566f777e0d003743de6f7ed64e2ee13bcb7caf37d275f54baf"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/project/ProjectCategoryTaxonomyService.java",
+      "size": 2202,
+      "sha256": "cc1504150e6ef218012c83268549080de59957929a8b1bc8d6d40c5dfc3f45a5"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/project/ProjectSignificanceService.java",
+      "size": 8171,
+      "sha256": "2b1a55ae4d8d44364cd481906bff11be0825a4ed652771fe378cc37a28a148cc"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/project/SignificantExternalProjectService.java",
+      "size": 1753,
+      "sha256": "a95f2def4f5729c78a13ae3b234f64fde8629667c77dd8a7ed3feaa728f071c3"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/report/CanonicalReportService.java",
+      "size": 15437,
+      "sha256": "6ed89f6d3c77428d92830987ccf854c876243708827164060542e4cb68147934"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/report/MarkdownReportRenderer.java",
+      "size": 8985,
+      "sha256": "e5f8d1f872ec147a725ff829df9ec6aadea65f84fdc03b296bdc8e0b7cc87af8"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/report/MarkdownReportType.java",
+      "size": 728,
+      "sha256": "cb1b358808faa7be7cfb233af40290e7e6579a0739c396b0f41f5de638a04811"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/report/PdfReportRenderer.java",
+      "size": 15958,
+      "sha256": "ec4573999168ecbc3ab28e4a11a5794c90b81ca0b7e34cad147be6a31357b412"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/report/ReportExportService.java",
+      "size": 6831,
+      "sha256": "98719606aa473952cd19377977346638226bcf3aff048cb297963ffc1aade978"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/report/ReportPrivacyPolicy.java",
+      "size": 1574,
+      "sha256": "edaca90471d1d0b17859d42c6f56ca4aa9df71ae6a6098f5f6c4b76d2ee69730"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/report/ReportSection.java",
+      "size": 246,
+      "sha256": "a5ab32a98f54aa870c6854344da7fac1817917fa0882a98223eb7b6a0aea384d"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/report/ReportSectionPlanner.java",
+      "size": 1749,
+      "sha256": "74771d5d8937c2d657d5744b8cda4a264091b23c6df86613336ea95cf54560cf"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/sync/ContributionSyncOrchestrator.java",
+      "size": 2175,
+      "sha256": "127999b41bdab59703a21d460c1a5201b049d837cf9dca6dd32fbc61c2cf9b1e"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/sync/RepositoryAnalysisOrchestrator.java",
+      "size": 3839,
+      "sha256": "8b7d94e43dc41ab7b7129f6f0c0e024e6c01ffad0523ad9136bc0ffb93d06c67"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/sync/SynchronisationRecoveryService.java",
+      "size": 2771,
+      "sha256": "c9b12316eec59d9a918534cc9090f76187fce52bcdbb1eba48c80dcb4118b1be"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/technology/FileManifestEvidenceService.java",
+      "size": 6469,
+      "sha256": "d499fb7dce62903cb620902680f0e1280819715913306abad3a73fda58a7bbc0"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/technology/LanguageEvidenceService.java",
+      "size": 4981,
+      "sha256": "b735712ad761e9c30e739208311a6eb63454149f175edc85d72fdae027ccc29d"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/technology/TechnologyCatalogueService.java",
+      "size": 2551,
+      "sha256": "76a5794ca1184c08393b44a748ee721220ef326a2cf0043ba386181f914607cc"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/technology/TechnologyEvidenceStrengthService.java",
+      "size": 5809,
+      "sha256": "3ad4d6c9b6ab8d546441381f642667e65db695ff1b0b60df537050c2518cd097"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/service/technology/TechnologyTimelineService.java",
+      "size": 5410,
+      "sha256": "01a7107d03a48b993b9b6abdb9b92d71ae1d90fb6116ef5c246947396106291b"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/worker/BackgroundJobDispatcher.java",
+      "size": 626,
+      "sha256": "6c2533a4b4f4097b7a7b4355cafdf51817e8ab2e25cedcc68dd4514441eddf76"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/worker/BackgroundJobHandler.java",
+      "size": 217,
+      "sha256": "0b5fb51ef0af214ea4187844d782d7ce59ae074ac1cb1ea55db221612fdc00ea"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/worker/BackgroundJobWorker.java",
+      "size": 4570,
+      "sha256": "a5af7807a2f2e96ade001ff0dda4ff1187bb8aba69627a6fe3c3a096317c18af"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/worker/DeterministicProjectClassificationJobHandler.java",
+      "size": 1525,
+      "sha256": "5ef6b4370a70ef477ddc55262bc4b1a20c83321848651c6ce74cb87762260609"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/worker/GitHubContributionDiscoveryJobHandler.java",
+      "size": 2359,
+      "sha256": "ca191fd7fb77b2a9238a00cf3493c6fe561cf309c8b59d6ab08b7746b08e714e"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/worker/GitHubFileManifestEvidenceJobHandler.java",
+      "size": 1523,
+      "sha256": "05e5a551080bbc7a5ef14ae223752d252402adf346de8e0021b26554a9e2cf4c"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/worker/GitHubLanguageEvidenceJobHandler.java",
+      "size": 1500,
+      "sha256": "69e57f3768b9e1ef0d133cdd8492ccb2a73e5e9bd3c2ab22f22e28476871cfd4"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/worker/GitHubRepositoryDiscoveryJobHandler.java",
+      "size": 1196,
+      "sha256": "35c2cad13636abac4d43458e9d35b81415e5f917ba73c32ce8ad53c6fb69ccf0"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/worker/NoopBackgroundJobHandler.java",
+      "size": 344,
+      "sha256": "0f430c6959e1988671148b656f8dc24a03a18ad5a3fa234290ae1f6d64b6c439"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/worker/ProjectSignificanceRecalculationJobHandler.java",
+      "size": 827,
+      "sha256": "622a5450b45254d80c14dd32dcd6b30773726c78dbb7f1c44cb1f232d74ce572"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/worker/TechnologyAssessmentRecalculationJobHandler.java",
+      "size": 847,
+      "sha256": "d73a0740c027470315425cf9f1a2829cef22925f52b570db64edb7543fc2ce16"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/worker/TechnologyTimelineRecalculationJobHandler.java",
+      "size": 825,
+      "sha256": "ea2e99912b1b1e64e4ae21a6a5792fd6184a5a4599aa9c0e7d2e3130566291d3"
+    },
+    {
+      "path": "backend/src/main/java/io/github/developeranalytics/worker/WorkerHeartbeatService.java",
+      "size": 2720,
+      "sha256": "8d52d76e367b8a6b1d22038a29db73af22c5fef8972576ca6f4eb7903c4c9db8"
+    },
+    {
+      "path": "backend/src/main/resources/application.properties",
+      "size": 3268,
+      "sha256": "1f0804021ba0eb95e5f9d6c10354c0ee4aaa1614248f707b1aa8621620b08f0c"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V10__add_background_job_deduplication.sql",
+      "size": 389,
+      "sha256": "99acd49aee1161961ca780806b484cd53ae6bd7684e010400efb24d4bbe2ce96"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V11__add_contribution_sync_runs.sql",
+      "size": 935,
+      "sha256": "7aa8fd5d4ebc7b2a1df7eb03c22fcc94b06ba4eb3d7b8d6ed33bab74ed9f05d9"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V12__create_technology_catalogue.sql",
+      "size": 788,
+      "sha256": "9555f6b01133aef36707824e1653612fef6841aaed32e6184b60712fb5ed8b55"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V13__create_repository_technology_evidence.sql",
+      "size": 1064,
+      "sha256": "1c655bd2ba5d3ad41045785563805be4d907e3e178f9efbc77af035c3f4c4353"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V14__create_user_technology_assessment.sql",
+      "size": 964,
+      "sha256": "a3e6533e7bff002a9583aeba788c233ace17c00c5f6a0ec9a49ce9eedbb427f3"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V15__create_project_category_taxonomy.sql",
+      "size": 1188,
+      "sha256": "0b13ca940eded0528ff4d747cb2ab35a54d03475375af90d51ad5d9f2adb472f"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V16__add_repository_classification_metadata.sql",
+      "size": 208,
+      "sha256": "dde300c8cf27cd930606bfd52460f9ce1e6f60647bcfe7c5c612134711bbebd6"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V17__create_project_significance_assessment.sql",
+      "size": 1301,
+      "sha256": "aa5d110da741f2677ca9238c8ab49837194e1f106b57243669daf90c99475fd0"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V18__add_private_repository_authorisation.sql",
+      "size": 423,
+      "sha256": "acf7fc84428eb7748ce93e71ff51919260f80855f184178fbaa4f958b086e5fc"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V19__add_data_privacy_provenance.sql",
+      "size": 1589,
+      "sha256": "983b83bcc3d389b33f557051fd6e2415f4660c46f90f7cfd43812d75028ee621"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V1__create_application_metadata.sql",
+      "size": 339,
+      "sha256": "b151c175072c07e97e09da8074637d6c1ff848bde7477bfbf23d1d3620a6c781"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V20__add_repository_analysis_selection.sql",
+      "size": 293,
+      "sha256": "1063702c95857bbd185ede77c44d70fc84813c8ecff1a9b98af42794ed2e24d1"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V21__add_ai_privacy_consent.sql",
+      "size": 110,
+      "sha256": "e892d909a95f5ca9a0158346cd23e7a8afb2b3feadf0ab1df94e1d3f4ef474ad"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V22__add_ai_project_classification.sql",
+      "size": 780,
+      "sha256": "019754ebd227c5efa9ed3bd8e6b153a8b81b3e369f669ca8be99cfa4c920040f"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V23__add_user_ai_insight.sql",
+      "size": 809,
+      "sha256": "6f3d2ed8b6b88da3b159ab270152ebcd280b0cc5ddd83a59404d74c2d307111c"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V24__add_user_analysis_correction.sql",
+      "size": 551,
+      "sha256": "585672be3972ddc456cf3d00e285023a5d63878c5c4607f7ed3b34551410631e"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V25__add_external_client_token.sql",
+      "size": 432,
+      "sha256": "456e058fcd99d4da2843395f73e8a84ddaa4d300f4a019f4077e2859cccae63e"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V26__add_external_client_privacy_scope.sql",
+      "size": 111,
+      "sha256": "121929387f8c773676c02dee94064a65eb17dc4bca38b95deaabcdf50cc693d2"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V27__add_returned_ai_assessment.sql",
+      "size": 564,
+      "sha256": "cf93a1398eb955e79f502365dcc880c9cdc2a148a4cbab28c5410c3be63cb37a"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V28__add_worker_heartbeat.sql",
+      "size": 304,
+      "sha256": "cd383b89abd8da1a308abacad03d9043915b36a175fc3a48c63f56e51c42cf83"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V29__allow_long_contribution_titles.sql",
+      "size": 55,
+      "sha256": "3c94bb70747a8535e6c527143e6cffe543b865fcb969596b40ae438d4943a69c"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V2__create_core_identity_model.sql",
+      "size": 3129,
+      "sha256": "3f516d30e266c007a375a1931c922e9f20f463bfe85b09705546a88eef760db2"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V30__add_repository_contributor_statistics.sql",
+      "size": 381,
+      "sha256": "5e47e8c7ea821ac2c587762b0a34cc27a969c555193df7164c18df3470434ef4"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V31__track_contribution_scope_version.sql",
+      "size": 96,
+      "sha256": "235886388fcb6250aa4e3fd652852357ee207584f7e2a037ac58a0fdee5c79f0"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V32__add_repository_user_activity_week.sql",
+      "size": 716,
+      "sha256": "85c7e33de948ba2af1b43fc412907723add1fd4f2ad752012c5f613ebe490c87"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V3__create_contribution_model.sql",
+      "size": 1111,
+      "sha256": "45e0b295a54da3089b7062d37214c8f5b819a14df4f291657b411c771b20eeae"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V4__create_time_based_aggregates.sql",
+      "size": 2205,
+      "sha256": "0956ad58d953ac28fbf1e61b5be8908383c0fd81b218513952525cc07c945d09"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V5__create_background_job_model.sql",
+      "size": 870,
+      "sha256": "039641085ebaf0286f57be03da2328d21a6b16e5774f7faf1a1c40755e40e400"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V6__add_authentication_state.sql",
+      "size": 788,
+      "sha256": "f445069f87f735aaa47d1b53937f461a92e57de2e5fee62712ae285d0b2f6a40"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V7__add_provider_credentials.sql",
+      "size": 286,
+      "sha256": "54821bbe5c158d229e91aec08a3f78aa4bf92b561487069c8df548ff4afe541b"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V8__add_repository_discovery_metadata.sql",
+      "size": 219,
+      "sha256": "591281bd22c1e65d03885ea95e4a9544c193eaf7d607847d5705e703b0c8adc4"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V9__add_repository_sync_state.sql",
+      "size": 784,
+      "sha256": "fce877f06a7b695c1f40956164280db62eaa1e21796c2b88d6605af86f46450a"
+    },
+    {
+      "path": "backend/src/main/resources/project-category-taxonomy.json",
+      "size": 3150,
+      "sha256": "ba9fe63408c243fe80d8c62fcb92f4895f6a54494d8963e11a2acbd1c9f83df7"
+    },
+    {
+      "path": "backend/src/main/resources/technology-catalogue.json",
+      "size": 2561,
+      "sha256": "a9d6d410fd17e2e4b4fd71e85ba4f17bbe4cedd1605aea98d1291dbdb5c20083"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/ai/AiOutageRecoveryContractTest.java",
+      "size": 1052,
+      "sha256": "ccac83a63b19bc6f3b0b0fd16a6ad782717677e3906afcb89681356c8e57f6bd"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/ai/AiPrivacyPolicyTest.java",
+      "size": 989,
+      "sha256": "889c76f5989999effc85445086de87b6e49d833eac17f45450d86d7935582651"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/ai/AiProviderContractTest.java",
+      "size": 927,
+      "sha256": "a2c23d5b6edada6a666eee37abfcfe6fb4712917791fa41b8cb1871ed240720e"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/ai/AiProviderProducerTest.java",
+      "size": 510,
+      "sha256": "8e6f28f223217bd44facbdaf643bfa3207e80bdc8bd7815a1ddd662046385e78"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/ai/DisabledAiProviderTest.java",
+      "size": 2522,
+      "sha256": "299327484c8dd851b2c28baf2b308ddef3d22153953e09eee2c4166b6b48c82e"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/ai/GeminiAiProviderConfigurationTest.java",
+      "size": 765,
+      "sha256": "77df10908be52d5e984f2b54c6abc0ce1d74035a4902743d1e55fd0dc661b5e2"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/AnalysisPeriodTest.java",
+      "size": 2262,
+      "sha256": "6a65d666edbfe2fc8bfc7c58fe296e909998b2cd51a6e7bf458f80730825813c"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/ApplicationHealthResourceTest.java",
+      "size": 619,
+      "sha256": "63a16bb25263e542e3313ee61b7f408d1870e993184c5f33c6b31422503d69b8"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeActivityResourceModelTest.java",
+      "size": 2314,
+      "sha256": "34c86acec8b22b8473d6fe351f112f9cc115c24c852049f5e6439238ab8cb689"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeActivityResourceQueryTest.java",
+      "size": 1139,
+      "sha256": "03b37ead5e74333df61a9e33d1b1fb22f7efb1391f148f3a0f7e8b54617db856"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeAiAssessmentsResourceModelTest.java",
+      "size": 1083,
+      "sha256": "e16f937c063ad9b9208dc13ef333291dc141e7a14b1158d318bdbfe5136dccbc"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeConnectionDisconnectModelTest.java",
+      "size": 666,
+      "sha256": "a49c568bfe4e0068b4bbe3a9fcedc5e94e17424698aeff93880dd875ef283ea1"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeConnectionsResourceTest.java",
+      "size": 2227,
+      "sha256": "694529106d39643708bb0e05322ea5b917910f61b256f2daf882ee16c6977833"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeDataDeletionModelTest.java",
+      "size": 594,
+      "sha256": "8ac300c66e3192dfa2b1001774e2810d7b155132f3bf991daca0668abc8632dc"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeExternalClientsResourceModelTest.java",
+      "size": 976,
+      "sha256": "6afa147a9aebf1cffd316ffa212e5a47eda3e57a7c96a39947ccba118dc0cdfb"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeProjectDetailResourceModelTest.java",
+      "size": 2480,
+      "sha256": "6204edb0c8dcd88ef9d1723af0654e8c68906300c1109e749b97861020a40a40"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeProjectInventoryResourceModelTest.java",
+      "size": 2229,
+      "sha256": "7193c3ae20b45dab6977e6b863cd68df6a9f2aa2fbf67e118a2885030824b8dd"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeProjectTypesResourceModelTest.java",
+      "size": 1874,
+      "sha256": "6c8ed4cce4d04543b01a5df69d8fd34212b9ee45c0b9c7755238a8afeb198345"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeReportExportResourceModelTest.java",
+      "size": 1336,
+      "sha256": "7b5792ec143ef1e5257bc736e7618b44363533da021e804efc29ed1ba3bd19d1"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeReportPrivacyPreviewModelTest.java",
+      "size": 1283,
+      "sha256": "67b5755952e28ddc5e9ff75de78a53cbaeb4fca902c789584c58f4be864bba87"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeScopingTest.java",
+      "size": 1929,
+      "sha256": "5678e0fe3344cf5832968e4fa71a36b2b6b11ad6f05045b033acf389b30981f8"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeSyncResourceTest.java",
+      "size": 1459,
+      "sha256": "65c2c2ec317b2a39a8825000fab9f93af716dcce8bba8713c8cb78bad68804d9"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/MeTechnologiesResourceModelTest.java",
+      "size": 2556,
+      "sha256": "bed30d3848c7f2fbc9a697b486b0597bd6d97eb7babaca72388b986c984b3a82"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/SignificantExternalProjectApiModelTest.java",
+      "size": 1258,
+      "sha256": "8acf1a1532d7f5a919b1ad329756c870c993b501b0f9422e27e9f1c07d160ab1"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/api/external/ExternalAnalysisContractTest.java",
+      "size": 2040,
+      "sha256": "4f1dcf0f8c14e45da1d61833bfac2f6c890b2965a82866681bcdb1c4b17ac65e"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/auth/AuthenticationInitialSyncContractTest.java",
+      "size": 730,
+      "sha256": "0784304c8711dca6e67f82e59aaccf9e5c2f58a28791ac8b643aa0094a143f38"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/auth/CryptoTokensTest.java",
+      "size": 576,
+      "sha256": "677741b451804cbcfa3b5945643fbcb558612e96777631cf42fb0a597126cfa2"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/external/ExternalClientPrivacyScopeTest.java",
+      "size": 1049,
+      "sha256": "cb40c8615fd37622fa23d4e1d6a9f511a6572a2a351ab5cfa0df61e3f17ef337"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/external/ExternalClientTokenScopeTest.java",
+      "size": 1389,
+      "sha256": "1d423aaf9c104860b6727a25bb9a1a2b8eacbba97c44bfd3def2f9f5a306e80e"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/external/ReturnedAiAssessmentTest.java",
+      "size": 1640,
+      "sha256": "e82f05d40ad2c3f726f97b177cf3149509f29338819f90a928165682517109fa"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/job/BackgroundJobRecoveryTest.java",
+      "size": 1608,
+      "sha256": "2d440109d24fbf3fd97e4aa0945bc19dcad6471256a196e3e651b70d48cc0d28"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/model/ContributionSyncRunTest.java",
+      "size": 1910,
+      "sha256": "c1e27207b3d41877620da5dfe1ec08fb67ae47dda0e2a3425a435fcf0d407b90"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/model/DataPrivacyProvenanceTest.java",
+      "size": 944,
+      "sha256": "7ed3fdf756c7bb0c4f5145d771ab6704b68fbabb03236d019574be4787fad77d"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/model/ProviderConnectionPrivateAccessTest.java",
+      "size": 1116,
+      "sha256": "bfe1e2b779c0f41d416d60115b5f51f42fb3ac71ac1a0cd3e8413e70449c86bd"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/model/RepositorySyncRunTest.java",
+      "size": 1692,
+      "sha256": "b650b32a5414c04f4ee2d75dbe0e5442c73ac4b3cbb250526befc1bb3a52d6d2"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/model/SourceRepositoryClassificationMetadataTest.java",
+      "size": 1234,
+      "sha256": "c64ec5165bf26bd896be3b1f6396417fcefe55adaaf074227c9132579576c9d7"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/model/SourceRepositorySelectionTest.java",
+      "size": 1249,
+      "sha256": "05cd22f224795c05baf5972bda465698aab3f68aa563d872b7f44a3c55ce08f1"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/project/DeterministicClassificationRationaleTest.java",
+      "size": 1699,
+      "sha256": "31b6144f0fedba5591538e6af1ada34525f594e10eee32bc3fa8b0789efe052a"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/project/ProjectCategoryTest.java",
+      "size": 751,
+      "sha256": "b4cc6a0b4b42d2f3b3006186a065b18729c389c9ad5c58e2979b121afa6038be"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/project/RepositoryProjectCategoryTest.java",
+      "size": 1894,
+      "sha256": "1d5f9aa5892029ee70bfc9f6846626ab5c6f35e9177a58b921fb1d515602035e"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/report/CanonicalReportModelTest.java",
+      "size": 1852,
+      "sha256": "5934313223de476431436664535c67d750e46a6c058784d7e370edd1134e9f9c"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/technology/RepositoryTechnologyEvidenceTest.java",
+      "size": 1804,
+      "sha256": "9ac942db9bb2bb4b60705a35537596016c88ffc0cda8b78ecf46b7e3d03504df"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/domain/technology/TechnologyCatalogueEntryTest.java",
+      "size": 1362,
+      "sha256": "cf361502262d0e567118efadb62c5753935e1750822adaa3022d8ed0b3568457"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/health/BackendLivenessCheckTest.java",
+      "size": 398,
+      "sha256": "373769d7a3b22f652083aa10e00610f33f3436ede28c45f3a8640e570320d44a"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/health/HealthContractTest.java",
+      "size": 494,
+      "sha256": "c043ea0714a5b97f14b913cbee09e8eefaffc29f6db97049d519c84ca92bb550"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/observability/CorrelationIdFilterTest.java",
+      "size": 729,
+      "sha256": "8b681763157e1b1b1675c821205cf0f574ceae23deeac642c050133ccda8909b"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/observability/SensitiveLoggingContractTest.java",
+      "size": 978,
+      "sha256": "317eac1cdec8475139913cb59f1e80be5dc72d249f9126d485d96c63072d21a5"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/observability/StructuredLogRedactionTest.java",
+      "size": 1394,
+      "sha256": "f21dc030b562a477af2fb33434f6b0ffe1f97dfc1770d5cc4b299dbde3210867"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/persistence/FlywayMigrationTest.java",
+      "size": 2201,
+      "sha256": "57f59be58a70f69ce039761e630239294ee5547fd73427a63a938e114554d4f0"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/persistence/MonthValueConverterTest.java",
+      "size": 1810,
+      "sha256": "0425362d7463ab82395da0e7e03e32fbfd7bed76ff791a2efc41e31188bdb743"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/provider/github/GitHubProviderAdapterTest.java",
+      "size": 2095,
+      "sha256": "289c1aeadbca0d09f7a6faf2a85e6341d931e7f85585bae177ed09903b1bc22f"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/provider/github/GitHubProviderContributionTypesTest.java",
+      "size": 675,
+      "sha256": "57f692427cc9a37f9a331f1cb92b00443655c0f909a6d2d88d2803117d6b254b"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/provider/github/GitHubProviderLanguageBreakdownTest.java",
+      "size": 849,
+      "sha256": "a0648a1266dffbce16ea91909176182c4d593763bdca558b28d80b6f081ccf8f"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/security/CredentialCipherTest.java",
+      "size": 1412,
+      "sha256": "bb37c512c9571d1d8521e94942b0f3cb4005e83f09226f87db6a023a2a8e0e83"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/account/UserDataDeletionIntegrationTest.java",
+      "size": 7332,
+      "sha256": "6f536e7ca5884926d6e15aaeff51b0f6743a28ff6ef5283cb3baa7e874186377"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/connection/DisconnectDataDispositionTest.java",
+      "size": 614,
+      "sha256": "6687223f1dccb903e4b6ecb7510d68c48027dced3c62b163f47e14b1184f99ba"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/connection/ProviderCredentialDisconnectedTest.java",
+      "size": 1033,
+      "sha256": "eacd37402f2d23c6122413d7ecd5fdab1f6d9f7b3b51a9802955924a75cf1430"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/connection/ProviderCredentialServiceTest.java",
+      "size": 1839,
+      "sha256": "1eeb9fb134b4e25bb6475876015e9bcc98c739d774c0278174c58c969d4962ce"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/correction/UserAnalysisCorrectionTypeTest.java",
+      "size": 810,
+      "sha256": "4f3249f3b8898ad5b4c83f3eb09d030f9a054cad961e579807f08eb986576374"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/discovery/ContributionModelTest.java",
+      "size": 1531,
+      "sha256": "0dc2015d2c7228943e3dac3f1e9b4f545ab1e1bbdb7cce9b0f539d0d65e97c30"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/insight/UserAiInsightVersionTest.java",
+      "size": 408,
+      "sha256": "a829dc9a819e2e4230c2b5069598732048d0cd77e614701b65a0e62efb167170"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/job/JobFailureClassifierTest.java",
+      "size": 1609,
+      "sha256": "8b908cd47ea667d8604fa75c65ec62bd0144df4a39a839b1b567cab09631478f"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/job/RepositoryDiscoveryJobServiceTest.java",
+      "size": 1267,
+      "sha256": "fec94831926c5da907c9b134da7e5e5d7b904a42e46808969ac2b6c42682b31e"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/project/AiProjectClassificationVersionTest.java",
+      "size": 429,
+      "sha256": "3b14794a2dde90939feeed1cd48bc14863ecbb4591098fba914dcf0902543261"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/project/ProjectSignificanceServiceTest.java",
+      "size": 3306,
+      "sha256": "0c5a5a5108b5e7a7e3c88ff1d4bc2db3b42663956157bf4e952f658c7d4ac446"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/project/SignificantExternalProjectServiceTest.java",
+      "size": 902,
+      "sha256": "6dc28ab40477fda7e77ae918fc3a7783ac2fa02e3a998a868d7972e77446ddca"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/report/MarkdownPdfCoreContentParityTest.java",
+      "size": 4308,
+      "sha256": "bfa19052914fa3017c3bd16a166ef1e8110776121e2ea91e2d89b3cd1bf87b1c"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/report/MarkdownReportRendererTest.java",
+      "size": 2127,
+      "sha256": "fb9276b3fff62c25f7f4010214fb3bb5d7e04240d7bc878ab26c183e5f17bbfb"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/report/MarkdownReportTypeTest.java",
+      "size": 664,
+      "sha256": "3bfe03f6965db5127050332c84f9515c536f518601ff91973b08e9fca70325b1"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/report/MarkdownReportVariantsTest.java",
+      "size": 2909,
+      "sha256": "de9a7c6bc30781cd2ac596aca9f88e5abb03259de6117f24399b0e5d390084b2"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/report/PdfReportRendererTest.java",
+      "size": 2162,
+      "sha256": "cc1fd39b7ebc9048128632f59a904630445c42dac207c3e4a28c2f6854cbd342"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/report/ReportExportPrivacyBoundaryTest.java",
+      "size": 3384,
+      "sha256": "79ca74b2f229f93eef69fc2ce8e3f27858d1c693bf30a4a25bdf51a457ad3758"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/report/ReportExportPrivacyModeTest.java",
+      "size": 1060,
+      "sha256": "86a7676e3d54b8c099390237e05b79b142c1ac015dc853bf9317ad1d7a8c4afe"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/report/ReportPrivacyPreviewTest.java",
+      "size": 1424,
+      "sha256": "76dd6ff522ec3dc793c15b585aa012e609ca12593de8bcf2874f641a4d549078"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/report/ReportSectionPlannerTest.java",
+      "size": 770,
+      "sha256": "f675006edbe0590ea4ca587bcc80d22c30bc34fff088e0ab91ff1f0ab8c68dfe"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/sync/ContributionSyncOrchestratorTest.java",
+      "size": 1660,
+      "sha256": "5084449ab034e993489a0ba8b9faf407c2b077bc86ec8f494697dbdc08784396"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/sync/RepositoryAnalysisOrchestrationContractTest.java",
+      "size": 1436,
+      "sha256": "3914c7e170e3d9ee7f051c06b604c41e5f9b5cb1126fc1d800368a0fd1594b28"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/technology/FileManifestDetectionRuleTest.java",
+      "size": 814,
+      "sha256": "598e26933f04994c12cd67ee48ea0a76412f2d2aba2ebe9a340d93152c322329"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/technology/TechnologyEvidenceStrengthServiceTest.java",
+      "size": 1961,
+      "sha256": "331ea236273a50508ec3ea4ba9331d5808a0688a1a7c38e368f11415a4627e64"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/service/technology/TechnologyTimelineModelTest.java",
+      "size": 1559,
+      "sha256": "0a427b23b537dd9c29c11488309789ad4b0d17d5df3eb0879fac42133e6feeaa"
+    },
+    {
+      "path": "backend/src/test/java/io/github/developeranalytics/support/TestFixtureService.java",
+      "size": 3069,
+      "sha256": "f9e638708e42435f264dea50d242580021859065c58bba18796e2d73d357f261"
+    },
+    {
+      "path": "backend/src/test/resources/application.properties",
+      "size": 400,
+      "sha256": "d59c891aa7a3d8507414492447e36c3b91ebdfa2f76ead7c6c3d3039b33690c1"
+    },
+    {
+      "path": "deploy/README.md",
+      "size": 3952,
+      "sha256": "c8948686f7d17eaf29e767ef6b7748a022964ddcc22159c04c69ac607c27c672"
+    },
+    {
+      "path": "deploy/compose.ci-prebuilt-backend.yaml",
+      "size": 232,
+      "sha256": "08c286985175c9efc7ac9fff1a408e56e6cad1c14326dd417f013ecd3297dcf8"
+    },
+    {
+      "path": "deploy/compose.ci-runtime.yaml",
+      "size": 162,
+      "sha256": "201c65867c06a802a75c2b8e1136bba17f68ca6cffd6c7393d39a5eed9782912"
+    },
+    {
+      "path": "deploy/compose.local-build.yaml",
+      "size": 370,
+      "sha256": "7734e0134744fae4420e0fd6a10672a568fbb0dab8c2558c057c48095653ba77"
+    },
+    {
+      "path": "deploy/compose.release.example.yaml",
+      "size": 3718,
+      "sha256": "61627c194a752e26411ea4d2a84c4335c1a00092071d8d17e1cc532655a67558"
+    },
+    {
+      "path": "deploy/compose.yaml",
+      "size": 3749,
+      "sha256": "30226cf0d76ae273f0eb8f7bc3b74091c581ffad7910abb9fddc588b79b62a03"
+    },
+    {
+      "path": "deploy/coolify/README.md",
+      "size": 5022,
+      "sha256": "6c523242ee8673437d787374b86b979cabf61f6ea721a068b192f43f67c3c9f9"
+    },
+    {
+      "path": "deploy/coolify/app.yaml",
+      "size": 444,
+      "sha256": "6a8ab1d36fb336f30de0167f440bcdc2abd83e523f14b11c12899cd8110e3251"
+    },
+    {
+      "path": "deploy/coolify/bootstrap-db.sql",
+      "size": 274,
+      "sha256": "591bf957c2fd967c88d2be46773a192a83a174b71813ae1828570e3cccb21684"
+    },
+    {
+      "path": "deploy/coolify/compose.yaml",
+      "size": 2992,
+      "sha256": "33b0ad50b5a24c774a1e8f9de07af90472f3fd7ef6509c8ab14a9fbea775ff45"
+    },
+    {
+      "path": "deploy/coolify/env.example",
+      "size": 1043,
+      "sha256": "342be85da4c62878cef031c058b9d3081502247acf8a5c05b8dcdd708bedf477"
+    },
+    {
+      "path": "deploy/env.example",
+      "size": 678,
+      "sha256": "dd8141683f4298cc4d156c6825f5881d22d039691810c9ec076c9fbdfe9b7fda"
+    },
+    {
+      "path": "deploy/nginx/README.md",
+      "size": 1020,
+      "sha256": "b15349ce41e520642dc1782e4c349bfe064218c04dbbb1b1cd1608e9f1dff6cb"
+    },
+    {
+      "path": "deploy/nginx/nginx.conf",
+      "size": 1324,
+      "sha256": "5f96a42ab57fb16b74bed23b054796dfe8fb35528bcf8dd63e7e66d5d909f9aa"
+    },
+    {
+      "path": "deploy/release.env.example",
+      "size": 984,
+      "sha256": "f145968f4950627e82efe42cefc5311f483fcf7415f458fc62cd7e6bc331eed6"
+    },
+    {
+      "path": "docs/architecture-specification.md",
+      "size": 44206,
+      "sha256": "dbcb07c3fd451614e14b906fa79b2dbe6072878b15467f6ff299899f23df335a"
+    },
+    {
+      "path": "docs/automated-release-verification.md",
+      "size": 1998,
+      "sha256": "91cea8a4861be492793aa3481d857f116b9be54a322f7653d6756efd3aabdbdf"
+    },
+    {
+      "path": "docs/backend-test-layers.md",
+      "size": 3691,
+      "sha256": "23baf260464d54e9b3c7cffe562962b9e12105c3db4ecb5553a6fe3bb606dce3"
+    },
+    {
+      "path": "docs/basic-security-checks.md",
+      "size": 2646,
+      "sha256": "5b557534480ff408de9488ff75f5e1ee05380da9ac9fa82f819c300662e15569"
+    },
+    {
+      "path": "docs/canonical-report-model.md",
+      "size": 1900,
+      "sha256": "33f7231f09fca3cc03c42667eeb59884e1dc793c27143cc3077dd8907c228e18"
+    },
+    {
+      "path": "docs/container-runtime-smoke-tests.md",
+      "size": 2070,
+      "sha256": "028dc5d9024369513d859e6b4bd34cc88f5fadf407110488e7b1214104f72087"
+    },
+    {
+      "path": "docs/development-plan.md",
+      "size": 48816,
+      "sha256": "6769af2c19139b9d577c152c478be61ba058091def7930e1f3084bbb0410f2ca"
+    },
+    {
+      "path": "docs/end-to-end-smoke-tests.md",
+      "size": 1768,
+      "sha256": "a1a95bae535e86d97ca1c3eb443580ae3b571dcd08965b0be932fb18f7e9761e"
+    },
+    {
+      "path": "docs/examples/ai-assessment-example.json",
+      "size": 402,
+      "sha256": "0fd33216b76df2d4b231ef35073f12e8e115309edc178d682f248adca83d085c"
+    },
+    {
+      "path": "docs/examples/external-analysis-calls.sh",
+      "size": 737,
+      "sha256": "0c40a214bb11bf0bef291e3a16224ee2f4ccd0f9803dc1b66a5897d7b30162c4"
+    },
+    {
+      "path": "docs/export-test-coverage.md",
+      "size": 1423,
+      "sha256": "c2d194f48cfe0dc6985be6e08547f1f94351a324f71fbcee6770f77f36d5ea0c"
+    },
+    {
+      "path": "docs/external-analysis-api.md",
+      "size": 7727,
+      "sha256": "da17f6fd4d455b641550e6feaa29d358264a912304ad8ed52f8d312e3f4975aa"
+    },
+    {
+      "path": "docs/frontend-test-layers.md",
+      "size": 2496,
+      "sha256": "de8ff1b0286e519eeabc5057d52593a41230d6a8c9acb3ea96135584401dcc78"
+    },
+    {
+      "path": "docs/functional-specification.md",
+      "size": 34622,
+      "sha256": "88e82da58e9da79e08883a28139d5e587aea9934fd68c0388dcf61dd6ab548ff"
+    },
+    {
+      "path": "docs/ghcr-release-verification.md",
+      "size": 2714,
+      "sha256": "28dacfaa2824272b07e49c962a1f0a94dbd92e94280586204cd64f325d8be058"
+    },
+    {
+      "path": "docs/github-disconnect-workflow.md",
+      "size": 2297,
+      "sha256": "d32d36bd5ddff919006eceef9b2910a84d3895126eb31eab4a2a2664bc937af2"
+    },
+    {
+      "path": "docs/gpt-api-integration.md",
+      "size": 6554,
+      "sha256": "f91510911b295331f5c43278dd19ba809394a52d345b1f56e4ed162b66bd78c1"
+    },
+    {
+      "path": "docs/health-readiness.md",
+      "size": 1625,
+      "sha256": "b557a89c8a1cc38b60cb32acd51a1f3854b79289936612c810ac1a421b6202c9"
+    },
+    {
+      "path": "docs/installation-v1.md",
+      "size": 10327,
+      "sha256": "2abeba17f7278ea6dd6f1a7480b393e95d5e56dedc4e67a47df4d1966178d98c"
+    },
+    {
+      "path": "docs/large-account-acceptance-v1.md",
+      "size": 3758,
+      "sha256": "13eed3d6b56e81524f0784fdd754fea57e38366eacd3ba738c26e4dfc7a96d18"
+    },
+    {
+      "path": "docs/markdown-reports.md",
+      "size": 2252,
+      "sha256": "dec663a34a60f0bbf719a941bda79f8300c41dc019ef62fb6d378ce06030ead1"
+    },
+    {
+      "path": "docs/migration-verification.md",
+      "size": 2195,
+      "sha256": "d1310194362a3140353a215887dec16466a70c807eef78665d0df295005acdf0"
+    },
+    {
+      "path": "docs/mobile-acceptance-v1.md",
+      "size": 2522,
+      "sha256": "b1dbc0bd3191f29b573bf5e4b935d476fe632e68976398378cb0bc09ae6fc129"
+    },
+    {
+      "path": "docs/openapi/custom-gpt-action-example.yaml",
+      "size": 14136,
+      "sha256": "514d351ef99280113d648f882eef34ef488e458eaffe0fe449b1c7b1d59bce53"
+    },
+    {
+      "path": "docs/openapi/external-analysis-v1.yaml",
+      "size": 14460,
+      "sha256": "39f6444533dc5d0d26a24414d89301870e6c0466650cf2d527dfe415e3465d25"
+    },
+    {
+      "path": "docs/operator-v1.md",
+      "size": 8540,
+      "sha256": "f1823433dba7ebc788a8050a00efb900a08b422fffd4233315235401fa98e07b"
+    },
+    {
+      "path": "docs/pdf-reports.md",
+      "size": 1605,
+      "sha256": "d6117310ab0693cc1cbb831463ab319ef7528a999272d0ca2a619afc9bed5e07"
+    },
+    {
+      "path": "docs/postgres-backup-restore.md",
+      "size": 5253,
+      "sha256": "190f8370609bc836359c037424cd8844bc5c70ca58cdc297e0f910435d70b4c0"
+    },
+    {
+      "path": "docs/privacy-acceptance-v1.md",
+      "size": 3041,
+      "sha256": "ae085ba0f5941e6f54c915dd4918cc8d1c3157ea40685b9de275dcf5242a079c"
+    },
+    {
+      "path": "docs/production-compose.md",
+      "size": 812,
+      "sha256": "8bda7923ffe15995cce107f10bb6f80b28f5ea76cf0459d02ac5550388e0b15a"
+    },
+    {
+      "path": "docs/release-compose-quickstart.md",
+      "size": 3679,
+      "sha256": "c55a2078ba3dc2f23394d0dc74f353ffbd98b70442419764ed30c99fd1c5fc3f"
+    },
+    {
+      "path": "docs/release-process.md",
+      "size": 2603,
+      "sha256": "02ac6732ed48d6330893f34624b29c1ca5b53d77e3b9f129c9cf1d468978e00d"
+    },
+    {
+      "path": "docs/report-privacy-preview.md",
+      "size": 1430,
+      "sha256": "9ef01af8d1df2a60155335c62045ddb450165a828595a83edf77617de70ea4c7"
+    },
+    {
+      "path": "docs/structured-logging.md",
+      "size": 2225,
+      "sha256": "cbc749a77f28127249740a54a56665a09162b4527ddc7b6f2b64c1441ea8f47f"
+    },
+    {
+      "path": "docs/synchronisation-recovery.md",
+      "size": 2135,
+      "sha256": "a4b0520b2f3f6604bd10c94f98a4d591e5fb1a6eed36eeeea33ef41394b4bc8c"
+    },
+    {
+      "path": "docs/user-data-deletion.md",
+      "size": 2245,
+      "sha256": "b91c54f7925543fd10875c50647166e78fb149d0660cd6b2f739a0babec59281"
+    },
+    {
+      "path": "docs/ux-filtering-current-state-inventory.md",
+      "size": 14838,
+      "sha256": "7ed178d78139717a5d5dcf9e2872be0fa7b730539b36e5e334ce4347bddef779"
+    },
+    {
+      "path": "docs/ux-filtering-final-cleanup.md",
+      "size": 4397,
+      "sha256": "7a21f9d9a8fafe606033bc374d28810c7d09908bafd1d396612aaa615423e490"
+    },
+    {
+      "path": "docs/ux-filtering-step-0.2-regression-tests.md",
+      "size": 2550,
+      "sha256": "0403581d42c90932411ca341a2b0f982deb65004b8652fed700b72d02514f4c1"
+    },
+    {
+      "path": "docs/ux-filtering-step-1.1-analysis-scope.md",
+      "size": 1821,
+      "sha256": "361f8665a37c5b4e132631ad70a9b9fd8cba94ba9e14422be18feced5e423c33"
+    },
+    {
+      "path": "docs/ux-filtering-step-1.2-analysis-view-options.md",
+      "size": 1869,
+      "sha256": "c2507d3db4d89aeb7f65f50f31d03770bd189c402e146a29f326cd288d355ccb"
+    },
+    {
+      "path": "docs/ux-filtering-step-1.3-analysis-scope-url.md",
+      "size": 1280,
+      "sha256": "bbcc18a56e2944a11738788a74d6fce32096556a0561a444b0a9171832e127a4"
+    },
+    {
+      "path": "docs/ux-filtering-step-10.1-shared-analysis-scope-controller.md",
+      "size": 1982,
+      "sha256": "50db9122a907b8e242f0d4ac093412184f2999f9fe8bdc4cac74a4be14fabb74"
+    },
+    {
+      "path": "docs/ux-filtering-step-10.2-explore-scope-navigation.md",
+      "size": 2168,
+      "sha256": "52dba7d9dbdd2552417193717dfd93727bf1af89934a91bfc6de56bada6ad56b"
+    },
+    {
+      "path": "docs/ux-filtering-step-10.3-project-detail-scope-navigation.md",
+      "size": 1072,
+      "sha256": "4d86442913f364ff35df703654591fef1fefa7696e8f0fa7ff84ee914d5c7575"
+    },
+    {
+      "path": "docs/ux-filtering-step-11.1-navigation-groups.md",
+      "size": 1477,
+      "sha256": "ca942e4ef0cf351c3bcee9aca9e2dada9f22f53f2ebecef690d37edab20411b6"
+    },
+    {
+      "path": "docs/ux-filtering-step-11.3-active-explore-context.md",
+      "size": 1131,
+      "sha256": "aaa432d9bc85546f55feac538cb7552c1499b47fa8de341165ca5277551ed832"
+    },
+    {
+      "path": "docs/ux-filtering-step-12.1-kpi-statistics-inventory.md",
+      "size": 7319,
+      "sha256": "eebca0481d1a52ef952d2f8b5543475d82a5614138a621ba9d14c9db8ed526fe"
+    },
+    {
+      "path": "docs/ux-filtering-step-12.2-summary-facts.md",
+      "size": 2313,
+      "sha256": "5f6ff02dd3fffd849e7a2d9e147aa6de805c4c6add481d4891ec74a8b09dc704"
+    },
+    {
+      "path": "docs/ux-filtering-step-12.3-tertiary-details.md",
+      "size": 1652,
+      "sha256": "86916888d2708196cca7dfbd8c8e73d4b55251697a9b2804ccb3e8a8a2d8fd3e"
+    },
+    {
+      "path": "docs/ux-filtering-step-13.1-standard-empty-states.md",
+      "size": 2161,
+      "sha256": "7f0b248ee482d1f558d845e10eae79baeea231b688b1cda79834cdbf28f7e82a"
+    },
+    {
+      "path": "docs/ux-filtering-step-13.2-over-time-empty-states.md",
+      "size": 1615,
+      "sha256": "007c22ec85307a0654aeeef3f88407b38705ec1a3e341fe4c7b6226758a97bf3"
+    },
+    {
+      "path": "docs/ux-filtering-step-14.1-mobile-filter-panel.md",
+      "size": 937,
+      "sha256": "79329a9b5506df58f451eba6dc6dbab5fe150a1839db4bda5a96394d7cde5f4e"
+    },
+    {
+      "path": "docs/ux-filtering-step-14.2-mobile-content-priority.md",
+      "size": 1995,
+      "sha256": "ed10c9ccc0035bd25ecd2ec4f8b8daa603c0b3c9b39f4b186ae7f706b6c4d6fd"
+    },
+    {
+      "path": "docs/ux-filtering-step-15.1-analysis-model-unit-tests.md",
+      "size": 1342,
+      "sha256": "f33c63d1669fe6e3c39bee5a5a8a7e34df02edee81bb66c1017b23b03c1109c9"
+    },
+    {
+      "path": "docs/ux-filtering-step-15.2-component-tests.md",
+      "size": 1676,
+      "sha256": "fca088246b05b31f59f71d31f1cc6d1a635b0ba6561efc4d9a4c17d21d1aeec0"
+    },
+    {
+      "path": "docs/ux-filtering-step-15.3-navigation-tests.md",
+      "size": 1638,
+      "sha256": "44f44889016b7c3b95b44aa65a62b815dbe05903bf17f0ebdf13e83dea48d737"
+    },
+    {
+      "path": "docs/ux-filtering-step-15.4-browser-history-project-detail.md",
+      "size": 1130,
+      "sha256": "57088fa819e89cc59bbbfd4a1f5350956c2d5e55a9d163cbeeb41f5fa2e2dbb4"
+    },
+    {
+      "path": "docs/ux-filtering-step-15.5-mobile-acceptance.md",
+      "size": 2038,
+      "sha256": "4c2debda155471f47cc28bbf8dcca7edd80242b1febefb7f056304f10b2a9aa2"
+    },
+    {
+      "path": "docs/ux-filtering-step-2.1-analysis-filters.md",
+      "size": 1389,
+      "sha256": "7d0c04265c180620c1d414100a32a028e5765d534ec9ffc76272dd7006a84de5"
+    },
+    {
+      "path": "docs/ux-filtering-step-2.2-active-filter-chips.md",
+      "size": 1183,
+      "sha256": "ff9df80efc1f66faa2a610267112958629c34817e4dc3ff8ce86015a20412d67"
+    },
+    {
+      "path": "docs/ux-filtering-step-3.1-projects-api-inventory.md",
+      "size": 10104,
+      "sha256": "dcbd0c4aaeabbb7a836e637d2f28745043b4a233e3ed787d2707d7144e3ffa52"
+    },
+    {
+      "path": "docs/ux-filtering-step-3.2-project-query-analysis-scope.md",
+      "size": 1901,
+      "sha256": "238707fdf96ee5c010d7c0b1621480d6c8b1deea5395c4e62ac87052e72d04de"
+    },
+    {
+      "path": "docs/ux-filtering-step-3.3-project-facets.md",
+      "size": 2376,
+      "sha256": "68e9d5e74e2e6e175e848a245d8733338c579e2c09e971b854fdfc1d06d470e9"
+    },
+    {
+      "path": "docs/ux-filtering-step-3.4-matching-projects.md",
+      "size": 1656,
+      "sha256": "ea98c31de6b8949462b767c672a3a2c169cf5bd65617748916c96c3aac39a990"
+    },
+    {
+      "path": "docs/ux-filtering-step-4.1-technologies-analysis-scope.md",
+      "size": 1932,
+      "sha256": "1aef7064023dcc2a6d60eb2ee99bd646727d750679167c761a092f76925561ae"
+    },
+    {
+      "path": "docs/ux-filtering-step-4.2-technologies-layout.md",
+      "size": 1825,
+      "sha256": "2c51fa7242a636f647a5475a1cc8676f0e3a4c3216995b99e63fdbb8e8d2c6c5"
+    },
+    {
+      "path": "docs/ux-filtering-step-4.3-technology-statistics.md",
+      "size": 1313,
+      "sha256": "dd52cb2ceae4243dc0c1c4d73329142729f44c1048942027b13828cb09a7fea6"
+    },
+    {
+      "path": "docs/ux-filtering-step-4.4-technology-evidence-details.md",
+      "size": 1355,
+      "sha256": "3f60dcd53eb0c46e96812d2047985493c5591e6ad7fc6eac37f222efa73500dd"
+    },
+    {
+      "path": "docs/ux-filtering-step-4.5-technology-advanced-corrections.md",
+      "size": 891,
+      "sha256": "19b0dd6ad1a2481beed228dbe1f4934f31c3cc35e163d1ea5daa1b1e810ad428"
+    },
+    {
+      "path": "docs/ux-filtering-step-5.1-technology-timeline-semantics.md",
+      "size": 2042,
+      "sha256": "1a88b09c19640f09b16c53e7af92aefbcc740f89c85e8ea55c0e54877e755878"
+    },
+    {
+      "path": "docs/ux-filtering-step-5.2-technology-timeline-non-empty-periods.md",
+      "size": 1357,
+      "sha256": "e8dbc02973399fbe1176f37d186ee32c58935dd25178cfe2bfacaf419b29d73c"
+    },
+    {
+      "path": "docs/ux-filtering-step-5.3-technology-time-scope.md",
+      "size": 1712,
+      "sha256": "ca16bf8146b1ba102fa62561df6e050ff43e6a7cf1e4a55ed15e54aabb202c87"
+    },
+    {
+      "path": "docs/ux-filtering-step-5.4-project-classification-sets.md",
+      "size": 1468,
+      "sha256": "d3483d12274b28ea684e070af0eda44fe4ed40b35c89aaf57562a8959b1ec044"
+    },
+    {
+      "path": "docs/ux-filtering-step-6.1-project-types-analysis-scope.md",
+      "size": 1583,
+      "sha256": "b74e3eb4fb7bee45ab164ce024f2885a8d4eba6dcbc9b7e81a67c87116b93bf0"
+    },
+    {
+      "path": "docs/ux-filtering-step-6.2-project-types-layout.md",
+      "size": 1755,
+      "sha256": "909fc85a97dad0e3dbb18dfa092f2ebeaf567809e3cfbb293126a08580c3cc04"
+    },
+    {
+      "path": "docs/ux-filtering-step-6.3-project-types-time-scope.md",
+      "size": 1076,
+      "sha256": "1a7fea9148037284cfc287d531ca6caa1117532b395ca86a504760b9ddb17cd8"
+    },
+    {
+      "path": "docs/ux-filtering-step-7.1-activity-timeline-overlap.md",
+      "size": 9884,
+      "sha256": "aef37dbd19875725ca7ef6d83a7a02038752d49f74997df38070c893125d274a"
+    },
+    {
+      "path": "docs/ux-filtering-step-7.2-activity-timeline-consolidation.md",
+      "size": 1345,
+      "sha256": "bbd426c90624a26895fd9aab44b78eb03accc426723a39a18b582cf9c3fa2b54"
+    },
+    {
+      "path": "docs/ux-filtering-step-7.3-remove-timeline-navigation.md",
+      "size": 1719,
+      "sha256": "ad560a61c974123a59b549bf3fa7a4b894f663935bb4df3a45fdd10ebdc1cdf5"
+    },
+    {
+      "path": "docs/ux-filtering-step-8.1-contributions-analysis-filters.md",
+      "size": 1793,
+      "sha256": "aef4ae27843163f77280cf66cf7e023229dbea8a228f0c91b85537df1aff67e1"
+    },
+    {
+      "path": "docs/ux-filtering-step-8.2-contributions-matching-projects.md",
+      "size": 1755,
+      "sha256": "be3b278d1ce3c11992ff0a10b038cda74d8c1a6abce8fede8b50afb5ba31c13a"
+    },
+    {
+      "path": "docs/ux-filtering-step-9.1-projects-analysis-scope.md",
+      "size": 1955,
+      "sha256": "b8b75240d375febaf2b0cf6390df863584ae66a20190c6b1ebf621b88c6368a7"
+    },
+    {
+      "path": "docs/ux-filtering-step-9.2-project-filter-groups.md",
+      "size": 1885,
+      "sha256": "c5cac23d750725a35118fb800570e91a7f03cacd0b82a06454dc60a7cf1307f1"
+    },
+    {
+      "path": "frontend/Dockerfile",
+      "size": 644,
+      "sha256": "e796e1f1d42d20b4d28cb681973d710d3f1cd2a22094cf535dfcfed6304d9917"
+    },
+    {
+      "path": "frontend/README.md",
+      "size": 6000,
+      "sha256": "70ec27cb475bd5aa1dc8e14240cbacbf3ae433fa7a347d4fca73393f9203fb16"
+    },
+    {
+      "path": "frontend/e2e/mobile/primary-flows.spec.ts",
+      "size": 17402,
+      "sha256": "303bb074e2136b8d67f532c0a00c440605e79f921e7594d986088342d0cd06df"
+    },
+    {
+      "path": "frontend/eslint.config.js",
+      "size": 769,
+      "sha256": "8a3bb295f65a261a8ec5f2c64b0a0ed900552db197993149c2d5ce93c33c5d57"
+    },
+    {
+      "path": "frontend/index.html",
+      "size": 451,
+      "sha256": "ee14fd8fa4c1f119bd7157d8b832336c56ba3e29e974eb391ec006f8b505140d"
+    },
+    {
+      "path": "frontend/package.json",
+      "size": 1338,
+      "sha256": "1b2043d5e2e6f39006f841d0e200090b8853f6c5358503532cad1a5c3d62e68e"
+    },
+    {
+      "path": "frontend/playwright.mobile.config.ts",
+      "size": 570,
+      "sha256": "7c0683a8caf26572fd5fbce4ce9a0a3f155b86271a6ccedffac3280ee4d4cf33"
+    },
+    {
+      "path": "frontend/public/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "frontend/src/App.css",
+      "size": 2606,
+      "sha256": "ba81f4a5e4eb64cff0c593e86628120ca48389006380b215abe6f15523a56a7b"
+    },
+    {
+      "path": "frontend/src/App.test.tsx",
+      "size": 2321,
+      "sha256": "c5bba08356855974ce33b2fe08b606c6e38b65de74122f9497a0451df05d6523"
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "size": 2825,
+      "sha256": "0efe6f217a12d8aab147778aed1d2d77dc72fd7610c8c3a048b6ac753539e4f0"
+    },
+    {
+      "path": "frontend/src/analysis/AnalysisPeriodPresets.ts",
+      "size": 918,
+      "sha256": "9c63e2b83a7b49e52c60c819a4ef7a690366e256f9f8f20343426dbc70872888"
+    },
+    {
+      "path": "frontend/src/analysis/AnalysisScope.ts",
+      "size": 1885,
+      "sha256": "4b38f4b30d44ec68ffe134d8672929a8490aea705360b1c131c90d31476b690e"
+    },
+    {
+      "path": "frontend/src/analysis/AnalysisScopeUrl.ts",
+      "size": 3507,
+      "sha256": "9638d0f82dc42d49077972541f5d02bc3b035e36e8fd967cb24923a3d526b530"
+    },
+    {
+      "path": "frontend/src/analysis/AnalysisTimeline.ts",
+      "size": 811,
+      "sha256": "00fed71df6716ddc6d02346ad178c47f8ea093466d0fa0919b1fca5d4549bb47"
+    },
+    {
+      "path": "frontend/src/analysis/AnalysisViewOptions.ts",
+      "size": 936,
+      "sha256": "89df2ff54023736972da4a250852703fbf0384896c96405cc5e8bba394d93d30"
+    },
+    {
+      "path": "frontend/src/analysis/ProjectFacetOptions.ts",
+      "size": 527,
+      "sha256": "83a78aff80251029d50a7f6d84b5ec2915fe709fd41c487fdabcd54ab3223322"
+    },
+    {
+      "path": "frontend/src/components/AccountView.tsx",
+      "size": 6150,
+      "sha256": "6ba501aa01d1ee1aa618014a013c6f6037f51b6b90c8c2b0758cfdd1c3721b52"
+    },
+    {
+      "path": "frontend/src/components/ActivityTimelineAnalysis.tsx",
+      "size": 9790,
+      "sha256": "ed8c31eca81dc472b0c41787df2b72e7e35652c895c1946bf0cb058b1471aa6f"
+    },
+    {
+      "path": "frontend/src/components/ActivityView.tsx",
+      "size": 5595,
+      "sha256": "c345a3ab5bb9c1b03ab3bb054e94969340fbcd2c052d02f49e003235d4cd75e6"
+    },
+    {
+      "path": "frontend/src/components/AiInsightsView.tsx",
+      "size": 6176,
+      "sha256": "45179d53253dde82cf0b0df6bc671e497c08f00ff321c277f71677358f81b9d0"
+    },
+    {
+      "path": "frontend/src/components/AnalysisEmptyState.tsx",
+      "size": 3411,
+      "sha256": "f97e5bfb6feef464368c146c07f5186ee3abc85e146d46f97d809be6950eaab8"
+    },
+    {
+      "path": "frontend/src/components/AnalysisFilters.tsx",
+      "size": 9030,
+      "sha256": "97cfc264d5e085c64de14e5287d9f7f2abfcf98a392244ee6331867e6939a82e"
+    },
+    {
+      "path": "frontend/src/components/AppErrorBoundary.tsx",
+      "size": 804,
+      "sha256": "d5564cb5e3bc27218e53eb9157d36833a6998933f60f6d1a2d5030ea420a18d9"
+    },
+    {
+      "path": "frontend/src/components/AuthenticatedShell.tsx",
+      "size": 6956,
+      "sha256": "4e43007c15eec57919e67046406a2331353a2a44529037ad3c5d7d3e183a30ff"
+    },
+    {
+      "path": "frontend/src/components/ContributionsView.tsx",
+      "size": 2998,
+      "sha256": "07ffa692ae6a297d6c3ab7167ec195e6c052caa9351285ec47bd10e8ca7a5c85"
+    },
+    {
+      "path": "frontend/src/components/DrilldownTimeChart.tsx",
+      "size": 6486,
+      "sha256": "8d07a54da99cb6f6cc008a45619bf8caf1ac66ff579a0ce9af8ff8f0a7d8c292"
+    },
+    {
+      "path": "frontend/src/components/MatchingProjects.tsx",
+      "size": 4681,
+      "sha256": "46a2c5373366f1bca1a83e510530d9b230731c94f780b8a362289a7c0aa03bee"
+    },
+    {
+      "path": "frontend/src/components/OverviewDashboard.tsx",
+      "size": 5290,
+      "sha256": "4bac74a72410952af519af2393f3912a3253c902878c284173f089e925f41f8d"
+    },
+    {
+      "path": "frontend/src/components/PrivacyDataSourcesView.tsx",
+      "size": 5704,
+      "sha256": "23aff0a72424c71b141b928e3a7685f949fc14d5f14516b403609ec9a440532e"
+    },
+    {
+      "path": "frontend/src/components/ProjectDetailView.tsx",
+      "size": 9504,
+      "sha256": "7ceda3aa5601c0646d7f16dddbc5e05dde9aa594b85da1d41dac3f63cd14f9eb"
+    },
+    {
+      "path": "frontend/src/components/ProjectInventoryView.tsx",
+      "size": 9473,
+      "sha256": "7f466c6add784c71f7ffd6a884f8830d9c12c1338a2defb0b2469860e9ab87ca"
+    },
+    {
+      "path": "frontend/src/components/ProjectTypeViews.tsx",
+      "size": 6904,
+      "sha256": "3bc9b586442d63d9955bae6564def2d32395e2621f561a78b74c53d0a496af3a"
+    },
+    {
+      "path": "frontend/src/components/ReportsView.tsx",
+      "size": 13757,
+      "sha256": "04e207b1ee50cf8835ee2e317af5e4ee8f1ff5b8958db6338c7929801b8d0bfe"
+    },
+    {
+      "path": "frontend/src/components/SummaryFacts.tsx",
+      "size": 525,
+      "sha256": "17c8e8d8b369409950af6dad01189a178da75e6d288810ac667b052b91524d32"
+    },
+    {
+      "path": "frontend/src/components/SyncMonitoringPanel.tsx",
+      "size": 4379,
+      "sha256": "f3a889ceae68ab1fef1a63794b594c795c3bab33183b4ce65f4fe26bcf589ac0"
+    },
+    {
+      "path": "frontend/src/components/TechnologyViews.tsx",
+      "size": 9545,
+      "sha256": "c5f4a71dc706f7645074df4eb201b89f791869da3a41039117de0ff5674dfc2f"
+    },
+    {
+      "path": "frontend/src/hooks/useActivityView.ts",
+      "size": 7752,
+      "sha256": "cd498634a2c1d9fdcb2bfb954b8cdd878a882fd582212ea220afd704b0995ab9"
+    },
+    {
+      "path": "frontend/src/hooks/useAiPrivacy.ts",
+      "size": 2232,
+      "sha256": "96bfd6bc7a99b0a95134a54dff0e2bad0229c5f6bb5701bdeed42f2610eaf901"
+    },
+    {
+      "path": "frontend/src/hooks/useAiStatus.ts",
+      "size": 1633,
+      "sha256": "d1bd4a6893187ac0897c21af2f54eb29df9a28223f32f91d8ac4c51fd6e28c93"
+    },
+    {
+      "path": "frontend/src/hooks/useAnalysisScope.ts",
+      "size": 2304,
+      "sha256": "33a3c3c2aca002fc51a2dfcf9096c861036e5c8efaa89183f7a50f21fcdc8eed"
+    },
+    {
+      "path": "frontend/src/hooks/useAuthenticatedSession.ts",
+      "size": 1777,
+      "sha256": "bd9ff5bc7befb79e5aec89a6bd8935cfa3e063c7826b3534f016bf4622550980"
+    },
+    {
+      "path": "frontend/src/hooks/useContributions.ts",
+      "size": 1975,
+      "sha256": "01126b99333f3c2fd495632fe85657dd926b6557734c75162d77b5b4e3ee3913"
+    },
+    {
+      "path": "frontend/src/hooks/useCorrections.ts",
+      "size": 1047,
+      "sha256": "648a4f1b3912aa4fe3bc1a04449bec25bef092d358d8f6281700c39b6af41453"
+    },
+    {
+      "path": "frontend/src/hooks/useDataFreshness.ts",
+      "size": 2213,
+      "sha256": "f1d4ecdd0c5a84443f8cea33bf9b51cc1fb9a6b2f2fad3296c9c0308ec7112cb"
+    },
+    {
+      "path": "frontend/src/hooks/useExternalClients.ts",
+      "size": 2912,
+      "sha256": "cf94ad683d524c25b4c0547b5a621af351e82d004b476c81c9a488e73b8b28cc"
+    },
+    {
+      "path": "frontend/src/hooks/useGitHubDataSource.ts",
+      "size": 2001,
+      "sha256": "90224144616960526654b46cddb516ec77084b4a3770412815aeed7792267afe"
+    },
+    {
+      "path": "frontend/src/hooks/useGitHubDisconnect.ts",
+      "size": 1164,
+      "sha256": "8185f087f8d31fbfcbd43377f15d91b44bde67903b6628a2a3ec6539196622eb"
+    },
+    {
+      "path": "frontend/src/hooks/useMatchingProjects.ts",
+      "size": 1901,
+      "sha256": "aa961da6680ff3a4eab24f41416e95d02e4eff248024c10f0daa47729f6b2bde"
+    },
+    {
+      "path": "frontend/src/hooks/useOverviewDashboard.ts",
+      "size": 3302,
+      "sha256": "7b4ced6f72a7f5a9524429a1a559b485f311f055736689c580a728b338f0bbe4"
+    },
+    {
+      "path": "frontend/src/hooks/useProjectDetail.ts",
+      "size": 3151,
+      "sha256": "4b463931bdbc6bebe3c53e304f6919968454fb9fff6b659bda13d2f250cd5236"
+    },
+    {
+      "path": "frontend/src/hooks/useProjectDetailNavigation.ts",
+      "size": 2024,
+      "sha256": "6672db903d79265e22432d77c66cb321a9acd09c6e595cb43077623e0171a50a"
+    },
+    {
+      "path": "frontend/src/hooks/useProjectInventory.ts",
+      "size": 2759,
+      "sha256": "ea3e56a8e5b83f6058df61ff51553744ec67d50a76c655f14eecde96ca952c27"
+    },
+    {
+      "path": "frontend/src/hooks/useProjectTypes.ts",
+      "size": 1678,
+      "sha256": "178f83daff56b54202a2225905d76ccb11e93bc43c40b764704b379aa69d9d65"
+    },
+    {
+      "path": "frontend/src/hooks/useSyncMonitoring.ts",
+      "size": 3925,
+      "sha256": "670aec0213f08d96d3fa974a77772c463aea2bab3948d1cf154a718f0c38d5b3"
+    },
+    {
+      "path": "frontend/src/hooks/useSyncRecovery.ts",
+      "size": 1327,
+      "sha256": "60014ae36caff924b37fdaae9a811d452e8373e5251642a8c6a97cf683f7b824"
+    },
+    {
+      "path": "frontend/src/hooks/useTechnologyViews.ts",
+      "size": 1989,
+      "sha256": "e9c6c3c8746ebb0d9d25c2636a7815cd84395d2245ab77dbb69e09a47b6ec1dd"
+    },
+    {
+      "path": "frontend/src/hooks/useUserAiInsights.ts",
+      "size": 2254,
+      "sha256": "7e7f9e64f7d9d89a9edb42669b4762be6f5e90ae15392a2194e3b7f2b8211c62"
+    },
+    {
+      "path": "frontend/src/hooks/useUserDataDeletion.ts",
+      "size": 981,
+      "sha256": "542687e800abd06474fc5379c676a667ca6052fe87a26768e5b997b80fa11874"
+    },
+    {
+      "path": "frontend/src/main.tsx",
+      "size": 463,
+      "sha256": "b8be470420b305b0c12089db3b8ee27c16df4c7c150b66077dcdd1573fbe1c21"
+    },
+    {
+      "path": "frontend/src/styles.css",
+      "size": 33980,
+      "sha256": "7f572766b84ddf2e2d012434a4544b043d04e2b52c5fa2b9f17fc45767b6727e"
+    },
+    {
+      "path": "frontend/src/test-layers/api-error/ReportsApiError.test.tsx",
+      "size": 1003,
+      "sha256": "c598af4e08933ea6fbdb471f7418871ca2f60763889df3d17582e8cc16e429bc"
+    },
+    {
+      "path": "frontend/src/test-layers/component/AnalysisEmptyState.test.tsx",
+      "size": 1988,
+      "sha256": "6d6c008b6cb5066e727c904e048fad09ad75c94213bbf6c35fc1499ad47ebaa8"
+    },
+    {
+      "path": "frontend/src/test-layers/component/AnalysisFilters.test.tsx",
+      "size": 7115,
+      "sha256": "4b3ea12c12ce2414d7a833929aa00c96a165069c96506fdf991abc1a48cc5644"
+    },
+    {
+      "path": "frontend/src/test-layers/component/AppErrorBoundary.test.tsx",
+      "size": 748,
+      "sha256": "2a8964031796bb453d288297ee2190a5c2e408c218528d31f72c532081a9af58"
+    },
+    {
+      "path": "frontend/src/test-layers/component/ExploreSelectionConsistency.test.tsx",
+      "size": 6482,
+      "sha256": "92c9215610e477367c798ac53fbaeb1b8a090a80591316195a472834414408fe"
+    },
+    {
+      "path": "frontend/src/test-layers/component/SecondaryDetailsDisclosure.test.tsx",
+      "size": 1424,
+      "sha256": "0664884cf4f5ea4e9f79207f75a7e44b9783faf296ff1b61d4a7983e49c62714"
+    },
+    {
+      "path": "frontend/src/test-layers/component/SummaryFacts.test.tsx",
+      "size": 1065,
+      "sha256": "669bf86a088b3401fd5197eb34491e02540ed29e2e5485f2cd8b55859d1e4f78"
+    },
+    {
+      "path": "frontend/src/test-layers/feature/ActivityAnalysisScopeFeature.test.tsx",
+      "size": 2737,
+      "sha256": "2222b9366d19eba29909491c306886daf5e3a0ba3fd50027778403eefbcedc9e"
+    },
+    {
+      "path": "frontend/src/test-layers/feature/AnalysisModelUnitFeature.test.ts",
+      "size": 2397,
+      "sha256": "38149d74b8821c768ceca50aed07aa2482816b5616c490b5611fbf82fd6da564"
+    },
+    {
+      "path": "frontend/src/test-layers/feature/AnalysisScopeControllerFeature.test.tsx",
+      "size": 2490,
+      "sha256": "4e10067e393ed524f1683f3020fc205c986985cdac587508b1bfbd46ca4aeeb8"
+    },
+    {
+      "path": "frontend/src/test-layers/feature/AnalysisScopeFeature.test.ts",
+      "size": 2079,
+      "sha256": "c4e91b8290ab6079aa50e0ff8b9e8fe5a202560ea7a74243b096d1032ff19c47"
+    },
+    {
+      "path": "frontend/src/test-layers/feature/AnalysisScopeUrlFeature.test.ts",
+      "size": 2140,
+      "sha256": "2f13306c525f90e8a98d09f8b2a57c6f506d4c41cc87ae88ae6366deebad0621"
+    },
+    {
+      "path": "frontend/src/test-layers/feature/AnalysisViewOptionsFeature.test.ts",
+      "size": 1258,
+      "sha256": "34768c7064a6a5ef665be20c123ff99927ade7daefc7a8bb2767fddda756556f"
+    },
+    {
+      "path": "frontend/src/test-layers/feature/ContributionsAnalysisScopeFeature.test.tsx",
+      "size": 6154,
+      "sha256": "8c66988dfe78c50d29fe3d91548ebbec5a4272f5e57715a827ebff1cc0d7776e"
+    },
+    {
+      "path": "frontend/src/test-layers/feature/ExploreCurrentBehaviourFeature.test.tsx",
+      "size": 20508,
+      "sha256": "e20cba9fd90143be06bdb7f89ecb0e1261f2533fbca5c10edaa3ce7621f7d05a"
+    },
+    {
+      "path": "frontend/src/test-layers/feature/ExploreScopeNavigationFeature.test.tsx",
+      "size": 4297,
+      "sha256": "b43875822d450d485d326980351c5ed1cfb2d051e8b48b93294e4f0e0ccd0e3a"
+    },
+    {
+      "path": "frontend/src/test-layers/feature/MatchingProjectsFeature.test.tsx",
+      "size": 5086,
+      "sha256": "6c3faa40951ba183fa0bdbd09fc6cc5349309fd6ce18cce584e197d04add9e43"
+    },
+    {
+      "path": "frontend/src/test-layers/feature/ProjectDetailScopeNavigationFeature.test.tsx",
+      "size": 1944,
+      "sha256": "b76a517089a0c2937c9d6c3f683fec43664f15ee0ad2ec7f80e2b4ad6ffaae83"
+    },
+    {
+      "path": "frontend/src/test-layers/feature/ProjectInventoryFilteringFeature.test.tsx",
+      "size": 7023,
+      "sha256": "d95c035560e35cc2a27e2c393c2bb425bd4576359e47bcb236944525bc3aa554"
+    },
+    {
+      "path": "frontend/src/test-layers/feature/ReportsFeature.test.tsx",
+      "size": 1858,
+      "sha256": "1eced096cd61fe77da8d888ded22f0920f944f4175119b67478e5eef3f2be240"
+    },
+    {
+      "path": "frontend/src/test-layers/privacy/ReportPrivacyIndicators.test.tsx",
+      "size": 2057,
+      "sha256": "b3f4ea9f3f8e2d10f69c499357b7f75ff00afad3629f3fb9c100d249cb9c96ec"
+    },
+    {
+      "path": "frontend/src/test-layers/responsive/AuthenticatedShellResponsive.test.tsx",
+      "size": 4047,
+      "sha256": "ca3193cf232ff740f582e96c70a2733a6c2ca09f9d7f13b743cabc6b7f04c0ee"
+    },
+    {
+      "path": "frontend/src/test-setup.ts",
+      "size": 42,
+      "sha256": "977afde26bba6a51325908cd7713cbfdc87d18f06b78b237c8f364c44864b7de"
+    },
+    {
+      "path": "frontend/src/timeline.css",
+      "size": 3195,
+      "sha256": "3e76a0b4d314b6f9b394f7ca8a0d8e8bcef06b7608ebdb25cca071e42f166287"
+    },
+    {
+      "path": "frontend/src/vite-env.d.ts",
+      "size": 38,
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    },
+    {
+      "path": "frontend/tsconfig.app.json",
+      "size": 714,
+      "sha256": "ba5d548d073634ad8c800987b7f7b4baf1dc5fcaf63415ef8d897b7f33b64e97"
+    },
+    {
+      "path": "frontend/tsconfig.json",
+      "size": 119,
+      "sha256": "770b4140bbb581e2dfd9ea9946ffc9c75a1d86ba7d2db5f77c83e37cbdf9d808"
+    },
+    {
+      "path": "frontend/tsconfig.node.json",
+      "size": 433,
+      "sha256": "b2da0b26acff699fe586bf16a8755b8908269bcfd32a3143ffb7cb0a790d2311"
+    },
+    {
+      "path": "frontend/vite.config.ts",
+      "size": 282,
+      "sha256": "97bc504e8db00eface15f23ca590f1f419ddecb5f4e52e20b165c61539de4635"
+    },
+    {
+      "path": "scripts/.gitkeep",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "scripts/check-backend-test-layers.py",
+      "size": 1044,
+      "sha256": "edd630e867a3ab9a8f108638f5ca191a53dcf4483555f3de38b16477b000d464"
+    },
+    {
+      "path": "scripts/check-flyway-migrations.py",
+      "size": 1710,
+      "sha256": "bf2c6a375ee6755a579719e530cbd3d3f05001ed6a3c22ecc7ad20eab6119985"
+    },
+    {
+      "path": "scripts/check-frontend-test-layers.py",
+      "size": 949,
+      "sha256": "321135e4ed448bb9d047dc7f779cf9518879bd1644f956c9c70604f6976f5bfd"
+    },
+    {
+      "path": "scripts/check-large-account-fixture.py",
+      "size": 566,
+      "sha256": "4d11d832a7be4392677ec06c1a6e8c26c2282dddb88c4919b940ed1079ce6a22"
+    },
+    {
+      "path": "scripts/hash-auth-token.py",
+      "size": 280,
+      "sha256": "ee536668f9baeea5dee6ee851a0865d4a419ff3da6f4128286e1e0dd9b33b204"
+    },
+    {
+      "path": "scripts/npm-audit-ci.sh",
+      "size": 1149,
+      "sha256": "99bdfcb728f0f8cf22b3b1b583f540ad0a27822aa5a99aa8faa06771beb341f4"
+    },
+    {
+      "path": "scripts/postgres-backup.sh",
+      "size": 685,
+      "sha256": "5bd2be6c8fd35119321e8a7ab0d1b804b5e01e5bd864892c81895e62bb2a4139"
+    },
+    {
+      "path": "scripts/postgres-restore.sh",
+      "size": 1467,
+      "sha256": "495923e16d2a2490d59aca68fd09e6cc72de0c886abfe6459e045c4ca9ffff8a"
+    },
+    {
+      "path": "scripts/run-backend-test-layer.sh",
+      "size": 637,
+      "sha256": "34645a45c69eb5b2d836b72d101f560b11db455dac7cb0d85c90405a4278d595"
+    },
+    {
+      "path": "scripts/run-frontend-test-layer.sh",
+      "size": 454,
+      "sha256": "59fbcb492cacb1e0609d6c77980577308e9f27c17f871ca6b68452ed266d0167"
+    },
+    {
+      "path": "scripts/test-container-runtime.sh",
+      "size": 3682,
+      "sha256": "e8a943bdc2e32ef3d5ba5cf957ef96a86ee88969b37089fdda582785271bdeb5"
+    },
+    {
+      "path": "scripts/test-e2e-smoke.sh",
+      "size": 4304,
+      "sha256": "ec75de2e2d47de6cbed2aaa07ff5665cf220a355161ec8bc8ffe955628702760"
+    },
+    {
+      "path": "scripts/test-fresh-database-migrations.sh",
+      "size": 2182,
+      "sha256": "1dad4155f7dd0e23f702c4fc24b38ea049254ee0f9f907309f7ba8f8c0a5fbdd"
+    },
+    {
+      "path": "scripts/test-large-account-acceptance.sh",
+      "size": 11188,
+      "sha256": "423d87d9657197c4018e601c47d741ce9257fc4c6c6b62acc5d4dab2f87c2d71"
+    },
+    {
+      "path": "scripts/test-postgres-backup-restore.sh",
+      "size": 5235,
+      "sha256": "5d26eb34c5aab91641cc3bf3197f4aacf1b1db6fb83e45bf300262b71e1f832e"
+    },
+    {
+      "path": "scripts/test-privacy-acceptance.sh",
+      "size": 13819,
+      "sha256": "685721cc72d20a8fa3cfa93645ae78d5c38226628d29bcaafca410b5f5720de3"
+    },
+    {
+      "path": "scripts/test-published-release-runtime.sh",
+      "size": 7319,
+      "sha256": "47e8fe3f89883f485ebd33251a96e616902600162124e1876d2b43039af60834"
+    },
+    {
+      "path": "scripts/verify-ghcr-release.sh",
+      "size": 4697,
+      "sha256": "28e97c760615e1d674c38d78ce335572236a8618e5afef9a11b5e0a956546240"
+    }
+  ]
+}

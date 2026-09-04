@@ -1,0 +1,33 @@
+schema_version: 1
+plan_id: developer-analytics-refactoring-2026-09
+source:
+  mode: zip
+  zip:
+    base_name: "developer-analytics-main(1).zip"
+    base_sha256: "4314be6f435c256811cb21d7336202f670a1aa79c43f19b50066c2aff92c27f8"
+    last_output_name: null
+    last_output_sha256: null
+progress:
+  current_step_id: R-001
+  completed_step_ids: []
+  skipped_step_ids: []
+  blocked_step_ids: [R-001]
+findings:
+  F-001: in_progress
+  F-002: planned
+  F-003: planned
+  F-004: planned
+blockers:
+  - id: B-001
+    status: open
+    step_id: R-001
+    reason: Full backend verification cannot run in this execution environment because the project has no Maven wrapper and `mvn` is not installed.
+plan_changes: []
+next_step:
+  recommended: R-001
+  reason: Characterization tests are implemented, but R-001 remains the next step until the required backend test run has passed.
+delivery:
+  last_completed_step_id: null
+  verification_status: blocked
+  verification_summary: Backend test-layer validation passes (persistence layer now contains 10 tests). Required Maven test execution is blocked because neither mvnw nor mvn is available in the execution environment.
+updated_at: "2026-09-04T04:44:47Z"
