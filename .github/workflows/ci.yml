@@ -43,7 +43,7 @@ jobs:
         run: python3 ../scripts/check-frontend-test-layers.py
 
       - name: Audit production frontend dependencies
-        run: npm audit --omit=dev --audit-level=high
+        run: bash ../scripts/npm-audit-ci.sh
 
       - name: Lint
         run: npm run lint
