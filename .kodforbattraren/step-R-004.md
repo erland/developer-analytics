@@ -32,3 +32,20 @@ Beteendebevarande backendrefaktorering med privacy-känsligt regressionsskydd.
 
 ## Status
 R-004 är **implementerad men väntar på full CI-verifiering**. Nästa planerade steg efter grön CI är R-005.
+
+## CI-korrigering 2026-09-04
+GitHub Actions-körning `33847694102`, jobb `100943162667`, visade två 406-fel i
+`ExternalAnalysisPrivacyCharacterizationTest`. Orsaken var inte privacy-logiken utan JAX-RS-routing:
+UI-resurserna hade mer specifika klassvägar som `/api/me/activity` och vann path-matchningen innan
+`Accept: application/vnd.developer-analytics.analysis.v1+json` kunde välja External Analysis-resursen.
+
+Korrigering:
+- `MeActivityResource`, `MeContributionsResource`, `MeTechnologiesResource` och `MeProjectTypesResource`
+  använder nu klassvägen `/api/me` och respektive metodväg `/activity`, `/contributions`, `/technologies`
+  och `/project-types`.
+- De publika URL:erna är oförändrade.
+- `application/json` och External Analysis-media typen kan nu särskiljas vid metodvalet via content negotiation.
+- Ingen payload- eller privacy-semantik har ändrats.
+
+Lokal lagerkontroll efter korrigeringen passerar: authorization 7, privacy 19, persistence 10, unit 66.
+Full `mvn verify` behöver bekräftas av GitHub Actions.

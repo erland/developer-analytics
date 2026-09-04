@@ -36,8 +36,6 @@ next_step:
   reason: R-005 måste slutföras med en verklig npm-lockfil innan R-006 får starta.
 delivery:
   last_completed_step_id: R-003
-  verification_status: blocked
-  verification_summary: 'R-005 påbörjad: npm-versionen är pinnad i package.json. Lockfil/
-    npm ci-migrering är blockerad eftersom npm-registret inte är åtkomligt från körmiljön;
-    ingen falsk lockfil eller medvetet trasig CI har skapats.'
+  verification_status: verification_pending
+  verification_summary: 'R-004 routing-korrigering implementerad efter CI 33847694102: fyra kolliderande UI-resurser använder nu /api/me som klassväg och metodspecifika delvägar så content negotiation kan välja External Analysis-medietypen. R-005 är fortsatt blockerad av npm-registryåtkomst.'
 updated_at: '2026-09-04T06:51:43.402206Z'

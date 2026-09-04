@@ -14,7 +14,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 
-@Path("/api/me/contributions")
+@Path("/api/me")
 @Produces(MediaType.APPLICATION_JSON)
 public class MeContributionsResource {
     @Inject CurrentUserService currentUserService;
@@ -22,6 +22,7 @@ public class MeContributionsResource {
     @Inject ProjectInventoryRepository inventory;
 
     @GET
+    @Path("/contributions")
     public Summary list(
             @CookieParam(AuthenticationService.SESSION_COOKIE) String token,
             @QueryParam("limit") @DefaultValue("100") int limit,

@@ -11,13 +11,14 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
-@Path("/api/me/activity")
+@Path("/api/me")
 @Produces(MediaType.APPLICATION_JSON)
 public class MeActivityResource {
     @Inject CurrentUserService currentUserService;
     @Inject ActivityApplicationService activity;
 
     @GET
+    @Path("/activity")
     public ActivityResponse get(@CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken,
                                 @QueryParam("from") String from, @QueryParam("to") String to,
                                 @QueryParam("year") Integer year, @QueryParam("month") String month,

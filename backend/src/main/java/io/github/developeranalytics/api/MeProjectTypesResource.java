@@ -15,7 +15,7 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Path("/api/me/project-types")
+@Path("/api/me")
 @Produces(MediaType.APPLICATION_JSON)
 public class MeProjectTypesResource {
 
@@ -23,6 +23,7 @@ public class MeProjectTypesResource {
     @Inject ProjectTypeAnalyticsRepository analytics;
 
     @GET
+    @Path("/project-types")
     public List<Entry> list(@CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken) {
         CurrentUser current = currentUserService.requireCurrentUser(sessionToken);
 

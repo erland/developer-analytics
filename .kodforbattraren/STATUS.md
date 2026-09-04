@@ -1,11 +1,13 @@
 # Kodförbättraren – status
 
-- Fas: **R-004 implementerad, full CI-verifiering väntar**.
-- Senast implementerade steg: **R-004 – Etablera use-case-gräns för externa analys-API:t**.
-- Ny `ExternalAnalysisApplicationService` äger persistence/aggregation för `projects`, `activity` och `contributions`.
-- `ExternalAnalysisResource` behåller autentisering/scope-kontroll och transportmappning för de migrerade use casen.
+- Fas: **R-004 routing-korrigering implementerad, full CI-verifiering väntar**.
+- Senast korrigerade steg: **R-004 – Etablera use-case-gräns för externa analys-API:t**.
+- GitHub Actions-run `33847694102` visade att externa `/api/me/activity` gav 406 på grund av JAX-RS path-precedens, inte privacy-logik.
+- UI-resurserna för `activity`, `contributions`, `technologies` och `project-types` har nu gemensam klassväg `/api/me` och metodspecifika delvägar.
+- Alla befintliga URL:er är oförändrade; skillnaden mellan dashboard-JSON och External Analysis-medietyp kan nu göras via content negotiation.
+- Ny `ExternalAnalysisApplicationService` äger fortsatt persistence/aggregation för `projects`, `activity` och `contributions`.
 - Privacy-scope förs explicit över use-case-gränsen; policysemantiken är oförändrad.
-- Nytt end-to-end characterization-skydd täcker PUBLIC_ONLY, PUBLIC_PLUS_PRIVATE_AGGREGATES och FULL_AUTHORISED_ANALYSIS.
 - Lokal testlagerkontroll passerar: authorization 7, privacy 19, persistence 10, unit 66.
-- Full Maven/Quarkus-svit kräver GitHub Actions eftersom lokal miljö saknar Maven/Docker.
-- Nästa rekommenderade steg efter grön CI: **R-005 – Lås frontendens dependency-resolution**.
+- Full Maven/Quarkus-svit behöver bekräftas av GitHub Actions.
+- **R-005 är fortfarande blockerad** på att skapa en verklig `package-lock.json` i en npm-registryansluten miljö.
+- Nästa rekommenderade steg efter grön backend-CI är fortfarande att slutföra **R-005 – Lås frontendens dependency-resolution**.
