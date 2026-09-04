@@ -5,7 +5,6 @@ import io.github.developeranalytics.auth.external.ExternalClientAuthService.Exte
 import io.github.developeranalytics.domain.external.ExternalClientToken;
 import io.github.developeranalytics.domain.model.*;
 import io.github.developeranalytics.domain.technology.UserTechnologyAssessment;
-import io.github.developeranalytics.persistence.correction.UserAnalysisCorrectionRepository;
 import io.github.developeranalytics.persistence.project.ProjectTypeAnalyticsRepository;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
 import io.github.developeranalytics.persistence.technology.UserTechnologyAssessmentRepository;
@@ -14,12 +13,9 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.MediaType;
 
 import java.time.OffsetDateTime;
-import java.time.YearMonth;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Path("/api/me")
 @Produces(ExternalAnalysisMediaType.VALUE)
@@ -29,7 +25,6 @@ public class ExternalAnalysisResource {
     @Inject SourceRepositoryRepository repositories;
     @Inject UserTechnologyAssessmentRepository technologyAssessments;
     @Inject ProjectTypeAnalyticsRepository projectTypes;
-    @Inject UserAnalysisCorrectionRepository corrections;
     @Inject EntityManager entityManager;
     @Inject ExternalAnalysisApplicationService externalAnalysis;
 
@@ -71,10 +66,6 @@ public class ExternalAnalysisResource {
 
         List<TechnologySummary> technologies =
                 technologyAssessments.findForUser(userId).stream()
-                        .filter(a -> !isTechnologySuppressed(
-                                userId,
-                                a.getTechnology().getTechnologyKey()
-                        ))
                         .filter(a ->
                                 principal.privacyScope().allowsPrivateAggregates()
                                 || a.getPrivacyProvenance() ==
@@ -174,10 +165,6 @@ public class ExternalAnalysisResource {
         int safeLimit = Math.max(1, Math.min(limit, 100));
 
         return technologyAssessments.findForUser(userId).stream()
-                .filter(a -> !isTechnologySuppressed(
-                        userId,
-                        a.getTechnology().getTechnologyKey()
-                ))
                 .filter(a ->
                         principal.privacyScope().allowsPrivateAggregates()
                         || a.getPrivacyProvenance() ==
@@ -261,10 +248,6 @@ public class ExternalAnalysisResource {
                         principal.privacyScope().allowsPrivateAggregates()
                         || DataPrivacyProvenance.PUBLIC_ONLY.name()
                                 .equals(row[4].toString()))
-                .filter(row -> !isTechnologySuppressed(
-                        userId,
-                        (String) row[0]
-                ))
                 .map(row -> new TechnologyEvidence(
                         (String) row[0],
                         row[1].toString(),
@@ -281,14 +264,6 @@ public class ExternalAnalysisResource {
                         "from RepositoryProjectCategory c " +
                         "where c.repository.user.id=:userId " +
                         "and c.repository.includedInAnalysis=true " +
-                        "and not exists (" +
-                        "select 1 from UserAnalysisCorrection correction " +
-                        "where correction.user.id=:userId " +
-                        "and correction.repository.id=c.repository.id " +
-                        "and correction.type=" +
-                        "io.github.developeranalytics.domain.correction." +
-                        "UserAnalysisCorrection.Type.PROJECT_CATEGORY_REJECTED " +
-                        "and correction.correctionKey=c.category.categoryKey) " +
                         "group by c.category.categoryKey, c.source, " +
                         "c.confidence, c.privacyProvenance " +
                         "order by count(c) desc",
@@ -317,57 +292,48 @@ public class ExternalAnalysisResource {
         );
     }
 
-
     private List<ProjectTypeSummary> projectTypeSummaries(
-        UUID userId,
-        ExternalClientToken.PrivacyScope privacyScope,
-        int limit
-) {
-    if (privacyScope.allowsPrivateAggregates()) {
-        return projectTypes.categorySummaries(userId).stream()
-                .limit(limit)
-                .map(row -> new ProjectTypeSummary(
-                        row.categoryKey(),
-                        row.categoryName(),
-                        row.projectCount()
-                ))
-                .toList();
-    }
+            UUID userId,
+            ExternalClientToken.PrivacyScope privacyScope,
+            int limit
+    ) {
+        if (privacyScope.allowsPrivateAggregates()) {
+            return projectTypes.categorySummaries(userId).stream()
+                    .limit(limit)
+                    .map(row -> new ProjectTypeSummary(
+                            row.categoryKey(),
+                            row.categoryName(),
+                            row.projectCount()
+                    ))
+                    .toList();
+        }
 
-    return entityManager.createQuery(
-            "select c.category.categoryKey, c.category.displayName, " +
-            "count(distinct c.repository.id) " +
-            "from RepositoryProjectCategory c " +
-            "where c.repository.user.id=:userId " +
-            "and c.repository.includedInAnalysis=true " +
-            "and c.repository.visibility=:publicVisibility " +
-            "and not exists (" +
-            "select 1 from UserAnalysisCorrection correction " +
-            "where correction.user.id=:userId " +
-            "and correction.repository.id=c.repository.id " +
-            "and correction.type=" +
-            "io.github.developeranalytics.domain.correction." +
-            "UserAnalysisCorrection.Type.PROJECT_CATEGORY_REJECTED " +
-            "and correction.correctionKey=c.category.categoryKey) " +
-            "group by c.category.categoryKey, c.category.displayName " +
-            "order by count(distinct c.repository.id) desc",
-            Object[].class
-    )
-    .setParameter("userId", userId)
-    .setParameter(
-            "publicVisibility",
-            RepositoryVisibility.PUBLIC
-    )
-    .setMaxResults(limit)
-    .getResultList()
-    .stream()
-    .map(row -> new ProjectTypeSummary(
-            (String) row[0],
-            (String) row[1],
-            ((Number) row[2]).intValue()
-    ))
-    .toList();
-}
+        return entityManager.createQuery(
+                "select c.category.categoryKey, c.category.displayName, " +
+                "count(distinct c.repository.id) " +
+                "from RepositoryProjectCategory c " +
+                "where c.repository.user.id=:userId " +
+                "and c.repository.includedInAnalysis=true " +
+                "and c.repository.visibility=:publicVisibility " +
+                "group by c.category.categoryKey, c.category.displayName " +
+                "order by count(distinct c.repository.id) desc",
+                Object[].class
+        )
+        .setParameter("userId", userId)
+        .setParameter(
+                "publicVisibility",
+                RepositoryVisibility.PUBLIC
+        )
+        .setMaxResults(limit)
+        .getResultList()
+        .stream()
+        .map(row -> new ProjectTypeSummary(
+                (String) row[0],
+                (String) row[1],
+                ((Number) row[2]).intValue()
+        ))
+        .toList();
+    }
 
     private TechnologySummary technologySummary(
             UserTechnologyAssessment assessment
@@ -381,16 +347,6 @@ public class ExternalAnalysisResource {
                 assessment.getFirstObservedAt(),
                 assessment.getLastObservedAt(),
                 assessment.getPrivacyProvenance().name()
-        );
-    }
-
-    private boolean isTechnologySuppressed(UUID userId, String key) {
-        return corrections.exists(
-                userId,
-                null,
-                io.github.developeranalytics.domain.correction.
-                        UserAnalysisCorrection.Type.TECHNOLOGY_INFERENCE_SUPPRESSED,
-                key
         );
     }
 
