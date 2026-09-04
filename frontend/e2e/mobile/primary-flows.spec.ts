@@ -330,9 +330,10 @@ test('Explore analysis keeps filters compact and primary content reachable on ph
   const technologySelect = page.getByLabel('Technology', { exact: true })
   await expect(technologySelect).not.toBeVisible()
   await editFilters.click()
-  await expect(editFilters).toHaveAttribute('aria-expanded', 'true')
+  const doneFilters = page.getByRole('button', { name: 'Done' })
+  await expect(doneFilters).toHaveAttribute('aria-expanded', 'true')
   await expect(technologySelect).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Done' })).toBeVisible()
+  await expect(doneFilters).toBeVisible()
   await page.getByRole('button', { name: 'Done' }).click()
   await expect(technologySelect).not.toBeVisible()
 
