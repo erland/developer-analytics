@@ -109,6 +109,8 @@ public class LanguageEvidenceService {
             matched++;
         }
 
+        repository.updateCodeSizeBytes(totalBytes);
+
         return new Result(
                 languages.bytesByLanguage().size(),
                 matched,
