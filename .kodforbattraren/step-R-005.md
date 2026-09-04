@@ -2,24 +2,20 @@
 
 ## Status
 
-**Blockerad efter säker förberedelse.**
+**Klar och CI-verifierad.**
 
 ## Genomfört
 
-- `frontend/package.json` pinnar nu package manager till `npm@11.6.0`, samma npm-version som CI använder.
-- Befintlig `npm install` i CI och Dockerfile har avsiktligt **inte** bytts till `npm ci` ännu, eftersom `npm ci` kräver en giltig `package-lock.json`.
+- `frontend/package.json` pinnar package manager till `npm@11.6.0`.
+- Developer Analytics egen CI-genererade npm v3-lockfil är incheckad som `frontend/package-lock.json`.
+- Frontend validation och mobile acceptance använder `npm ci --no-audit --no-fund`.
+- `frontend/Dockerfile` kopierar `package.json` och `package-lock.json` innan `npm ci`.
+- Det tillfälliga artefaktsteget från R-005A har tagits bort.
 
-## Blockerare
+## Verifiering
 
-Den aktuella körmiljön kan inte DNS-resolvera/nå `registry.npmjs.org`. `npm install --package-lock-only` kan därför inte skapa en korrekt lockfil. Att fabricera eller kombinera en lockfil utan npm:s resolver skulle kunna ge en inkonsistent eller trasig dependency-graf och görs inte.
+PR #50 head `88e5237378944dc72b0c90f46e5f7d3807d69e96` verifierades grönt:
+- CI run `33883581268`: success.
+- Dependency Review run `33883581278`: success.
 
-## För att slutföra R-005
-
-1. Kör med npm 11.6.0 i en miljö med npm-registryåtkomst:
-   `cd frontend && npm install --package-lock-only --ignore-scripts --no-audit --no-fund`
-2. Verifiera:
-   `npm ci`
-3. Byt `.github/workflows/ci.yml` och `frontend/Dockerfile` från `npm install --no-audit --no-fund` till `npm ci --no-audit --no-fund`.
-4. Kör `npm run lint && npm run typecheck && npm test && npm run build`.
-
-R-006 ska inte påbörjas innan detta är grönt.
+R-005 är därmed avslutat och F-004 är löst.

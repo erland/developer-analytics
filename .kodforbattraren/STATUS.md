@@ -1,12 +1,11 @@
 # Kodförbättraren – status
 
-- **R-001–R-005A är klara.**
-- R-005A verifierades i GitHub Actions run `33866218064`; frontendjobbet var grönt och skapade artefakten `developer-analytics-frontend-package-lock` från PR #50 head `cfd1c4e920416a4a53e6ff94ed1e8926de1970ab`.
-- Artefaktens `package-lock.json` är npm lockfile v3 och dess rot `dependencies`/`devDependencies` matchar `frontend/package.json` exakt.
-- Aktuellt steg är **R-005 – Lås frontendens dependency-resolution** och är **implementerat men väntar på CI-verifiering**.
-- `frontend/package-lock.json` är nu inlagd.
-- Frontend validation och mobile acceptance använder `npm ci --no-audit --no-fund`.
-- `frontend/Dockerfile` kopierar både `package.json` och `package-lock.json` före `npm ci`.
-- Det tillfälliga artefaktuppladdningssteget från R-005A är borttaget.
-- Lokal strukturell verifiering passerar: workflow-YAML, lockfilens JSON och frontend-testlagerkontrollen. Full lokal `npm ci` kunde inte slutföras eftersom körmiljön fortfarande saknar fungerande registryåtkomst.
-- **Nästa rekommenderade åtgärd:** kör GitHub Actions för denna version. Om den är grön markeras R-005 klar och R-006 blir nästa utvecklingssteg.
+- **R-001–R-005 är klara.**
+- R-005 verifierades grönt på PR #50 head `88e5237378944dc72b0c90f46e5f7d3807d69e96`: CI run `33883581268` och Dependency Review run `33883581278` passerade.
+- Aktuellt steg är **R-006 – Extrahera minimal gemensam frontend request-mekanik** och är **implementerat men väntar på CI-verifiering**.
+- Ny `frontend/src/api/request.ts` innehåller en liten `getJson<T>`-helper för det gemensamma dashboard-kontraktet: `credentials: include`, `Accept: application/json`, optional `AbortSignal`, HTTP-statuskontroll och JSON-deserialisering.
+- `useProjectTypes` och `useTechnologyViews` använder nu helpern; inga andra hooks har massmigrerats.
+- `frontend/src/api/request.test.ts` verifierar request-kontraktet och caller-specifika HTTP-fel.
+- Frontendens testlagerkontroll passerar oförändrat.
+- Full lokal `npm ci` kunde inte slutföras eftersom körmiljön inte får färdig registryåtkomst; därför är lint/typecheck/test/build ännu inte grönt lokalt.
+- **Nästa rekommenderade åtgärd:** kör GitHub Actions på denna version. Om den är grön kan R-006 markeras klar.

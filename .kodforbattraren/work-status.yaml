@@ -8,40 +8,37 @@ source:
     last_output_name: developer-analytics-kodforbattraren-R-004-routing-fix3.zip
     last_output_sha256: 72867b43aa50da43050f4d994aae9fc1a42f3b5a3c3572fa621e9e43377a23e0
 progress:
-  current_step_id: R-005
+  current_step_id: R-006
   completed_step_ids:
   - R-001
   - R-002
   - R-003
   - R-004
   - R-005A
+  - R-005
   skipped_step_ids: []
   blocked_step_ids: []
 findings:
   F-001: resolved
   F-002: resolved
-  F-003: planned
-  F-004: in_progress
+  F-003: in_progress
+  F-004: resolved
 blockers: []
 plan_changes:
 - type: split
   step_id: R-005
-  reason: Den lokala körmiljön saknar npm-registryåtkomst. R-005 delas därför så projektets
-    egen nätverksanslutna CI först genererar en exakt lockfil som artefakt, innan
-    npm ci införs.
+  reason: Den lokala körmiljön saknar npm-registryåtkomst. R-005 delas därför så projektets egen nätverksanslutna
+    CI först genererar en exakt lockfil som artefakt, innan npm ci införs.
   inserted_step_id: R-005A
 next_step:
-  recommended: R-005
-  reason: Kör GitHub Actions på denna version och verifiera att frontend validation,
-    mobile acceptance och frontend Docker build passerar med den incheckade lockfilen
-    och npm ci. R-006 får börja först därefter.
+  recommended: R-006
+  reason: R-006 är implementerat med en liten getJson-helper och två migrerade hooks, men full frontendverifiering
+    måste passera i GitHub Actions innan steget kan markeras klart.
 delivery:
-  last_completed_step_id: R-005A
+  last_completed_step_id: R-005
   verification_status: verification_pending
-  verification_summary: 'R-005A verifierades i GitHub Actions run 33866218064: CI
-    var grön och artefakten developer-analytics-frontend-package-lock skapades från
-    PR #50 head cfd1c4e920416a4a53e6ff94ed1e8926de1970ab. R-005 har nu lagt in exakt
-    den lockfilen, bytt båda frontendjobben samt frontend-Dockerfile till npm ci och
-    tagit bort den tillfälliga artefaktuppladdningen. Lokal full npm ci kunde inte
-    slutföras på grund av registry-nätverksbegränsning; CI-verifiering väntar.'
-updated_at: '2026-09-04T11:35:38Z'
+  verification_summary: 'R-005 verifierades grönt på PR #50 head 88e5237378944dc72b0c90f46e5f7d3807d69e96 i CI run
+    33883581268 samt Dependency Review run 33883581278. R-006 extraherar en minimal getJson-helper och migrerar
+    endast useProjectTypes/useTechnologyViews. Frontend-testlagerkontrollen och JSON-struktur passerar lokalt. Lokal
+    npm ci kunde inte slutföras på grund av registryåtkomst, så lint/typecheck/test/build väntar på GitHub Actions.'
+updated_at: '2026-09-04T14:34:00Z'
