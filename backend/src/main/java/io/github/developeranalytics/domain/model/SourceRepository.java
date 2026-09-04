@@ -56,6 +56,8 @@ public class SourceRepository {
     @Column(name = "analysis_completed_at") private OffsetDateTime analysisCompletedAt;
     @Column(name = "analyzed_activity_at") private OffsetDateTime analyzedActivityAt;
     @Column(name = "analysis_version", nullable = false) private int analysisVersion;
+    @Column(name = "repository_size_bytes") private Long repositorySizeBytes;
+    @Column(name = "code_size_bytes") private Long codeSizeBytes;
 
     protected SourceRepository() {}
 
@@ -86,6 +88,8 @@ public class SourceRepository {
     public OffsetDateTime getAnalysisCompletedAt() { return analysisCompletedAt; }
     public OffsetDateTime getAnalyzedActivityAt() { return analyzedActivityAt; }
     public int getAnalysisVersion() { return analysisVersion; }
+    public Long getRepositorySizeBytes() { return repositorySizeBytes; }
+    public Long getCodeSizeBytes() { return codeSizeBytes; }
 
     public boolean needsAnalysisRefresh() {
         if (!includedInAnalysis) return false;
@@ -102,6 +106,14 @@ public class SourceRepository {
         analysisCompletedAt = completedAt;
         analyzedActivityAt = activityWatermark;
         analysisVersion = CURRENT_ANALYSIS_VERSION;
+    }
+
+    public void updateRepositorySizeBytes(Long value) {
+        repositorySizeBytes = value == null || value < 0 ? null : value;
+    }
+
+    public void updateCodeSizeBytes(long value) {
+        codeSizeBytes = Math.max(0L, value);
     }
 
     public void markContributionScopeCurrent() { contributionScopeVersion = 2; }
