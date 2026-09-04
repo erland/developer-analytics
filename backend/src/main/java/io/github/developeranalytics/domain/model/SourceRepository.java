@@ -11,7 +11,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "source_repository")
 public class SourceRepository {
-    public static final int CURRENT_ANALYSIS_VERSION = 1;
+    public static final int CURRENT_ANALYSIS_VERSION = 2;
 
     @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -180,9 +180,6 @@ public OffsetDateTime getLastSeenAt() { return lastSeenAt; }
         this.ownerType = ownerType;
         this.ownershipRelation = ownershipRelation;
         this.visibility = visibility;
-        // GitHub App installation scope is the repository selection boundary.
-        // Every repository returned by GitHub is therefore included in analysis;
-        // Developer Analytics no longer maintains a second repository allow-list.
         this.includedInAnalysis = true;
         this.fork = fork;
         this.archived = archived;
