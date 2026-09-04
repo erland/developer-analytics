@@ -95,8 +95,12 @@ public class SourceRepository {
     }
 
     public void markAnalysisCompleted(OffsetDateTime completedAt) {
+        markAnalysisCompleted(completedAt, lastActivityAt);
+    }
+
+    public void markAnalysisCompleted(OffsetDateTime completedAt, OffsetDateTime activityWatermark) {
         analysisCompletedAt = completedAt;
-        analyzedActivityAt = lastActivityAt;
+        analyzedActivityAt = activityWatermark;
         analysisVersion = CURRENT_ANALYSIS_VERSION;
     }
 
