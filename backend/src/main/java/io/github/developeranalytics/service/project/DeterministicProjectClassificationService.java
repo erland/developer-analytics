@@ -33,13 +33,15 @@ public class DeterministicProjectClassificationService {
         Map<String,Score> scores=new LinkedHashMap<>();
 
         technology(scores,context,"react","web-application",5);technology(scores,context,"vite","web-application",2);
-        technology(scores,context,"swift","mobile-application",4);technology(scores,context,"quarkus","backend-service",5);
-        technology(scores,context,"spring-boot","backend-service",5);technology(scores,context,"docker","infrastructure-platform",2);
+        technology(scores,context,"swift","mobile-application",4);technology(scores,context,"ios","mobile-application",7);technology(scores,context,"android","mobile-application",7);
+        technology(scores,context,"arduino","embedded-iot",8);
+        technology(scores,context,"quarkus","backend-service",5);technology(scores,context,"spring-boot","backend-service",5);technology(scores,context,"docker","infrastructure-platform",2);
         technology(scores,context,"github-actions","devops-ci-cd",4);technology(scores,context,"kubernetes","infrastructure-platform",5);
         technology(scores,context,"terraform","infrastructure-platform",5);technology(scores,context,"postgresql","data-database",4);
         technology(scores,context,"markdown","documentation-education",4);
 
         topic(scores,context,"game","game",6);topic(scores,context,"ios","mobile-application",5);topic(scores,context,"android","mobile-application",5);topic(scores,context,"tvos","mobile-application",5);
+        topic(scores,context,"arduino","embedded-iot",7);topic(scores,context,"embedded","embedded-iot",6);topic(scores,context,"iot","embedded-iot",6);topic(scores,context,"microcontroller","embedded-iot",6);
         topic(scores,context,"api","api",5);topic(scores,context,"library","library",5);topic(scores,context,"framework","framework",5);topic(scores,context,"security","security",6);
         topic(scores,context,"observability","observability",6);topic(scores,context,"monitoring","observability",5);topic(scores,context,"automation","automation",5);topic(scores,context,"devops","devops-ci-cd",5);
         topic(scores,context,"kubernetes","infrastructure-platform",5);topic(scores,context,"terraform","infrastructure-platform",5);topic(scores,context,"machine-learning","ai-ml",6);topic(scores,context,"ai","ai-ml",5);
@@ -48,11 +50,14 @@ public class DeterministicProjectClassificationService {
         topic(scores,context,"prototype","experiment-prototype",5);topic(scores,context,"poc","experiment-prototype",5);
 
         file(scores,context,".github/workflows/","devops-ci-cd",4);file(scores,context,"dockerfile","infrastructure-platform",2);file(scores,context,"chart.yaml","infrastructure-platform",5);file(scores,context,"kustomization.yaml","infrastructure-platform",5);
-        file(scores,context,"package.swift","mobile-application",3);file(scores,context,"pom.xml","backend-service",2);file(scores,context,"package.json","web-application",2);
+        file(scores,context,"package.swift","mobile-application",3);file(scores,context,"androidmanifest.xml","mobile-application",6);file(scores,context,"project.pbxproj","mobile-application",6);
+        file(scores,context,".ino","embedded-iot",7);file(scores,context,"platformio.ini","embedded-iot",7);
+        file(scores,context,"pom.xml","backend-service",2);file(scores,context,"package.json","web-application",2);
 
         metadata(scores,context,"api","api",2);metadata(scores,context,"server","backend-service",2);metadata(scores,context,"backend","backend-service",2);metadata(scores,context,"library","library",2);
         metadata(scores,context,"sdk","library",2);metadata(scores,context,"framework","framework",2);metadata(scores,context,"tool","developer-tooling",2);metadata(scores,context,"cli","developer-tooling",2);
         metadata(scores,context,"automation","automation",2);metadata(scores,context,"security","security",2);metadata(scores,context,"integration","integration",2);metadata(scores,context,"connector","integration",2);
+        metadata(scores,context,"android","mobile-application",4);metadata(scores,context,"ios","mobile-application",4);metadata(scores,context,"arduino","embedded-iot",5);metadata(scores,context,"embedded","embedded-iot",4);metadata(scores,context,"iot","embedded-iot",4);
         metadata(scores,context,"architecture","architecture-modelling",2);metadata(scores,context,"docs","documentation-education",3);metadata(scores,context,"documentation","documentation-education",3);
         metadata(scores,context,"book","documentation-education",4);metadata(scores,context,"writing","documentation-education",4);metadata(scores,context,"novel","documentation-education",4);metadata(scores,context,"manuscript","documentation-education",4);
         metadata(scores,context,"prototype","experiment-prototype",2);metadata(scores,context,"poc","experiment-prototype",2);metadata(scores,context,"game","game",3);
