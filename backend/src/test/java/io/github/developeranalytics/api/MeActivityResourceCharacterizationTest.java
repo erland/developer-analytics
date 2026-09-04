@@ -9,6 +9,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.Cookie;
 import io.restassured.response.Response;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.MediaType;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -55,6 +56,7 @@ class MeActivityResourceCharacterizationTest {
 
         Response response = given()
                 .cookie(sessionCookie("activity-session-1001"))
+                .accept(MediaType.APPLICATION_JSON)
         .when()
                 .get("/api/me/activity");
 
@@ -102,6 +104,7 @@ class MeActivityResourceCharacterizationTest {
 
         given()
                 .cookie(sessionCookie("activity-session-1002"))
+                .accept(MediaType.APPLICATION_JSON)
                 .queryParam("month", "2026-02")
         .when()
                 .get("/api/me/activity")
@@ -140,6 +143,7 @@ class MeActivityResourceCharacterizationTest {
 
         given()
                 .cookie(sessionCookie("activity-session-1003"))
+                .accept(MediaType.APPLICATION_JSON)
                 .queryParam("search", "target")
         .when()
                 .get("/api/me/activity")

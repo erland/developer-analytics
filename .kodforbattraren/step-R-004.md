@@ -49,3 +49,17 @@ Korrigering:
 
 Lokal lagerkontroll efter korrigeringen passerar: authorization 7, privacy 19, persistence 10, unit 66.
 Full `mvn verify` behöver bekräftas av GitHub Actions.
+
+
+## CI-korrigering 2 – 2026-09-04
+GitHub Actions-körning `33848355442`, jobb `100945285125`, bekräftade att
+`ExternalAnalysisPrivacyCharacterizationTest` nu passerar efter routingkorrigeringen.
+De tre `MeActivityResourceCharacterizationTest`-testen fick däremot 401 eftersom RestAssured
+standardmässigt skickade `Accept: */*`. När samma URL medvetet erbjuder både dashboardens
+`application/json` och External Analysis vendor-media type är `*/*` inte ett entydigt kontrakt.
+
+Korrigering:
+- de tre dashboard-characterization-testerna skickar nu explicit `Accept: application/json`,
+- detta matchar frontendens riktiga `fetch`-anrop för `/api/me/activity`,
+- External Analysis-testerna fortsätter använda `application/vnd.developer-analytics.analysis.v1+json`,
+- ingen produktionskod eller URL ändrades i denna korrigering.
