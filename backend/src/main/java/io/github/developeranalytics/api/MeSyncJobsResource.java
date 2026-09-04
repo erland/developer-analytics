@@ -18,6 +18,14 @@ import java.util.*;
 @Path("/api/me/sync-jobs")
 @Produces(MediaType.APPLICATION_JSON)
 public class MeSyncJobsResource {
+    private static final int ANALYSIS_STEPS_PER_REPOSITORY = 4;
+    private static final Map<String, Integer> ANALYSIS_STAGE = Map.of(
+            "GITHUB_CONTRIBUTION_DISCOVERY", 1,
+            "GITHUB_LANGUAGE_EVIDENCE", 2,
+            "GITHUB_FILE_MANIFEST_EVIDENCE", 3,
+            "DETERMINISTIC_PROJECT_CLASSIFICATION", 4
+    );
+
     @Inject CurrentUserService currentUserService;
     @Inject BackgroundJobRepository jobs;
     @Inject SourceRepositoryRepository repositories;
@@ -62,9 +70,20 @@ public class MeSyncJobsResource {
         long running = 0;
         long completed = 0;
         long failed = 0;
+        long analysisStepsCompleted = 0;
 
         for (SourceRepository repository : repositoriesForAnalysis) {
             List<BackgroundJob> repositoryJobs = activeByRepository.getOrDefault(repository.getId(), List.of());
+            long activeAnalysisJobs = repositoryJobs.stream()
+                    .filter(job -> ANALYSIS_STAGE.containsKey(job.getJobType()))
+                    .count();
+
+            if (!repository.needsAnalysisRefresh()) {
+                analysisStepsCompleted += ANALYSIS_STEPS_PER_REPOSITORY;
+            } else if (activeAnalysisJobs > 0) {
+                analysisStepsCompleted += Math.max(0, ANALYSIS_STEPS_PER_REPOSITORY - activeAnalysisJobs);
+            }
+
             if (repositoryJobs.stream().anyMatch(job -> job.getStatus().name().equals("RUNNING"))) {
                 running++;
             } else if (repositoryJobs.stream().anyMatch(job -> job.getStatus().name().equals("WAITING"))) {
@@ -74,7 +93,8 @@ public class MeSyncJobsResource {
             } else if (repository.getSyncStatus() == RepositorySyncStatus.FAILED
                     || repository.getSyncStatus() == RepositorySyncStatus.ACCESS_REVOKED) {
                 failed++;
-            } else if (repository.getSyncStatus() == RepositorySyncStatus.NOT_SYNCED) {
+            } else if (repository.needsAnalysisRefresh()
+                    || repository.getSyncStatus() == RepositorySyncStatus.NOT_SYNCED) {
                 waiting++;
             } else if (repository.getSyncStatus() == RepositorySyncStatus.QUEUED) {
                 queued++;
@@ -94,8 +114,9 @@ public class MeSyncJobsResource {
                 .map(job -> summary(userId, job))
                 .toList();
 
+        long analysisStepsTotal = (long) repositoriesForAnalysis.size() * ANALYSIS_STEPS_PER_REPOSITORY;
         return new JobOverview(queued, waiting, running, completed, failed,
-                repositoriesForAnalysis.size(), active);
+                repositoriesForAnalysis.size(), analysisStepsCompleted, analysisStepsTotal, active);
     }
 
     private JobSummary summary(UUID userId, BackgroundJob job) {
@@ -104,9 +125,11 @@ public class MeSyncJobsResource {
                 .findByIdForUser(repositoryId, userId)
                 .map(SourceRepository::getName)
                 .orElse(null);
+        Integer analysisStep = ANALYSIS_STAGE.get(job.getJobType());
         return new JobSummary(
                 job.getId(), job.getJobType(), job.getStatus().name(), repositoryId,
                 repositoryName, job.getAttemptCount(), job.getMaxAttempts(),
+                analysisStep, analysisStep == null ? null : ANALYSIS_STEPS_PER_REPOSITORY,
                 job.getProgressPercent(), job.getLastError(), job.getCreatedAt(),
                 job.getNextExecutionAt(), job.getLockedAt(), job.getCompletedAt());
     }
@@ -120,12 +143,14 @@ public class MeSyncJobsResource {
 
     public record JobOverview(
             long queued, long waiting, long running, long completed, long failed,
-            int totalRepositories, List<JobSummary> activeJobs
+            int totalRepositories, long analysisStepsCompleted, long analysisStepsTotal,
+            List<JobSummary> activeJobs
     ) {}
 
     public record JobSummary(
             UUID id, String jobType, String status, UUID repositoryId,
             String repositoryName, int attemptCount, int maxAttempts,
+            Integer analysisStep, Integer analysisStepsTotal,
             Integer progressPercent, String lastError, OffsetDateTime createdAt,
             OffsetDateTime nextExecutionAt, OffsetDateTime startedAt,
             OffsetDateTime completedAt
