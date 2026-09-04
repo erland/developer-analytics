@@ -1,0 +1,40 @@
+name: Apply PR 49 audit CI fix
+
+on:
+  push:
+    branches:
+      - zip-github/work-7de8338d-df96-44ff-88b9-b82466d9d0d8
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: zip-github/work-7de8338d-df96-44ff-88b9-b82466d9d0d8
+      - name: Use resilient npm audit wrapper
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/ci.yml')
+          text = path.read_text()
+          old = '        run: npm audit --omit=dev --audit-level=high\n'
+          new = '        run: bash ../scripts/npm-audit-ci.sh\n'
+          if old not in text:
+              raise SystemExit('Expected npm audit command not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Commit fix and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/apply-pr49-audit-fix.yml
+          git add .github/workflows/ci.yml
+          git commit -m "Use resilient npm audit wrapper in CI"
+          git push origin HEAD:zip-github/work-7de8338d-df96-44ff-88b9-b82466d9d0d8
