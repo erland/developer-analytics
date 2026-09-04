@@ -1,24 +1,3 @@
-export async function setCategoryRejected(
-  repositoryId: string,
-  categoryKey: string,
-  enabled: boolean,
-) {
-  await update(
-    `/api/me/corrections/projects/${repositoryId}/categories/${encodeURIComponent(categoryKey)}`,
-    enabled,
-  )
-}
-
-export async function setTechnologySuppressed(
-  technologyKey: string,
-  enabled: boolean,
-) {
-  await update(
-    `/api/me/corrections/technologies/${encodeURIComponent(technologyKey)}`,
-    enabled,
-  )
-}
-
 export async function setProjectExcludedFromAiProfile(
   repositoryId: string,
   enabled: boolean,
