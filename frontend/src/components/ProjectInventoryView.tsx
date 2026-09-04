@@ -186,7 +186,7 @@ export function ProjectInventoryView() {
                   />
 
                   <div className="inventory-meta">
-                    Last activity: {formatDate(project.lastActivityAt)}
+                    Code size: {formatBytes(project.codeSizeBytes)} · Repository size: {formatBytes(project.repositorySizeBytes)} · Last activity: {formatDate(project.lastActivityAt)}
                   </div>
                 </article>
               ))
@@ -313,4 +313,17 @@ function formatDate(value: string | null) {
     month: 'short',
     day: 'numeric',
   }).format(new Date(value))
+}
+
+function formatBytes(value: number | null) {
+  if (value == null) return 'Unknown'
+  if (value < 1024) return `${value} B`
+  const units = ['KB', 'MB', 'GB', 'TB']
+  let size = value / 1024
+  let unitIndex = 0
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024
+    unitIndex += 1
+  }
+  return `${size >= 10 ? size.toFixed(0) : size.toFixed(1)} ${units[unitIndex]}`
 }
