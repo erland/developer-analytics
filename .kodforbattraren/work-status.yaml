@@ -8,35 +8,36 @@ source:
     last_output_name: developer-analytics-kodforbattraren-step-R-001-fix1.zip
     last_output_sha256: 91a0ac794512a65c06595b8dbe1c17542aa8cdf76352c94f87c5d3bcc93c3cc3
 progress:
-  current_step_id: R-002
+  current_step_id: R-005
   completed_step_ids:
   - R-001
+  - R-002
+  - R-003
   skipped_step_ids: []
   blocked_step_ids:
-  - R-002
+  - R-005
 findings:
-  F-001: in_progress
-  F-002: planned
+  F-001: resolved
+  F-002: verification_pending
   F-003: planned
-  F-004: planned
+  F-004: blocked
 blockers:
-- id: B-002
-  status: open
-  step_id: R-002
-  reason: R-002 implementation is complete, but this execution environment has Java
-    without Maven or Docker, so the required backend mvn verify cannot be run locally.
-    Full CI verification is required before R-002 can be marked completed.
+- id: B-R005-NPM-REGISTRY
+  step_id: R-005
+  reason: Körmiljön kan inte nå registry.npmjs.org, så en korrekt package-lock.json
+    kan inte genereras eller valideras här.
+  safe_preparation: frontend/package.json pinnar nu packageManager till npm@11.6.0,
+    samma npm-version som CI redan använder.
+  resume_when: Kör npm 11.6.0 i en miljö med npm-registryåtkomst och generera package-lock.json;
+    byt därefter CI och Dockerfile från npm install till npm ci och kör frontendvalideringen.
 plan_changes: []
 next_step:
-  recommended: R-002
-  reason: The application-service extraction is implemented and static/test-layer
-    checks pass, but R-002 remains the next step until the required backend verification
-    is green.
+  recommended: R-005
+  reason: R-005 måste slutföras med en verklig npm-lockfil innan R-006 får starta.
 delivery:
-  last_completed_step_id: R-001
+  last_completed_step_id: R-003
   verification_status: blocked
-  verification_summary: R-001 is considered completed based on the user confirming
-    the corrected CI run looks good. For R-002, backend test-layer validation passes
-    and the REST resource no longer owns persistence/aggregation, but mvn verify cannot
-    be run in this environment because Maven and Docker are unavailable.
-updated_at: '2026-09-04T06:03:11Z'
+  verification_summary: 'R-005 påbörjad: npm-versionen är pinnad i package.json. Lockfil/
+    npm ci-migrering är blockerad eftersom npm-registret inte är åtkomligt från körmiljön;
+    ingen falsk lockfil eller medvetet trasig CI har skapats.'
+updated_at: '2026-09-04T06:51:43.402206Z'

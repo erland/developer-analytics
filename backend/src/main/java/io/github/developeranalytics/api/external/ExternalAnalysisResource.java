@@ -9,6 +9,7 @@ import io.github.developeranalytics.persistence.correction.UserAnalysisCorrectio
 import io.github.developeranalytics.persistence.project.ProjectTypeAnalyticsRepository;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
 import io.github.developeranalytics.persistence.technology.UserTechnologyAssessmentRepository;
+import io.github.developeranalytics.service.external.ExternalAnalysisApplicationService;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -30,6 +31,7 @@ public class ExternalAnalysisResource {
     @Inject ProjectTypeAnalyticsRepository projectTypes;
     @Inject UserAnalysisCorrectionRepository corrections;
     @Inject EntityManager entityManager;
+    @Inject ExternalAnalysisApplicationService externalAnalysis;
 
     @GET
     @Path("/profile")
@@ -104,7 +106,6 @@ public class ExternalAnalysisResource {
 
     @GET
     @Path("/projects")
-    @Transactional
     public List<Project> projects(
             @HeaderParam("Authorization") String authorization,
             @QueryParam("limit") @DefaultValue("50") int limit
@@ -113,31 +114,26 @@ public class ExternalAnalysisResource {
                 authorization,
                 ExternalClientToken.Scope.PROJECTS_READ
         );
-        UUID userId = principal.user().getId();
-        int safeLimit = Math.max(1, Math.min(limit, 200));
 
-        return repositories.findAllForUser(userId).stream()
-                .filter(SourceRepository::isIncludedInAnalysis)
-                .filter(repository ->
-                        principal.privacyScope().allowsPrivateProjectDetail()
-                        || repository.getVisibility() == RepositoryVisibility.PUBLIC)
-                .limit(safeLimit)
-                .map(repository -> new Project(
-                        repository.getId(),
-                        repository.getName(),
-                        repository.getVisibility().name(),
-                        repository.getOwnershipRelation().name(),
-                        repository.getLastActivityAt(),
-                        categoryKeys(userId, repository.getId()),
-                        technologyKeys(userId, repository.getId()),
-                        excludedFromAiProfile(userId, repository.getId())
-                ))
+        return externalAnalysis.projects(
+                        principal.user().getId(),
+                        principal.privacyScope(),
+                        limit)
+                .stream()
+                .map(project -> new Project(
+                        project.id(),
+                        project.name(),
+                        project.visibility(),
+                        project.ownership(),
+                        project.lastActivityAt(),
+                        project.projectTypes(),
+                        project.technologies(),
+                        project.excludedFromAiProfile()))
                 .toList();
     }
 
     @GET
     @Path("/activity")
-    @Transactional
     public Activity activity(
             @HeaderParam("Authorization") String authorization,
             @QueryParam("months") @DefaultValue("24") int months
@@ -146,78 +142,22 @@ public class ExternalAnalysisResource {
                 authorization,
                 ExternalClientToken.Scope.ACTIVITY_READ
         );
-        UUID userId = principal.user().getId();
-        int safeMonths = Math.max(1, Math.min(months, 120));
-        OffsetDateTime threshold = OffsetDateTime.now()
-                .minusMonths(safeMonths);
-
-        String visibilityClause =
-                principal.privacyScope().allowsPrivateAggregates()
-                        ? ""
-                        : " and c.repository.visibility=:publicVisibility ";
-
-        var activityQuery = entityManager.createQuery(
-                "select c.occurredAt, c.type, c.repository.id, " +
-                "c.repository.visibility from Contribution c " +
-                "where c.user.id=:userId " +
-                "and c.repository.includedInAnalysis=true " +
-                "and c.occurredAt>=:threshold " +
-                visibilityClause +
-                "order by c.occurredAt",
-                Object[].class
-        )
-        .setParameter("userId", userId)
-        .setParameter("threshold", threshold);
-
-        if (!principal.privacyScope().allowsPrivateAggregates()) {
-            activityQuery.setParameter(
-                    "publicVisibility",
-                    RepositoryVisibility.PUBLIC
-            );
-        }
-
-        List<Object[]> rows = activityQuery.getResultList();
-
-        Map<YearMonth, MutableMonth> monthly = new TreeMap<>();
-        EnumMap<Contribution.Type, Integer> totals =
-                new EnumMap<>(Contribution.Type.class);
-        Set<UUID> activeProjects = new HashSet<>();
-        int publicRows = 0;
-        int privateRows = 0;
-
-        for (Object[] row : rows) {
-            OffsetDateTime occurredAt = (OffsetDateTime) row[0];
-            Contribution.Type type = (Contribution.Type) row[1];
-            UUID repositoryId = (UUID) row[2];
-            RepositoryVisibility visibility =
-                    (RepositoryVisibility) row[3];
-
-            totals.merge(type, 1, Integer::sum);
-            activeProjects.add(repositoryId);
-            if (visibility == RepositoryVisibility.PRIVATE) privateRows++;
-            else publicRows++;
-
-            MutableMonth month = monthly.computeIfAbsent(
-                    YearMonth.from(occurredAt),
-                    ignored -> new MutableMonth()
-            );
-            month.contributions++;
-            month.projects.add(repositoryId);
-        }
+        var result = externalAnalysis.activity(
+                principal.user().getId(),
+                principal.privacyScope(),
+                months);
 
         return new Activity(
-                rows.size(),
-                activeProjects.size(),
-                contributionTotals(totals),
-                monthly.entrySet().stream()
-                        .map(entry -> new ActivityMonth(
-                                entry.getKey().toString(),
-                                entry.getValue().contributions,
-                                entry.getValue().projects.size()
-                        ))
+                result.contributionCount(),
+                result.activeProjectCount(),
+                result.contributionTypes(),
+                result.monthly().stream()
+                        .map(month -> new ActivityMonth(
+                                month.month(),
+                                month.contributions(),
+                                month.activeProjects()))
                         .toList(),
-                privacyProvenance(publicRows, privateRows)
-        );
+                result.privacyProvenance());
     }
 
     @GET
@@ -269,7 +209,6 @@ public class ExternalAnalysisResource {
 
     @GET
     @Path("/contributions")
-    @Transactional
     public Contributions contributions(
             @HeaderParam("Authorization") String authorization
     ) {
@@ -277,57 +216,14 @@ public class ExternalAnalysisResource {
                 authorization,
                 ExternalClientToken.Scope.CONTRIBUTIONS_READ
         );
-        UUID userId = principal.user().getId();
-
-        String contributionVisibilityClause =
-                principal.privacyScope().allowsPrivateAggregates()
-                        ? ""
-                        : " and c.repository.visibility=:publicVisibility ";
-
-        var contributionQuery = entityManager.createQuery(
-                "select c.type, count(c.id), c.repository.visibility " +
-                "from Contribution c " +
-                "where c.user.id=:userId " +
-                "and c.repository.includedInAnalysis=true " +
-                contributionVisibilityClause +
-                "group by c.type, c.repository.visibility",
-                Object[].class
-        )
-        .setParameter("userId", userId);
-
-        if (!principal.privacyScope().allowsPrivateAggregates()) {
-            contributionQuery.setParameter(
-                    "publicVisibility",
-                    RepositoryVisibility.PUBLIC
-            );
-        }
-
-        List<Object[]> rows = contributionQuery.getResultList();
-
-        EnumMap<Contribution.Type, Integer> totals =
-                new EnumMap<>(Contribution.Type.class);
-        int publicCount = 0;
-        int privateCount = 0;
-
-        for (Object[] row : rows) {
-            Contribution.Type type = (Contribution.Type) row[0];
-            int count = ((Number) row[1]).intValue();
-            RepositoryVisibility visibility =
-                    (RepositoryVisibility) row[2];
-
-            totals.merge(type, count, Integer::sum);
-            if (visibility == RepositoryVisibility.PRIVATE) {
-                privateCount += count;
-            } else {
-                publicCount += count;
-            }
-        }
+        var result = externalAnalysis.contributions(
+                principal.user().getId(),
+                principal.privacyScope());
 
         return new Contributions(
-                totals.values().stream().mapToInt(Integer::intValue).sum(),
-                contributionTotals(totals),
-                privacyProvenance(publicCount, privateCount)
-        );
+                result.total(),
+                result.byType(),
+                result.privacyProvenance());
     }
 
     @GET
@@ -422,7 +318,7 @@ public class ExternalAnalysisResource {
     }
 
 
-private List<ProjectTypeSummary> projectTypeSummaries(
+    private List<ProjectTypeSummary> projectTypeSummaries(
         UUID userId,
         ExternalClientToken.PrivacyScope privacyScope,
         int limit
@@ -488,41 +384,6 @@ private List<ProjectTypeSummary> projectTypeSummaries(
         );
     }
 
-    private List<String> categoryKeys(UUID userId, UUID repositoryId) {
-        return entityManager.createQuery(
-                "select distinct c.category.categoryKey " +
-                "from RepositoryProjectCategory c " +
-                "where c.repository.id=:repositoryId " +
-                "and not exists (" +
-                "select 1 from UserAnalysisCorrection correction " +
-                "where correction.user.id=:userId " +
-                "and correction.repository.id=:repositoryId " +
-                "and correction.type=" +
-                "io.github.developeranalytics.domain.correction." +
-                "UserAnalysisCorrection.Type.PROJECT_CATEGORY_REJECTED " +
-                "and correction.correctionKey=c.category.categoryKey)",
-                String.class
-        )
-        .setParameter("repositoryId", repositoryId)
-        .setParameter("userId", userId)
-        .getResultList();
-    }
-
-    private List<String> technologyKeys(UUID userId, UUID repositoryId) {
-        return entityManager.createQuery(
-                "select distinct e.technology.technologyKey " +
-                "from RepositoryTechnologyEvidence e " +
-                "where e.repository.id=:repositoryId " +
-                "order by e.technology.technologyKey",
-                String.class
-        )
-        .setParameter("repositoryId", repositoryId)
-        .getResultList()
-        .stream()
-        .filter(key -> !isTechnologySuppressed(userId, key))
-        .toList();
-    }
-
     private boolean isTechnologySuppressed(UUID userId, String key) {
         return corrections.exists(
                 userId,
@@ -533,32 +394,6 @@ private List<ProjectTypeSummary> projectTypeSummaries(
         );
     }
 
-    private boolean excludedFromAiProfile(
-            UUID userId,
-            UUID repositoryId
-    ) {
-        return corrections.exists(
-                userId,
-                repositoryId,
-                io.github.developeranalytics.domain.correction.
-                        UserAnalysisCorrection.Type.PROJECT_EXCLUDED_FROM_AI_PROFILE,
-                null
-        );
-    }
-
-    private Map<String, Integer> contributionTotals(
-            Map<Contribution.Type, Integer> totals
-    ) {
-        Map<String, Integer> result = new LinkedHashMap<>();
-        for (Contribution.Type type : Contribution.Type.values()) {
-            result.put(
-                    type.name().toLowerCase(Locale.ROOT),
-                    totals.getOrDefault(type, 0)
-            );
-        }
-        return result;
-    }
-
     private String privacyProvenance(
             int publicCount,
             int privateCount
@@ -566,11 +401,6 @@ private List<ProjectTypeSummary> projectTypeSummaries(
         return DataPrivacyProvenance
                 .fromRepositoryCounts(publicCount, privateCount)
                 .name();
-    }
-
-    private static final class MutableMonth {
-        int contributions;
-        final Set<UUID> projects = new HashSet<>();
     }
 
     public record Profile(
