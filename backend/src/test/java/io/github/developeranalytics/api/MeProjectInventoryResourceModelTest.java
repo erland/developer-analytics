@@ -22,6 +22,8 @@ class MeProjectInventoryResourceModelTest {
                 "EXTERNAL",
                 "PUBLIC",
                 OffsetDateTime.parse("2026-08-20T08:00:00Z"),
+                123_456L,
+                789_012L,
                 List.of(
                         new MeProjectInventoryResource.Category(
                                 "backend-service",
@@ -50,6 +52,8 @@ class MeProjectInventoryResourceModelTest {
         );
 
         assertEquals(3, response.totalPages());
+        assertEquals(123_456L, response.items().getFirst().codeSizeBytes());
+        assertEquals(789_012L, response.items().getFirst().repositorySizeBytes());
         assertEquals("Backend service", response.items().getFirst().categories().getFirst().name());
         assertEquals("Java", response.items().getFirst().technologies().getFirst().name());
         assertEquals(42, response.facets().technologies().getFirst().count());

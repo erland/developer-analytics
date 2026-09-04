@@ -135,6 +135,8 @@ public class MeProjectInventoryResource {
                 repository.getOwnershipRelation().name(),
                 repository.getVisibility().name(),
                 repository.getLastActivityAt(),
+                repository.getCodeSizeBytes(),
+                repository.getRepositorySizeBytes(),
                 categoryItems,
                 technologyItems
         );
@@ -165,6 +167,8 @@ public class MeProjectInventoryResource {
             String ownershipRelation,
             String visibility,
             OffsetDateTime lastActivityAt,
+            Long codeSizeBytes,
+            Long repositorySizeBytes,
             List<Category> categories,
             List<Technology> technologies
     ) {}

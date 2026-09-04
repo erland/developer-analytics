@@ -46,9 +46,6 @@ public class GitHubRepositoryDiscoveryService {
                 .findForUserAndProvider(user.getId(), "github")
                 .orElse(null);
 
-        // Successfully resolving the authenticated GitHub user proves that the
-        // provider credential is valid again. Clear a stale connection ERROR here;
-        // each repository returned below is independently restored to SYNCED.
         if (connection != null) {
             connection.markValidated();
         }
@@ -78,9 +75,6 @@ public class GitHubRepositoryDiscoveryService {
                 pages++;
 
                 for (ProviderRepository providerRepository : page.items()) {
-                    // Repository selection belongs to the GitHub App installation.
-                    // If GitHub exposes a repository to this token, Developer Analytics
-                    // includes it regardless of public/private visibility.
                     SourceRepository repository = repositories
                             .findByExternalIdForUser(
                                     user.getId(),
@@ -119,6 +113,7 @@ public class GitHubRepositoryDiscoveryService {
                             latestActivity(providerRepository),
                             now
                     );
+                    repository.updateRepositorySizeBytes(providerRepository.repositorySizeBytes());
                     repository.markSynced(now);
                     seen++;
                 }
