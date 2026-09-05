@@ -45,13 +45,18 @@ public class ExternalAnalysisApplicationService {
                 .filter(repository -> repository.getOwnershipRelation() == RepositoryOwnershipRelation.OWNED_BY_USER)
                 .count();
 
-        Long contributionCount = entityManager.createQuery(
+        String visibilityClause = privacyScope.allowsPrivateAggregates()
+                ? "" : " and c.repository.visibility=:publicVisibility ";
+        var contributionQuery = entityManager.createQuery(
                 "select count(c.id) from Contribution c " +
                 "where c.user.id=:userId " +
-                "and c.repository.includedInAnalysis=true",
+                "and c.repository.includedInAnalysis=true" + visibilityClause,
                 Long.class)
-                .setParameter("userId", userId)
-                .getSingleResult();
+                .setParameter("userId", userId);
+        if (!privacyScope.allowsPrivateAggregates()) {
+            contributionQuery.setParameter("publicVisibility", RepositoryVisibility.PUBLIC);
+        }
+        Long contributionCount = contributionQuery.getSingleResult();
 
         return new ProfileResult(
                 included.size(),
