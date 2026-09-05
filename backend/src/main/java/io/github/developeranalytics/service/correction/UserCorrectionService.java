@@ -46,31 +46,6 @@ public class UserCorrectionService {
         }
     }
 
-    public boolean isProjectCategoryRejected(
-            UUID userId,
-            UUID repositoryId,
-            String categoryKey
-    ) {
-        return corrections.exists(
-                userId,
-                repositoryId,
-                UserAnalysisCorrection.Type.PROJECT_CATEGORY_REJECTED,
-                categoryKey
-        );
-    }
-
-    public boolean isTechnologySuppressed(
-            UUID userId,
-            String technologyKey
-    ) {
-        return corrections.exists(
-                userId,
-                null,
-                UserAnalysisCorrection.Type.TECHNOLOGY_INFERENCE_SUPPRESSED,
-                technologyKey
-        );
-    }
-
     public boolean isProjectExcludedFromAiProfile(
             UUID userId,
             UUID repositoryId

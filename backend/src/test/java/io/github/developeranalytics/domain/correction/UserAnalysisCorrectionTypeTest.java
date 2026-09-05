@@ -1,6 +1,5 @@
-package io.github.developeranalytics.service.correction;
+package io.github.developeranalytics.domain.correction;
 
-import io.github.developeranalytics.domain.correction.UserAnalysisCorrection;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 

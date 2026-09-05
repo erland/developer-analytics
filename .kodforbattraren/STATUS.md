@@ -1,11 +1,12 @@
 # Kodförbättraren – status
 
-- **R-001–R-005 är klara.**
-- R-005 verifierades grönt på PR #50 head `88e5237378944dc72b0c90f46e5f7d3807d69e96`: CI run `33883581268` och Dependency Review run `33883581278` passerade.
-- Aktuellt steg är **R-006 – Extrahera minimal gemensam frontend request-mekanik** och är **implementerat men väntar på CI-verifiering**.
-- Ny `frontend/src/api/request.ts` innehåller en liten `getJson<T>`-helper för det gemensamma dashboard-kontraktet: `credentials: include`, `Accept: application/json`, optional `AbortSignal`, HTTP-statuskontroll och JSON-deserialisering.
-- `useProjectTypes` och `useTechnologyViews` använder nu helpern; inga andra hooks har massmigrerats.
-- `frontend/src/api/request.test.ts` verifierar request-kontraktet och caller-specifika HTTP-fel.
-- Frontendens testlagerkontroll passerar oförändrat.
-- Full lokal `npm ci` kunde inte slutföras eftersom körmiljön inte får färdig registryåtkomst; därför är lint/typecheck/test/build ännu inte grönt lokalt.
-- **Nästa rekommenderade åtgärd:** kör GitHub Actions på denna version. Om den är grön kan R-006 markeras klar.
+- **R-001–R-006 är klara och verifierade.**
+- **R-007A – Säkra external classification API och ta bort obsolete classification-correction filtering** är implementerat på PR #55.
+- Under CI-verifieringen av R-007A hittades kvarvarande beroenden till de borttagna correction-typerna i testkod, `ExternalAnalysisApplicationService`, `UserCorrectionService` och `UserAiInsightService`. Samtliga är nu rättade; AI-profile-exkludering är den enda kvarvarande manuella correction-typen.
+- **R-007B – Flytta external technology/project-type summaries till application-service-gränsen** är implementerat på PR #56.
+- **R-007C – Flytta external evidence-aggregation till application-service-gränsen** är implementerat på PR #57.
+- Vid CI-verifieringen av R-007C hittades ytterligare ett äldre regressionstest som fortfarande refererade till de två borttagna correction-typerna. Testet är nu korrigerat i den stackade kedjan.
+- Aktuellt steg är **R-007D – Flytta external profile-aggregation till application-service-gränsen** och är implementerat men väntar på CI-verifiering.
+- `/api/me/profile` hämtar nu hela profilsammanställningen via `ExternalAnalysisApplicationService`; repository-urval, repository-räkning, contribution count, privacy provenance samt technology/project-type-topplistor ligger bakom application-service-gränsen.
+- `ExternalAnalysisResource` har nu inga direkta persistence-beroenden (`EntityManager` eller repositories) och dess externa analysendpoints följer i huvudsak mönstret auth → application service → API DTO.
+- Nästa rekommenderade åtgärd efter grön CI är att göra en ny riskbaserad analys av kvarvarande hotspots i stället för att fortsätta dela `ExternalAnalysisResource` av strukturella skäl.

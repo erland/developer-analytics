@@ -13,8 +13,6 @@ import java.util.UUID;
 public class UserAnalysisCorrection {
 
     public enum Type {
-        PROJECT_CATEGORY_REJECTED,
-        TECHNOLOGY_INFERENCE_SUPPRESSED,
         PROJECT_EXCLUDED_FROM_AI_PROFILE
     }
 
