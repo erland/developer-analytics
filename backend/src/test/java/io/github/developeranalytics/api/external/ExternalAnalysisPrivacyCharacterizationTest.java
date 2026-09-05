@@ -40,6 +40,16 @@ class ExternalAnalysisPrivacyCharacterizationTest {
 
         given().header("Authorization", "Bearer " + scenario.rawToken())
                 .accept(ExternalAnalysisMediaType.VALUE)
+                .when().get("/api/me/profile")
+                .then().statusCode(200)
+                .body("repositoryCount", is(1))
+                .body("publicRepositoryCount", is(1))
+                .body("privateRepositoryCount", is(0))
+                .body("contributionCount", is(1))
+                .body("privacyProvenance", is("PUBLIC_ONLY"));
+
+        given().header("Authorization", "Bearer " + scenario.rawToken())
+                .accept(ExternalAnalysisMediaType.VALUE)
                 .when().get("/api/me/activity?months=24")
                 .then().statusCode(200)
                 .body("contributionCount", is(1))
@@ -64,6 +74,16 @@ class ExternalAnalysisPrivacyCharacterizationTest {
                 .then().statusCode(200)
                 .body("size()", is(1))
                 .body("name", contains("public-repo"));
+
+        given().header("Authorization", "Bearer " + scenario.rawToken())
+                .accept(ExternalAnalysisMediaType.VALUE)
+                .when().get("/api/me/profile")
+                .then().statusCode(200)
+                .body("repositoryCount", is(2))
+                .body("publicRepositoryCount", is(1))
+                .body("privateRepositoryCount", is(1))
+                .body("contributionCount", is(2))
+                .body("privacyProvenance", is("INCLUDES_PRIVATE"));
 
         given().header("Authorization", "Bearer " + scenario.rawToken())
                 .accept(ExternalAnalysisMediaType.VALUE)
@@ -116,6 +136,7 @@ class ExternalAnalysisPrivacyCharacterizationTest {
                 "test-" + suffix,
                 rawToken,
                 Set.of(
+                        ExternalClientToken.Scope.PROFILE_READ,
                         ExternalClientToken.Scope.PROJECTS_READ,
                         ExternalClientToken.Scope.ACTIVITY_READ,
                         ExternalClientToken.Scope.CONTRIBUTIONS_READ),

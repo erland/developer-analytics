@@ -4,9 +4,9 @@ source:
   mode: github
   repository: erland/developer-analytics
   base_branch: main
-  base_commit: 1f0b2d365994662ed0e302893a987ec34596f0e8
+  base_commit: 0a4a8259d62a56bf8faeb1df9e4a4ad3631f8151
 progress:
-  current_step_id: R-008
+  current_step_id: null
   completed_step_ids:
   - R-001
   - R-002
@@ -16,6 +16,7 @@ progress:
   - R-005
   - R-006
   - R-007
+  - R-008
   skipped_step_ids: []
   blocked_step_ids: []
 findings:
@@ -23,20 +24,19 @@ findings:
   F-002: resolved
   F-003: partially_resolved
   F-004: resolved
-  F-005: open
+  F-005: resolved
 blockers: []
 next_step:
-  recommended: R-008
+  recommended: risk_rebaseline
   reason: >-
-    ExternalAnalysisApplicationService.profile filters repository counts by privacy scope,
-    but contributionCount still counts contributions from every included repository.
-    PUBLIC_ONLY can therefore include private contribution data while reporting PUBLIC_ONLY provenance.
+    R-008 is complete and verified. After PR #60 is merged to main, perform a new risk-based
+    assessment of the current codebase before selecting another refactoring step.
 delivery:
-  last_completed_step_id: R-007
+  last_completed_step_id: R-008
   verification_status: verified
   verification_summary: >-
-    R-007A–R-007D were verified in GitHub Actions on the cumulative PR #58 head
-    and merged to main. ExternalAnalysisResource now has no direct persistence dependencies,
-    and obsolete manual classification correction types have been removed across external analysis,
-    AI insight generation, canonical reporting and regression tests.
-updated_at: '2026-09-05T03:20:00Z'
+    R-008 adds PROFILE_READ coverage to ExternalAnalysisPrivacyCharacterizationTest for PUBLIC_ONLY
+    and PUBLIC_PLUS_PRIVATE_AGGREGATES. ExternalAnalysisApplicationService.profile now applies the
+    aggregate privacy scope to contributionCount. GitHub Actions CI run #244 and Dependency Review
+    #164 both completed successfully on PR #60.
+updated_at: '2026-09-05T03:40:00Z'
