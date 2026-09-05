@@ -71,10 +71,6 @@ public class UserAiInsightService {
 
         List<UserTechnologyAssessment> assessments =
                 technologies.findForUser(user.getId()).stream()
-                        .filter(assessment -> !corrections.isTechnologySuppressed(
-                                user.getId(),
-                                assessment.getTechnology().getTechnologyKey()
-                        ))
                         .filter(assessment ->
                                 allowPrivateMetadata ||
                                 assessment.getPrivacyProvenance() ==
@@ -131,7 +127,6 @@ public class UserAiInsightService {
                 availability.providerId(),
                 availability.modelId()
         );
-
         if (reusable.isPresent()) {
             return Result.reused(reusable.get());
         }
@@ -215,13 +210,6 @@ public class UserAiInsightService {
                 "where c.repository.user.id=:userId " +
                 "and c.repository.id in :repositoryIds " +
                 "and c.repository.includedInAnalysis=true " +
-                "and not exists (" +
-                "select 1 from UserAnalysisCorrection correction " +
-                "where correction.user.id=:userId " +
-                "and correction.repository.id=c.repository.id " +
-                "and correction.type=io.github.developeranalytics.domain.correction.UserAnalysisCorrection.Type.PROJECT_CATEGORY_REJECTED " +
-                "and correction.correctionKey=c.category.categoryKey" +
-                ") " +
                 privacyClause +
                 "group by c.category.displayName " +
                 "order by count(distinct c.repository.id) desc",
