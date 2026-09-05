@@ -202,7 +202,6 @@ public class ExternalAnalysisResource {
 
     @GET
     @Path("/evidence")
-    @Transactional
     public Evidence evidence(
             @HeaderParam("Authorization") String authorization,
             @QueryParam("limit") @DefaultValue("50") int limit
@@ -211,71 +210,18 @@ public class ExternalAnalysisResource {
                 authorization,
                 ExternalClientToken.Scope.EVIDENCE_READ
         );
-        UUID userId = principal.user().getId();
-        int safeLimit = Math.max(1, Math.min(limit, 200));
-
-        List<TechnologyEvidence> technologyEvidence =
-                entityManager.createQuery(
-                        "select e.technology.technologyKey, " +
-                        "e.evidenceType, e.strength, count(e), " +
-                        "e.privacyProvenance " +
-                        "from RepositoryTechnologyEvidence e " +
-                        "where e.repository.user.id=:userId " +
-                        "and e.repository.includedInAnalysis=true " +
-                        "group by e.technology.technologyKey, " +
-                        "e.evidenceType, e.strength, e.privacyProvenance " +
-                        "order by count(e) desc",
-                        Object[].class
-                )
-                .setParameter("userId", userId)
-                .setMaxResults(safeLimit)
-                .getResultList()
-                .stream()
-                .filter(row ->
-                        principal.privacyScope().allowsPrivateAggregates()
-                        || DataPrivacyProvenance.PUBLIC_ONLY.name()
-                                .equals(row[4].toString()))
-                .map(row -> new TechnologyEvidence(
-                        (String) row[0],
-                        row[1].toString(),
-                        row[2].toString(),
-                        ((Number) row[3]).intValue(),
-                        row[4].toString()
-                ))
-                .toList();
-
-        List<CategoryEvidence> categoryEvidence =
-                entityManager.createQuery(
-                        "select c.category.categoryKey, c.source, c.confidence, " +
-                        "count(c), c.privacyProvenance " +
-                        "from RepositoryProjectCategory c " +
-                        "where c.repository.user.id=:userId " +
-                        "and c.repository.includedInAnalysis=true " +
-                        "group by c.category.categoryKey, c.source, " +
-                        "c.confidence, c.privacyProvenance " +
-                        "order by count(c) desc",
-                        Object[].class
-                )
-                .setParameter("userId", userId)
-                .setMaxResults(safeLimit)
-                .getResultList()
-                .stream()
-                .filter(row ->
-                        principal.privacyScope().allowsPrivateAggregates()
-                        || DataPrivacyProvenance.PUBLIC_ONLY.name()
-                                .equals(row[4].toString()))
-                .map(row -> new CategoryEvidence(
-                        (String) row[0],
-                        row[1].toString(),
-                        row[2].toString(),
-                        ((Number) row[3]).intValue(),
-                        row[4].toString()
-                ))
-                .toList();
+        var result = externalAnalysis.evidence(
+                principal.user().getId(),
+                principal.privacyScope(),
+                limit);
 
         return new Evidence(
-                technologyEvidence,
-                categoryEvidence
+                result.technologies().stream()
+                        .map(this::technologyEvidence)
+                        .toList(),
+                result.projectTypes().stream()
+                        .map(this::categoryEvidence)
+                        .toList()
         );
     }
 
@@ -301,6 +247,30 @@ public class ExternalAnalysisResource {
                 result.key(),
                 result.name(),
                 result.projectCount()
+        );
+    }
+
+    private TechnologyEvidence technologyEvidence(
+            ExternalAnalysisApplicationService.TechnologyEvidenceResult result
+    ) {
+        return new TechnologyEvidence(
+                result.technologyKey(),
+                result.evidenceType(),
+                result.strength(),
+                result.observations(),
+                result.privacyProvenance()
+        );
+    }
+
+    private CategoryEvidence categoryEvidence(
+            ExternalAnalysisApplicationService.CategoryEvidenceResult result
+    ) {
+        return new CategoryEvidence(
+                result.projectTypeKey(),
+                result.source(),
+                result.confidence(),
+                result.observations(),
+                result.privacyProvenance()
         );
     }
 
