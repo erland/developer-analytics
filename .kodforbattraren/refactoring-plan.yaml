@@ -71,7 +71,7 @@ steps:
 - id: R-008
   order: 9
   title: Säkra och korrigera profile contribution-count privacy semantics
-  status: planned
+  status: completed
   change_classification: defect_fix
   finding_ids: [F-005]
   depends_on: [R-007]
@@ -91,4 +91,5 @@ steps:
   - Aggregate/full scopes include private contributions according to their existing permissions.
   - privacyProvenance remains consistent with the data included in the profile.
   verification:
-  - cd backend && mvn --batch-mode --no-transfer-progress verify
+  - GitHub Actions CI run #244
+  - GitHub Actions Dependency Review #164
