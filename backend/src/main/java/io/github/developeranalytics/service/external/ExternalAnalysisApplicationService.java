@@ -107,6 +107,66 @@ public class ExternalAnalysisApplicationService {
     }
 
     @Transactional
+    public EvidenceResult evidence(
+            UUID userId,
+            ExternalClientToken.PrivacyScope privacyScope,
+            int limit
+    ) {
+        int safeLimit = Math.max(1, Math.min(limit, 200));
+
+        List<TechnologyEvidenceResult> technologyEvidence = entityManager.createQuery(
+                        "select e.technology.technologyKey, " +
+                        "e.evidenceType, e.strength, count(e), " +
+                        "e.privacyProvenance " +
+                        "from RepositoryTechnologyEvidence e " +
+                        "where e.repository.user.id=:userId " +
+                        "and e.repository.includedInAnalysis=true " +
+                        "group by e.technology.technologyKey, " +
+                        "e.evidenceType, e.strength, e.privacyProvenance " +
+                        "order by count(e) desc",
+                        Object[].class)
+                .setParameter("userId", userId)
+                .setMaxResults(safeLimit)
+                .getResultList()
+                .stream()
+                .filter(row -> privacyScope.allowsPrivateAggregates()
+                        || DataPrivacyProvenance.PUBLIC_ONLY.name().equals(row[4].toString()))
+                .map(row -> new TechnologyEvidenceResult(
+                        (String) row[0],
+                        row[1].toString(),
+                        row[2].toString(),
+                        ((Number) row[3]).intValue(),
+                        row[4].toString()))
+                .toList();
+
+        List<CategoryEvidenceResult> categoryEvidence = entityManager.createQuery(
+                        "select c.category.categoryKey, c.source, c.confidence, " +
+                        "count(c), c.privacyProvenance " +
+                        "from RepositoryProjectCategory c " +
+                        "where c.repository.user.id=:userId " +
+                        "and c.repository.includedInAnalysis=true " +
+                        "group by c.category.categoryKey, c.source, " +
+                        "c.confidence, c.privacyProvenance " +
+                        "order by count(c) desc",
+                        Object[].class)
+                .setParameter("userId", userId)
+                .setMaxResults(safeLimit)
+                .getResultList()
+                .stream()
+                .filter(row -> privacyScope.allowsPrivateAggregates()
+                        || DataPrivacyProvenance.PUBLIC_ONLY.name().equals(row[4].toString()))
+                .map(row -> new CategoryEvidenceResult(
+                        (String) row[0],
+                        row[1].toString(),
+                        row[2].toString(),
+                        ((Number) row[3]).intValue(),
+                        row[4].toString()))
+                .toList();
+
+        return new EvidenceResult(technologyEvidence, categoryEvidence);
+    }
+
+    @Transactional
     public ActivityResult activity(UUID userId, ExternalClientToken.PrivacyScope privacyScope, int months) {
         int safeMonths = Math.max(1, Math.min(months, 120));
         OffsetDateTime threshold = OffsetDateTime.now().minusMonths(safeMonths);
@@ -223,6 +283,14 @@ public class ExternalAnalysisApplicationService {
                                           OffsetDateTime firstObservedAt, OffsetDateTime lastObservedAt,
                                           String privacyProvenance) {}
     public record ProjectTypeSummaryResult(String key, String name, int projectCount) {}
+    public record EvidenceResult(List<TechnologyEvidenceResult> technologies,
+                                 List<CategoryEvidenceResult> projectTypes) {}
+    public record TechnologyEvidenceResult(String technologyKey, String evidenceType,
+                                           String strength, int observations,
+                                           String privacyProvenance) {}
+    public record CategoryEvidenceResult(String projectTypeKey, String source,
+                                         String confidence, int observations,
+                                         String privacyProvenance) {}
     public record ActivityResult(int contributionCount, int activeProjectCount,
                                  Map<String, Integer> contributionTypes,
                                  List<ActivityMonthResult> monthly, String privacyProvenance) {}
