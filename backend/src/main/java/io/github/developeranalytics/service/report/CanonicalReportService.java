@@ -115,7 +115,7 @@ public class CanonicalReportService {
                 new CanonicalReport.Methodology(
                         "Repository, contribution and technology evidence are measured from collected source-control metadata.",
                         "Project classifications, significance scores and AI interpretations are analytical assessments and are not formal statements of proficiency.",
-                        "User corrections suppress analytical conclusions without deleting underlying source facts.",
+                        "User-controlled AI-profile exclusions affect profile generation without deleting underlying source facts.",
                         List.of(
                                 "repository metadata",
                                 "contributions",
@@ -199,14 +199,6 @@ public class CanonicalReportService {
                 "from RepositoryProjectCategory c " +
                 "where c.repository.user.id=:userId " +
                 "and c.repository.id in :repositoryIds " +
-                "and not exists (" +
-                "select 1 from UserAnalysisCorrection correction " +
-                "where correction.user.id=:userId " +
-                "and correction.repository.id=c.repository.id " +
-                "and correction.type=" +
-                "io.github.developeranalytics.domain.correction." +
-                "UserAnalysisCorrection.Type.PROJECT_CATEGORY_REJECTED " +
-                "and correction.correctionKey=c.category.categoryKey) " +
                 "group by c.category.categoryKey, c.category.displayName " +
                 "order by count(distinct c.repository.id) desc, c.category.displayName",
                 Object[].class
@@ -230,10 +222,6 @@ public class CanonicalReportService {
         return technologies.findForUser(userId).stream()
                 .filter(a -> privacyScope != CanonicalReport.PrivacyScope.PUBLIC_ONLY
                         || a.getPrivacyProvenance() == DataPrivacyProvenance.PUBLIC_ONLY)
-                .filter(a -> !isTechnologySuppressed(
-                        userId,
-                        a.getTechnology().getTechnologyKey()
-                ))
                 .map(a -> new CanonicalReport.TechnologyAnalysis(
                         a.getTechnology().getTechnologyKey(),
                         a.getTechnology().getDisplayName(),
@@ -245,23 +233,6 @@ public class CanonicalReportService {
                         a.getPrivacyProvenance().name()
                 ))
                 .toList();
-    }
-
-    private boolean isTechnologySuppressed(UUID userId, String key) {
-        Long count = entityManager.createQuery(
-                "select count(c.id) from UserAnalysisCorrection c " +
-                "where c.user.id=:userId and c.repository is null " +
-                "and c.type=" +
-                "io.github.developeranalytics.domain.correction." +
-                "UserAnalysisCorrection.Type.TECHNOLOGY_INFERENCE_SUPPRESSED " +
-                "and c.correctionKey=:key",
-                Long.class
-        )
-        .setParameter("userId", userId)
-        .setParameter("key", key)
-        .getSingleResult();
-
-        return count > 0;
     }
 
     private List<CanonicalReport.SignificantProject> significantProjects(
