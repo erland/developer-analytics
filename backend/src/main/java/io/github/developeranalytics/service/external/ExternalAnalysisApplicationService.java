@@ -4,6 +4,7 @@ import io.github.developeranalytics.domain.correction.UserAnalysisCorrection;
 import io.github.developeranalytics.domain.external.ExternalClientToken;
 import io.github.developeranalytics.domain.model.Contribution;
 import io.github.developeranalytics.domain.model.DataPrivacyProvenance;
+import io.github.developeranalytics.domain.model.RepositoryOwnershipRelation;
 import io.github.developeranalytics.domain.model.RepositoryVisibility;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.persistence.correction.UserAnalysisCorrectionRepository;
@@ -27,6 +28,43 @@ public class ExternalAnalysisApplicationService {
     @Inject UserTechnologyAssessmentRepository technologyAssessments;
     @Inject ProjectTypeAnalyticsRepository projectTypes;
     @Inject EntityManager entityManager;
+
+    @Transactional
+    public ProfileResult profile(UUID userId, ExternalClientToken.PrivacyScope privacyScope) {
+        List<SourceRepository> included = repositories.findAllForUser(userId).stream()
+                .filter(SourceRepository::isIncludedInAnalysis)
+                .filter(repository -> privacyScope.allowsPrivateAggregates()
+                        || repository.getVisibility() == RepositoryVisibility.PUBLIC)
+                .toList();
+
+        int publicRepositories = (int) included.stream()
+                .filter(repository -> repository.getVisibility() == RepositoryVisibility.PUBLIC)
+                .count();
+        int privateRepositories = included.size() - publicRepositories;
+        int ownedRepositories = (int) included.stream()
+                .filter(repository -> repository.getOwnershipRelation() == RepositoryOwnershipRelation.OWNED_BY_USER)
+                .count();
+
+        Long contributionCount = entityManager.createQuery(
+                "select count(c.id) from Contribution c " +
+                "where c.user.id=:userId " +
+                "and c.repository.includedInAnalysis=true",
+                Long.class)
+                .setParameter("userId", userId)
+                .getSingleResult();
+
+        return new ProfileResult(
+                included.size(),
+                publicRepositories,
+                privateRepositories,
+                ownedRepositories,
+                included.size() - ownedRepositories,
+                Math.toIntExact(contributionCount),
+                privacyProvenance(publicRepositories, privateRepositories),
+                technologies(userId, privacyScope, 10),
+                projectTypes(userId, privacyScope, 10)
+        );
+    }
 
     @Transactional
     public List<ProjectResult> projects(UUID userId, ExternalClientToken.PrivacyScope privacyScope, int limit) {
@@ -275,6 +313,12 @@ public class ExternalAnalysisApplicationService {
         final Set<UUID> projects = new HashSet<>();
     }
 
+    public record ProfileResult(int repositoryCount, int publicRepositoryCount,
+                                int privateRepositoryCount, int ownedRepositoryCount,
+                                int externalRepositoryCount, int contributionCount,
+                                String privacyProvenance,
+                                List<TechnologySummaryResult> topTechnologies,
+                                List<ProjectTypeSummaryResult> topProjectTypes) {}
     public record ProjectResult(UUID id, String name, String visibility, String ownership,
                                 OffsetDateTime lastActivityAt, List<String> projectTypes,
                                 List<String> technologies, boolean excludedFromAiProfile) {}
