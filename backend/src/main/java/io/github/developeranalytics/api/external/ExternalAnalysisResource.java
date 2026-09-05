@@ -3,29 +3,24 @@ package io.github.developeranalytics.api.external;
 import io.github.developeranalytics.auth.external.ExternalClientAuthService;
 import io.github.developeranalytics.auth.external.ExternalClientAuthService.ExternalClientPrincipal;
 import io.github.developeranalytics.domain.external.ExternalClientToken;
-import io.github.developeranalytics.domain.model.*;
-import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
 import io.github.developeranalytics.service.external.ExternalAnalysisApplicationService;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Path("/api/me")
 @Produces(ExternalAnalysisMediaType.VALUE)
 public class ExternalAnalysisResource {
 
     @Inject ExternalClientAuthService externalAuth;
-    @Inject SourceRepositoryRepository repositories;
-    @Inject EntityManager entityManager;
     @Inject ExternalAnalysisApplicationService externalAnalysis;
 
     @GET
     @Path("/profile")
-    @Transactional
     public Profile profile(
             @HeaderParam("Authorization") String authorization
     ) {
@@ -33,55 +28,25 @@ public class ExternalAnalysisResource {
                 authorization,
                 ExternalClientToken.Scope.PROFILE_READ
         );
-        UUID userId = principal.user().getId();
-
-        List<SourceRepository> included = repositories.findAllForUser(userId)
-                .stream()
-                .filter(SourceRepository::isIncludedInAnalysis)
-                .filter(repository ->
-                        principal.privacyScope().allowsPrivateAggregates()
-                        || repository.getVisibility() == RepositoryVisibility.PUBLIC)
-                .toList();
-
-        int publicRepositories = (int) included.stream()
-                .filter(r -> r.getVisibility() == RepositoryVisibility.PUBLIC)
-                .count();
-        int privateRepositories = included.size() - publicRepositories;
-        int ownedRepositories = (int) included.stream()
-                .filter(r -> r.getOwnershipRelation() ==
-                        RepositoryOwnershipRelation.OWNED_BY_USER)
-                .count();
-
-        Long contributionCount = entityManager.createQuery(
-                "select count(c.id) from Contribution c " +
-                "where c.user.id=:userId " +
-                "and c.repository.includedInAnalysis=true",
-                Long.class
-        ).setParameter("userId", userId).getSingleResult();
-
-        List<TechnologySummary> technologies = externalAnalysis
-                .technologies(userId, principal.privacyScope(), 10)
-                .stream()
-                .map(this::technologySummary)
-                .toList();
-
-        List<ProjectTypeSummary> categories = externalAnalysis
-                .projectTypes(userId, principal.privacyScope(), 10)
-                .stream()
-                .map(this::projectTypeSummary)
-                .toList();
+        var result = externalAnalysis.profile(
+                principal.user().getId(),
+                principal.privacyScope());
 
         return new Profile(
                 "v1",
-                included.size(),
-                publicRepositories,
-                privateRepositories,
-                ownedRepositories,
-                included.size() - ownedRepositories,
-                Math.toIntExact(contributionCount),
-                privacyProvenance(publicRepositories, privateRepositories),
-                technologies,
-                categories
+                result.repositoryCount(),
+                result.publicRepositoryCount(),
+                result.privateRepositoryCount(),
+                result.ownedRepositoryCount(),
+                result.externalRepositoryCount(),
+                result.contributionCount(),
+                result.privacyProvenance(),
+                result.topTechnologies().stream()
+                        .map(this::technologySummary)
+                        .toList(),
+                result.topProjectTypes().stream()
+                        .map(this::projectTypeSummary)
+                        .toList()
         );
     }
 
@@ -272,15 +237,6 @@ public class ExternalAnalysisResource {
                 result.observations(),
                 result.privacyProvenance()
         );
-    }
-
-    private String privacyProvenance(
-            int publicCount,
-            int privateCount
-    ) {
-        return DataPrivacyProvenance
-                .fromRepositoryCounts(publicCount, privateCount)
-                .name();
     }
 
     public record Profile(
