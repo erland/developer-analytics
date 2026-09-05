@@ -12,29 +12,24 @@
    - R-007B: flytta technology/project-type summaries bakom application service.
    - R-007C: flytta evidence-aggregation bakom application service.
    - R-007D: flytta profile-aggregation bakom application service.
-9. **R-008 – Säkra och korrigera profile contribution-count privacy semantics** *(nästa)*
+9. **R-008 – Säkra och korrigera profile contribution-count privacy semantics** *(klar och verifierad via PR #60)*
 
-## R-008
+## R-008 – resultat
 
-**Finding:** F-005  
+**Finding:** F-005 *(löst)*  
 **Klassificering:** defect/privacy-correctness fix  
 **Risk:** high  
 **Förväntad nytta:** high  
 **Effort:** small–medium
 
-`ExternalAnalysisApplicationService.profile(...)` filtrerar repository-räkningarna efter tokenens `PrivacyScope`, men den separata `contributionCount`-queryn räknar contributions från alla repositories med `includedInAnalysis=true`. Det innebär att `PUBLIC_ONLY` kan exponera ett aggregerat värde påverkat av privata repositories samtidigt som profilens privacy provenance är `PUBLIC_ONLY`.
+`ExternalAnalysisApplicationService.profile(...)` använder nu samma aggregate privacy-scope för `contributionCount` som för repository-räkningarna och profilens privacy provenance. `PUBLIC_ONLY` räknar endast contributions från publika repositories, medan scopes som tillåter privata aggregat fortsatt inkluderar både publika och privata contributions.
 
-### Genomförandeordning
+`ExternalAnalysisPrivacyCharacterizationTest` verifierar profile-beteendet med både ett publikt och ett privat repository/contribution. CI run #244 och Dependency Review #164 passerade på PR #60.
 
-1. Lägg characterization tests för `/api/me/profile` med ett publikt och ett privat repository, båda med contributions.
-2. Verifiera förväntat beteende för `PUBLIC_ONLY`, `PUBLIC_PLUS_PRIVATE_AGGREGATES` och `FULL_AUTHORISED_ANALYSIS`.
-3. Justera endast contribution-count-urvalet så det följer samma aggregate privacy-scope som profilens repository-urval.
-4. Kör backend verify och privacy/authorization-testlagren.
-
-### Out of scope
+### Out of scope som bevarades
 
 - Ingen förändring av external API-kontraktet.
 - Ingen generell omskrivning av `ExternalAnalysisApplicationService`.
 - Ingen ändring av projekt-detail-semantik eller AI-profile-exkludering.
 
-Planen är fortsatt riskstyrd: efter R-008 görs en ny bedömning innan ytterligare strukturell refaktorering väljs.
+Planen är fortsatt riskstyrd. Efter merge av PR #60 görs en ny bedömning av aktuell `main` innan nästa förbättring väljs.
