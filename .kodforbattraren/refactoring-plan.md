@@ -1,10 +1,10 @@
 # Refaktoreringsplan – Developer Analytics
 
-R-001–R-013 är klara och verifierade.
+R-001–R-014 är klara och verifierade.
 
 ## Rebaseline efter R-011
 
-Rebaselinen gjordes mot `main@645ca57218fcdeb163857830160df25b1674eaae`. Ingen ny hög-riskfinding identifierades i backend. F-006 avgränsar kvarvarande duplicerad autentiserad GET-mekanik till `useProjectInventory`, `useMatchingProjects` och request-delen i `useProjectDetail`. Specialiserade callers som `useDataFreshness` är fortsatt utanför scope.
+Rebaselinen gjordes mot `main@645ca57218fcdeb163857830160df25b1674eaae`. Ingen ny hög-riskfinding identifierades i backend. F-006 avgränsade kvarvarande duplicerad autentiserad GET-mekanik till `useProjectInventory`, `useMatchingProjects` och request-delen i `useProjectDetail`. Specialiserade callers som `useDataFreshness` är fortsatt utanför scope.
 
 ## R-012 – resultat
 
@@ -14,24 +14,19 @@ R-012 verifierades grönt i GitHub Actions CI #270 och Dependency Review #186 in
 
 R-013 verifierades grönt i GitHub Actions CI #272 och Dependency Review #187 innan PR #65 mergades till `main` i `a513dfac815331bf002e605a8e8c4d8faeaff022`.
 
-## R-014 – implementerat
+## R-014 – resultat
 
-**Finding:** F-006  
-**Klassificering:** beteendebevarande refaktorering  
-**Risk:** low–medium
+R-014 verifierades grönt i GitHub Actions CI #274 och Dependency Review #188 på PR #66.
 
-- `useProjectDetail.ts` använder nu befintlig `getJson` från `frontend/src/api/request.ts` endast för GET-requestmekaniken.
-- Direkt `fetch`, lokal HTTP-statuskontroll och lokal JSON-deserialisering är borttagna.
+- `useProjectDetail.ts` använder befintlig `getJson` från `frontend/src/api/request.ts` endast för GET-requestmekaniken.
 - Samma `/api/me/projects/${repositoryId}` URL och samma `AbortSignal` används.
-- Feltexten `Project detail request failed with HTTP <status>` bevaras via caller-specifik `errorMessage`.
+- Feltexten `Project detail request failed with HTTP <status>` är bevarad.
 - Timeline-normalisering är oförändrad och ligger kvar lokalt.
 - Contributors-defaulting är oförändrad och ligger kvar lokalt.
 - Idle/loading/ready/error-state och abort-hantering är oförändrade.
 
-### Verifiering
+F-006 är därmed löst.
 
-R-014 markeras inte klar förrän relevanta frontend unit tests, lint, typecheck och build passerar i GitHub Actions på PR-headen.
+## Nästa steg
 
-## Efterföljande steg
-
-Efter grön R-014 görs en ny riskbaserad bedömning innan ytterligare refaktorering väljs. `useDataFreshness` och andra specialiserade callers migreras inte automatiskt.
+Efter merge av PR #66 görs en ny riskbaserad rebaseline mot aktuell `main` innan ytterligare refaktorering väljs. `useDataFreshness` och andra specialiserade callers migreras inte automatiskt.
