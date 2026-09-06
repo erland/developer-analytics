@@ -5,7 +5,7 @@ project:
   repository: erland/developer-analytics
 source_snapshot:
   mode: github
-  captured_at: '2026-09-06T05:50:00Z'
+  captured_at: '2026-09-06T05:55:00Z'
   base_identifier: main@645ca57218fcdeb163857830160df25b1674eaae
 objectives:
 - Minska lagerövertramp i centrala API-flöden utan onödiga kontraktsförändringar.
@@ -33,14 +33,25 @@ steps:
 - id: R-012
   order: 13
   title: Migrera useProjectInventory till gemensam getJson
-  status: verification_pending
+  status: completed
   change_classification: refactoring
   finding_ids: [F-006]
   risk: low
+  verification:
+  - GitHub Actions CI #270
+  - GitHub Actions Dependency Review #186
+- id: R-013
+  order: 14
+  title: Migrera useMatchingProjects till gemensam getJson
+  status: verification_pending
+  change_classification: refactoring
+  finding_ids: [F-006]
+  depends_on: [R-012]
+  risk: low
   scope:
-  - frontend/src/hooks/useProjectInventory.ts
+  - frontend/src/hooks/useMatchingProjects.ts
   out_of_scope:
-  - querybyggande och paging
+  - scope/paging-logik
   - InventoryResponse-kontrakt
   - andra hooks
   done_when:
@@ -52,17 +63,6 @@ steps:
   - frontend lint
   - frontend typecheck
   - frontend build
-- id: R-013
-  order: 14
-  title: Migrera useMatchingProjects till gemensam getJson
-  status: planned
-  change_classification: refactoring
-  finding_ids: [F-006]
-  depends_on: [R-012]
-  risk: low
-  out_of_scope:
-  - scope/paging-logik
-  - InventoryResponse-kontrakt
 - id: R-014
   order: 15
   title: Migrera request-delen i useProjectDetail till gemensam getJson
