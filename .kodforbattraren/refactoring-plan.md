@@ -2,31 +2,46 @@
 
 R-001–R-014 är klara och verifierade.
 
-## Rebaseline efter R-011
+## Rebaseline efter R-014
 
-Rebaselinen gjordes mot `main@645ca57218fcdeb163857830160df25b1674eaae`. Ingen ny hög-riskfinding identifierades i backend. F-006 avgränsade kvarvarande duplicerad autentiserad GET-mekanik till `useProjectInventory`, `useMatchingProjects` och request-delen i `useProjectDetail`. Specialiserade callers som `useDataFreshness` är fortsatt utanför scope.
+Rebaselinen är gjord mot aktuell `main` efter merge av PR #66.
 
-## R-012 – resultat
+Ingen ny bred arkitektur- eller maintainability-refaktorering rekommenderas. Däremot identifierades ett konkret beteendefel i `useOverviewDashboard` som introducerades av R-009.
 
-R-012 verifierades grönt i GitHub Actions CI #270 och Dependency Review #186 innan PR #64 mergades.
+Före R-009 hade hookens lokala helper följande felkontrakt:
 
-## R-013 – resultat
+`<url> failed with HTTP <status>`
 
-R-013 verifierades grönt i GitHub Actions CI #272 och Dependency Review #187 innan PR #65 mergades till `main` i `a513dfac815331bf002e605a8e8c4d8faeaff022`.
+Efter migrationen till gemensam `getJson` skickas bara URL:en som `errorMessage`, vilket ger:
 
-## R-014 – resultat
+`<url> with HTTP <status>`
 
-R-014 verifierades grönt i GitHub Actions CI #274 och Dependency Review #188 på PR #66.
+Detta är en beteenderegression och klassificeras som defect-fix, inte refaktorering.
 
-- `useProjectDetail.ts` använder befintlig `getJson` från `frontend/src/api/request.ts` endast för GET-requestmekaniken.
-- Samma `/api/me/projects/${repositoryId}` URL och samma `AbortSignal` används.
-- Feltexten `Project detail request failed with HTTP <status>` är bevarad.
-- Timeline-normalisering är oförändrad och ligger kvar lokalt.
-- Contributors-defaulting är oförändrad och ligger kvar lokalt.
-- Idle/loading/ready/error-state och abort-hantering är oförändrade.
+## R-015 – Återställ useOverviewDashboard felmeddelandekontrakt
 
-F-006 är därmed löst.
+**Finding:** F-007  
+**Klassificering:** defect-fix  
+**Risk:** low
+
+### Scope
+
+- Justera endast caller-specifik `errorMessage` i `useOverviewDashboard` så att tidigare feltext återställs.
+- Lägg till ett fokuserat regressionstest som fångar HTTP-feltexten.
+
+### Out of scope
+
+- Ingen global ändring av `getJson`.
+- Ingen ändring av overview-successflödet.
+- Ingen ytterligare fetch-migrering.
+- Inga andra hooks.
+
+### Done when
+
+- HTTP-fel åter ger `<url> failed with HTTP <status>`.
+- Regressionstestet passerar.
+- Success-, abort- och state-semantik är oförändrade.
 
 ## Nästa steg
 
-Efter merge av PR #66 görs en ny riskbaserad rebaseline mot aktuell `main` innan ytterligare refaktorering väljs. `useDataFreshness` och andra specialiserade callers migreras inte automatiskt.
+**R-015 – återställ `useOverviewDashboard` felmeddelandekontrakt och skydda det med ett regressionstest.**
