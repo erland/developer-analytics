@@ -5,8 +5,8 @@ project:
   repository: erland/developer-analytics
 source_snapshot:
   mode: github
-  captured_at: '2026-09-06T05:15:00Z'
-  base_identifier: main@980a2e50cb776df88769e9dfa455d5e2aace8430
+  captured_at: '2026-09-06T05:25:00Z'
+  base_identifier: main@c68c13d8d62768fda967e56d0360a49337ffef64
 objectives:
 - Minska lagerövertramp i centrala API-flöden utan onödiga kontraktsförändringar.
 - Förbättra testbarheten före riskfyllda beteendeändringar.
@@ -18,87 +18,49 @@ constraints:
 - Riskfyllda beteendeändringar ska föregås av characterization tests.
 - Ingen massmigrering av frontend fetch-anrop; endast konkreta callers med duplicerad gemensam GET-mekanik migreras inkrementellt.
 steps:
-- id: R-001
-  order: 1
-  title: Skydda activity-use-caset med characterization tests
-  status: completed
-  finding_ids: [F-001]
-- id: R-002
-  order: 2
-  title: Extrahera activity application service
-  status: completed
-  finding_ids: [F-001]
-- id: R-003
-  order: 3
-  title: Ersätt implementationstätt activity-querytest
-  status: completed
-  finding_ids: [F-001]
-- id: R-004
-  order: 4
-  title: Etablera use-case-gräns för externa analys-API:t
-  status: completed
-  finding_ids: [F-002]
-- id: R-005A
-  order: 5
-  title: Generera frontend-lockfil i nätverksansluten CI
-  status: completed
-  finding_ids: [F-004]
-- id: R-005
-  order: 6
-  title: Lås frontendens dependency-resolution
-  status: completed
-  finding_ids: [F-004]
-- id: R-006
-  order: 7
-  title: Extrahera minimal gemensam frontend request-mekanik
-  status: completed
-  finding_ids: [F-003]
-- id: R-007
-  order: 8
-  title: Slutför external analysis application-service-gränsen
-  status: completed
-  finding_ids: [F-002]
-- id: R-008
-  order: 9
-  title: Säkra och korrigera profile contribution-count privacy semantics
-  status: completed
-  change_classification: defect_fix
-  finding_ids: [F-005]
+- {id: R-001, order: 1, title: Skydda activity-use-caset med characterization tests, status: completed, finding_ids: [F-001]}
+- {id: R-002, order: 2, title: Extrahera activity application service, status: completed, finding_ids: [F-001]}
+- {id: R-003, order: 3, title: Ersätt implementationstätt activity-querytest, status: completed, finding_ids: [F-001]}
+- {id: R-004, order: 4, title: Etablera use-case-gräns för externa analys-API:t, status: completed, finding_ids: [F-002]}
+- {id: R-005A, order: 5, title: Generera frontend-lockfil i nätverksansluten CI, status: completed, finding_ids: [F-004]}
+- {id: R-005, order: 6, title: Lås frontendens dependency-resolution, status: completed, finding_ids: [F-004]}
+- {id: R-006, order: 7, title: Extrahera minimal gemensam frontend request-mekanik, status: completed, finding_ids: [F-003]}
+- {id: R-007, order: 8, title: Slutför external analysis application-service-gränsen, status: completed, finding_ids: [F-002]}
+- {id: R-008, order: 9, title: Säkra och korrigera profile contribution-count privacy semantics, status: completed, change_classification: defect_fix, finding_ids: [F-005]}
 - id: R-009
   order: 10
   title: Använd gemensam getJson i useOverviewDashboard
+  status: completed
+  change_classification: refactoring
+  finding_ids: [F-003]
+  verification:
+  - GitHub Actions CI #253
+  - GitHub Actions Dependency Review #172
+- id: R-010
+  order: 11
+  title: Migrera request-delen i useActivityView till gemensam getJson
   status: verification_pending
   change_classification: refactoring
   finding_ids: [F-003]
-  risk: low
+  depends_on: [R-009]
+  risk: low-medium
   scope:
-  - frontend/src/hooks/useOverviewDashboard.ts
-  - frontend/src/api/request.ts som befintlig stabil helper, utan API-utökning
+  - endast GET-requestmekanik i frontend/src/hooks/useActivityView.ts
+  - använd befintlig frontend/src/api/request.ts utan API-utökning
   out_of_scope:
-  - andra hooks
-  - mutationer och auth/sync-specialfall
-  - generell API-client-abstraktion
+  - activity-normalisering
+  - period- och scope-logik
+  - state-semantik
   done_when:
-  - den lokala getJson-implementationen i useOverviewDashboard är borttagen
-  - caller använder frontend/src/api/request.ts
-  - endpoint-lista och credentials/Accept/AbortSignal/status/JSON-semantik är oförändrade
-  - caller-specifik felhantering är beteendemässigt bevarad
+  - direkt fetch/status/json-hantering i useActivityView är ersatt av gemensam getJson
+  - URL- och querybyggande är oförändrat
+  - Activity request failed-feltext är oförändrad
+  - normalisering och state-semantik är oförändrade
   verification:
   - relevanta frontend unit tests
   - frontend lint
   - frontend typecheck
   - frontend build
-- id: R-010
-  order: 11
-  title: Migrera request-delen i useActivityView till gemensam getJson
-  status: planned
-  change_classification: refactoring
-  finding_ids: [F-003]
-  depends_on: [R-009]
-  risk: low-medium
-  out_of_scope:
-  - activity-normalisering
-  - period- och scope-logik
 - id: R-011
   order: 12
   title: Migrera request-delen i useContributions till gemensam getJson
@@ -116,5 +78,4 @@ replanning_history:
   affected_steps: [R-009, R-010, R-011]
   reason: >-
     Risk-rebaseline after merged R-008 found no new high-risk backend issue. F-003 remains partially
-    resolved with concrete duplicate GET request mechanics in useOverviewDashboard, useActivityView
-    and useContributions. Continue with narrowly scoped caller migrations rather than a mass migration.
+    resolved with concrete duplicate GET request mechanics. Continue with narrowly scoped caller migrations.
