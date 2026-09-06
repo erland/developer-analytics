@@ -67,13 +67,13 @@ steps:
 - id: R-009
   order: 10
   title: Använd gemensam getJson i useOverviewDashboard
-  status: ready
+  status: verification_pending
   change_classification: refactoring
   finding_ids: [F-003]
   risk: low
   scope:
   - frontend/src/hooks/useOverviewDashboard.ts
-  - frontend/src/api/request.ts som befintlig stabil helper, normalt utan API-utökning
+  - frontend/src/api/request.ts som befintlig stabil helper, utan API-utökning
   out_of_scope:
   - andra hooks
   - mutationer och auth/sync-specialfall
