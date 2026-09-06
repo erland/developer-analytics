@@ -6,7 +6,7 @@ source:
   base_branch: main
   base_commit: a513dfac815331bf002e605a8e8c4d8faeaff022
 progress:
-  current_step_id: R-014
+  current_step_id: null
   completed_step_ids:
   - R-001
   - R-002
@@ -22,6 +22,7 @@ progress:
   - R-011
   - R-012
   - R-013
+  - R-014
   skipped_step_ids: []
   blocked_step_ids: []
 findings:
@@ -30,19 +31,20 @@ findings:
   F-003: resolved
   F-004: resolved
   F-005: resolved
-  F-006: open
+  F-006: resolved
 blockers: []
 next_step:
-  recommended: verify_R-014
+  recommended: risk_rebaseline
   reason: >-
-    R-013 passed GitHub Actions CI #272 and Dependency Review #187 before PR #65 merged.
-    R-014 is now implemented on its own branch from current main. Do not close F-006 until frontend unit
-    tests, lint, typecheck and build pass on the updated PR head.
+    R-014 passed GitHub Actions CI #274 and Dependency Review #188. The focused F-006 sequence
+    R-012 through R-014 is complete and verified. After PR #66 merges, perform a new risk-based
+    reassessment against current main before selecting any further refactoring step.
 delivery:
-  last_completed_step_id: R-013
-  verification_status: pending
+  last_completed_step_id: R-014
+  verification_status: verified
   verification_summary: >-
     R-014 delegates only the useProjectDetail GET request mechanics to the shared getJson helper while
     preserving repository URL construction, AbortSignal, caller-specific error text, timeline normalization,
-    contributors defaulting and idle/loading/ready/error state semantics. GitHub Actions verification is pending.
-updated_at: '2026-09-06T06:05:00Z'
+    contributors defaulting and idle/loading/ready/error state semantics. GitHub Actions CI #274 and
+    Dependency Review #188 completed successfully on PR #66.
+updated_at: '2026-09-06T06:10:00Z'
