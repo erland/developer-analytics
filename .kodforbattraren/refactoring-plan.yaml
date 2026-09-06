@@ -5,8 +5,8 @@ project:
   repository: erland/developer-analytics
 source_snapshot:
   mode: github
-  captured_at: '2026-09-06T05:35:00Z'
-  base_identifier: main@f996c5533d5bf7a603ae72c80dffd3caf7e8c302
+  captured_at: '2026-09-06T05:40:00Z'
+  base_identifier: main@645ca57218fcdeb163857830160df25b1674eaae
 objectives:
 - Minska lagerövertramp i centrala API-flöden utan onödiga kontraktsförändringar.
 - Förbättra testbarheten före riskfyllda beteendeändringar.
@@ -27,42 +27,59 @@ steps:
 - {id: R-006, order: 7, title: Extrahera minimal gemensam frontend request-mekanik, status: completed, finding_ids: [F-003]}
 - {id: R-007, order: 8, title: Slutför external analysis application-service-gränsen, status: completed, finding_ids: [F-002]}
 - {id: R-008, order: 9, title: Säkra och korrigera profile contribution-count privacy semantics, status: completed, change_classification: defect_fix, finding_ids: [F-005]}
-- id: R-009
-  order: 10
-  title: Använd gemensam getJson i useOverviewDashboard
-  status: completed
+- {id: R-009, order: 10, title: Använd gemensam getJson i useOverviewDashboard, status: completed, change_classification: refactoring, finding_ids: [F-003]}
+- {id: R-010, order: 11, title: Migrera request-delen i useActivityView till gemensam getJson, status: completed, change_classification: refactoring, finding_ids: [F-003]}
+- {id: R-011, order: 12, title: Migrera request-delen i useContributions till gemensam getJson, status: completed, change_classification: refactoring, finding_ids: [F-003]}
+- id: R-012
+  order: 13
+  title: Migrera useProjectInventory till gemensam getJson
+  status: planned
   change_classification: refactoring
-  finding_ids: [F-003]
-  verification:
-  - GitHub Actions CI #253
-  - GitHub Actions Dependency Review #172
-- id: R-010
-  order: 11
-  title: Migrera request-delen i useActivityView till gemensam getJson
-  status: completed
+  finding_ids: [F-006]
+  risk: low
+  scope:
+  - frontend/src/hooks/useProjectInventory.ts
+  out_of_scope:
+  - querybyggande och paging
+  - InventoryResponse-kontrakt
+  - andra hooks
+  done_when:
+  - direkt fetch/status/json-hantering är ersatt av gemensam getJson
+  - URL/query, AbortSignal och feltext är beteendemässigt oförändrade
+  - state-semantik är oförändrad
+- id: R-013
+  order: 14
+  title: Migrera useMatchingProjects till gemensam getJson
+  status: planned
   change_classification: refactoring
-  finding_ids: [F-003]
-  depends_on: [R-009]
+  finding_ids: [F-006]
+  depends_on: [R-012]
+  risk: low
+  out_of_scope:
+  - scope/paging-logik
+  - InventoryResponse-kontrakt
+- id: R-014
+  order: 15
+  title: Migrera request-delen i useProjectDetail till gemensam getJson
+  status: planned
+  change_classification: refactoring
+  finding_ids: [F-006]
+  depends_on: [R-013]
   risk: low-medium
-  verification:
-  - GitHub Actions CI #255
-  - GitHub Actions Dependency Review #173
-- id: R-011
-  order: 12
-  title: Migrera request-delen i useContributions till gemensam getJson
-  status: completed
-  change_classification: refactoring
-  finding_ids: [F-003]
-  depends_on: [R-010]
-  risk: low-medium
-  verification:
-  - GitHub Actions CI #257
-  - GitHub Actions Dependency Review #174
+  out_of_scope:
+  - activity timeline-normalisering
+  - contributors-defaulting
+  - state-semantik
 replanning_history:
 - date: '2026-09-06'
   type: insert
   affected_steps: [R-009, R-010, R-011]
   reason: >-
-    Risk-rebaseline after merged R-008 found no new high-risk backend issue. F-003 remained partially
-    resolved with concrete duplicate GET request mechanics. The three narrowly scoped caller migrations
-    are now completed and verified; perform a new risk-based reassessment after PR #63 merges.
+    Risk-rebaseline after merged R-008 found concrete duplicate GET mechanics in three callers; these steps are complete.
+- date: '2026-09-06'
+  type: insert
+  affected_steps: [R-012, R-013, R-014]
+  reason: >-
+    Post-R-011 rebaseline on main@645ca572 found no new high-risk backend issue, but identified a focused
+    remaining cluster of duplicate authenticated GET mechanics in project inventory, matching-projects and
+    project-detail hooks. Specialized callers such as useDataFreshness remain intentionally out of scope.
