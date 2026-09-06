@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getJson } from '../api/request'
 import type { AnalysisScope } from '../analysis/AnalysisScope'
 import { analysisScopeToSearchParams } from '../analysis/AnalysisScopeUrl'
 
@@ -104,14 +105,10 @@ export function useActivityView(period: ActivityPeriod, scope?: AnalysisScope): 
       if (effectiveTo) query.set('to', effectiveTo)
 
       try {
-        const response = await fetch(`/api/me/activity${query.size ? `?${query}` : ''}`, {
-          credentials: 'include',
-          headers: { Accept: 'application/json' },
-          signal: controller.signal,
-        })
-        if (!response.ok) throw new Error(`Activity request failed with HTTP ${response.status}`)
-
-        const raw = await response.json() as Partial<ActivityData>
+        const raw = await getJson<Partial<ActivityData>>(
+          `/api/me/activity${query.size ? `?${query}` : ''}`,
+          { signal: controller.signal, errorMessage: 'Activity request failed' },
+        )
         const statisticsAvailable = raw.commitSizeStatisticsAvailable
           ?? (raw.averageCommitSize !== undefined || raw.additions !== undefined || raw.deletions !== undefined)
 

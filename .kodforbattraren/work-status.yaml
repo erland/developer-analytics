@@ -4,9 +4,9 @@ source:
   mode: github
   repository: erland/developer-analytics
   base_branch: main
-  base_commit: 980a2e50cb776df88769e9dfa455d5e2aace8430
+  base_commit: c68c13d8d62768fda967e56d0360a49337ffef64
 progress:
-  current_step_id: R-009
+  current_step_id: R-010
   completed_step_ids:
   - R-001
   - R-002
@@ -17,6 +17,7 @@ progress:
   - R-006
   - R-007
   - R-008
+  - R-009
   skipped_step_ids: []
   blocked_step_ids: []
 findings:
@@ -27,14 +28,15 @@ findings:
   F-005: resolved
 blockers: []
 next_step:
-  recommended: verify_R-009
+  recommended: verify_R-010
   reason: >-
-    R-009 is implemented on PR #61. Do not start R-010 until the updated PR head has passed
+    R-010 is implemented on its own branch. Do not start R-011 until the updated PR head has passed
     frontend unit tests, lint, typecheck and build in GitHub Actions.
 delivery:
-  last_completed_step_id: R-008
+  last_completed_step_id: R-009
   verification_status: pending
   verification_summary: >-
-    R-009 removes the local useOverviewDashboard getJson implementation and delegates the same
-    GET semantics to the existing shared frontend request helper. GitHub Actions verification is pending.
-updated_at: '2026-09-06T05:20:00Z'
+    R-009 was verified green in CI #253 and Dependency Review #172 before PR #61 merged.
+    R-010 now delegates the activity GET request to the shared frontend request helper while preserving
+    period/scope calculation, response normalization and state semantics. Verification is pending.
+updated_at: '2026-09-06T05:25:00Z'
