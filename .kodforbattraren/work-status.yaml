@@ -4,9 +4,9 @@ source:
   mode: github
   repository: erland/developer-analytics
   base_branch: main
-  base_commit: 7bc779f51811aa0a9fabfe586a82f8b32337ffe7
+  base_commit: a513dfac815331bf002e605a8e8c4d8faeaff022
 progress:
-  current_step_id: R-013
+  current_step_id: R-014
   completed_step_ids:
   - R-001
   - R-002
@@ -21,6 +21,7 @@ progress:
   - R-010
   - R-011
   - R-012
+  - R-013
   skipped_step_ids: []
   blocked_step_ids: []
 findings:
@@ -32,16 +33,16 @@ findings:
   F-006: open
 blockers: []
 next_step:
-  recommended: verify_R-013
+  recommended: verify_R-014
   reason: >-
-    R-012 passed GitHub Actions CI #270 and Dependency Review #186 before PR #64 merged.
-    R-013 is implemented on its own branch from current main. Do not start R-014 until frontend unit tests,
-    lint, typecheck and build pass on the updated PR head.
+    R-013 passed GitHub Actions CI #272 and Dependency Review #187 before PR #65 merged.
+    R-014 is now implemented on its own branch from current main. Do not close F-006 until frontend unit
+    tests, lint, typecheck and build pass on the updated PR head.
 delivery:
-  last_completed_step_id: R-012
+  last_completed_step_id: R-013
   verification_status: pending
   verification_summary: >-
-    R-013 delegates useMatchingProjects GET request mechanics to the shared getJson helper while preserving
-    scope/paging URL construction, AbortSignal, caller-specific error text, InventoryResponse contract and
-    loading/ready/error state semantics. GitHub Actions verification is pending.
-updated_at: '2026-09-06T06:00:00Z'
+    R-014 delegates only the useProjectDetail GET request mechanics to the shared getJson helper while
+    preserving repository URL construction, AbortSignal, caller-specific error text, timeline normalization,
+    contributors defaulting and idle/loading/ready/error state semantics. GitHub Actions verification is pending.
+updated_at: '2026-09-06T06:05:00Z'
