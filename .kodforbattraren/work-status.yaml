@@ -4,7 +4,7 @@ source:
   mode: github
   repository: erland/developer-analytics
   base_branch: main
-  base_commit: a513dfac815331bf002e605a8e8c4d8faeaff022
+  base_commit: da4ab11ad9920448377827edc3fa38c9c9323787
 progress:
   current_step_id: null
   completed_step_ids:
@@ -32,19 +32,19 @@ findings:
   F-004: resolved
   F-005: resolved
   F-006: resolved
+  F-007: open
 blockers: []
 next_step:
-  recommended: risk_rebaseline
+  recommended: R-015
   reason: >-
-    R-014 passed GitHub Actions CI #274 and Dependency Review #188. The focused F-006 sequence
-    R-012 through R-014 is complete and verified. After PR #66 merges, perform a new risk-based
-    reassessment against current main before selecting any further refactoring step.
+    Post-R-014 risk rebaseline found one concrete behavior regression introduced by R-009 in
+    useOverviewDashboard. Before R-009, failed requests produced '<url> failed with HTTP <status>'.
+    The shared getJson migration currently passes only the URL as errorMessage and therefore produces
+    '<url> with HTTP <status>'. Restore the previous error contract and add a focused regression test.
 delivery:
   last_completed_step_id: R-014
   verification_status: verified
   verification_summary: >-
-    R-014 delegates only the useProjectDetail GET request mechanics to the shared getJson helper while
-    preserving repository URL construction, AbortSignal, caller-specific error text, timeline normalization,
-    contributors defaulting and idle/loading/ready/error state semantics. GitHub Actions CI #274 and
-    Dependency Review #188 completed successfully on PR #66.
-updated_at: '2026-09-06T06:10:00Z'
+    R-001 through R-014 are complete and verified. The new rebaseline identified no new broad architecture
+    issue worth refactoring, but found the focused F-007 behavior regression in useOverviewDashboard.
+updated_at: '2026-09-06T06:20:00Z'
