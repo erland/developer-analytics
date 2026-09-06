@@ -5,7 +5,7 @@ project:
   repository: erland/developer-analytics
 source_snapshot:
   mode: github
-  captured_at: '2026-09-06T06:20:00Z'
+  captured_at: '2026-09-06T06:25:00Z'
   base_identifier: main@da4ab11ad9920448377827edc3fa38c9c9323787
 objectives:
 - Minska lagerövertramp i centrala API-flöden utan onödiga kontraktsförändringar.
@@ -36,13 +36,13 @@ steps:
 - id: R-015
   order: 16
   title: Återställ useOverviewDashboard felmeddelandekontrakt efter R-009
-  status: planned
+  status: verification_pending
   change_classification: defect_fix
   finding_ids: [F-007]
   risk: low
   scope:
   - frontend/src/hooks/useOverviewDashboard.ts
-  - fokuserat regressionstest för felmeddelandet
+  - frontend/src/test-layers/api-error/OverviewDashboardApiError.test.tsx
   out_of_scope:
   - övriga overview-dataflöden
   - getJson-kontraktet globalt
@@ -51,20 +51,24 @@ steps:
   - HTTP-fel åter ger '<url> failed with HTTP <status>' som före R-009
   - ett test fångar regressionen
   - success-, abort- och state-semantik är oförändrade
+  verification:
+  - focused API error regression test
+  - frontend unit tests
+  - frontend lint
+  - frontend typecheck
+  - frontend build
 replanning_history:
 - date: '2026-09-06'
   type: insert
   affected_steps: [R-009, R-010, R-011]
-  reason: >-
-    Risk-rebaseline after merged R-008 found concrete duplicate GET mechanics in three callers; these steps are complete.
+  reason: Risk-rebaseline after merged R-008 found concrete duplicate GET mechanics in three callers; these steps are complete.
 - date: '2026-09-06'
   type: insert
   affected_steps: [R-012, R-013, R-014]
-  reason: >-
-    Post-R-011 rebaseline found a focused remaining cluster of duplicate authenticated GET mechanics; the sequence is complete.
+  reason: Post-R-011 rebaseline found a focused remaining cluster of duplicate authenticated GET mechanics; the sequence is complete.
 - date: '2026-09-06'
   type: insert
   affected_steps: [R-015]
   reason: >-
     Post-R-014 rebaseline compared current useOverviewDashboard with pre-R-009 behavior and confirmed a
-    behavior regression in HTTP error text. This is a defect fix, not further refactoring.
+    behavior regression in HTTP error text. R-015 is implemented as a defect fix and awaits verification.
