@@ -9,44 +9,40 @@
 7. **R-006 – Extrahera minimal gemensam frontend request-mekanik** *(klar och verifierad)*
 8. **R-007 – Slutför external analysis application-service-gränsen** *(klar och verifierad via PR #58)*
 9. **R-008 – Säkra och korrigera profile contribution-count privacy semantics** *(klar och verifierad via PR #60)*
-10. **R-009 – Använd gemensam `getJson` i `useOverviewDashboard`** *(implementerad, CI-verifiering väntar)*
-11. **R-010 – Migrera request-delen i `useActivityView` till gemensam `getJson`** *(planerad)*
+10. **R-009 – Använd gemensam `getJson` i `useOverviewDashboard`** *(klar och verifierad via PR #61)*
+11. **R-010 – Migrera request-delen i `useActivityView` till gemensam `getJson`** *(implementerad, CI-verifiering väntar)*
 12. **R-011 – Migrera request-delen i `useContributions` till gemensam `getJson`** *(planerad)*
 
-## Rebaseline 2026-09-06
+## R-009 – resultat
 
-Efter merge av R-008 gjordes en ny riskbaserad bedömning av aktuell `main` (`980a2e50cb776df88769e9dfa455d5e2aace8430`). Ingen ny hög-risk backendfinding identifierades i den fokuserade omanalysen.
+R-009 verifierades grönt i GitHub Actions CI #253 och Dependency Review #172 innan PR #61 mergades till `main` i `c68c13d8d62768fda967e56d0360a49337ffef64`.
 
-F-003 kvarstår delvis: frontendens gemensamma GET-requestmekanik är etablerad i `frontend/src/api/request.ts`, men används ännu inte konsekvent av konkreta callers. Planen fortsätter därför med små, separata caller-migreringar. Ingen massmigrering, generell API-klient eller beteendeförändring ingår.
-
-## R-009 – implementerat
+## R-010 – implementerat
 
 **Finding:** F-003 *(partially resolved)*  
 **Klassificering:** beteendebevarande refaktorering  
-**Risk:** low  
+**Risk:** low–medium  
 **Förväntad nytta:** medium  
 **Effort:** small
 
 ### Genomfört
 
-- Den lokala `getJson`-implementationen i `useOverviewDashboard.ts` är borttagen.
-- Hooken använder nu befintlig `frontend/src/api/request.ts`.
-- Samma fem endpoints används.
-- Samma `AbortController`/`AbortSignal` används.
-- Credentials, Accept-header, HTTP-statuskontroll och JSON-deserialisering delegeras till den gemensamma helpern.
-- Caller-specifik feltext bevaras genom att URL:en används som `errorMessage`.
-- Dashboard-aggregation och state-semantik är oförändrade.
+- `useActivityView.ts` använder nu befintlig `frontend/src/api/request.ts` för activity-GET-anropet.
+- Direkt `fetch`, lokal statuskontroll och lokal JSON-deserialisering är borttagna från hooken.
+- Samma URL/querybyggande och `AbortSignal` används.
+- Feltexten `Activity request failed with HTTP <status>` är bevarad.
+- Activity-specifik normalisering, period-/scope-logik och state-semantik är oförändrade.
 
 ### Out of scope
 
-- Inga andra hooks i samma steg.
-- Ingen förändring av API-kontrakt eller dashboard-aggregation.
+- `useContributions` och övriga hooks.
+- Ingen ändring av activity-normalisering eller period-/scope-logik.
 - Ingen ny generell API-client-abstraktion.
 
 ### Verifiering
 
-R-009 markeras inte klar förrän relevanta frontend unit tests, lint, typecheck och build passerar i GitHub Actions på den uppdaterade PR-headen.
+R-010 markeras inte klar förrän relevanta frontend unit tests, lint, typecheck och build passerar i GitHub Actions på PR-headen.
 
 ## Efterföljande steg
 
-R-010 och R-011 följer samma princip men hålls separata eftersom respektive hook har egen response-normalisering/state-semantik. R-010 startas först efter grön verifiering av R-009. Efter R-011 görs en ny bedömning innan fler `fetch`-callers övervägs.
+R-011 migrerar endast request-delen i `useContributions` efter att R-010 verifierats grönt. Response-defaulting och state-semantik ska fortsätta vara lokala. Därefter görs en ny riskbedömning innan fler callers övervägs.
