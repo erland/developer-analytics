@@ -6,7 +6,7 @@ source:
   base_branch: main
   base_commit: da4ab11ad9920448377827edc3fa38c9c9323787
 progress:
-  current_step_id: null
+  current_step_id: R-015
   completed_step_ids:
   - R-001
   - R-002
@@ -35,16 +35,15 @@ findings:
   F-007: open
 blockers: []
 next_step:
-  recommended: R-015
+  recommended: verify_R-015
   reason: >-
-    Post-R-014 risk rebaseline found one concrete behavior regression introduced by R-009 in
-    useOverviewDashboard. Before R-009, failed requests produced '<url> failed with HTTP <status>'.
-    The shared getJson migration currently passes only the URL as errorMessage and therefore produces
-    '<url> with HTTP <status>'. Restore the previous error contract and add a focused regression test.
+    R-015 is implemented on PR #67. useOverviewDashboard now restores the pre-R-009 '<url> failed with HTTP <status>'
+    contract through caller-specific errorMessage values, and a focused api-error regression test protects the behavior.
+    Mark R-015 complete only after the updated PR head passes relevant frontend tests, lint, typecheck and build.
 delivery:
   last_completed_step_id: R-014
-  verification_status: verified
+  verification_status: pending
   verification_summary: >-
-    R-001 through R-014 are complete and verified. The new rebaseline identified no new broad architecture
-    issue worth refactoring, but found the focused F-007 behavior regression in useOverviewDashboard.
-updated_at: '2026-09-06T06:20:00Z'
+    R-015 changes only useOverviewDashboard caller-specific error messages and adds a focused regression test.
+    No global getJson change, success-flow change or additional fetch migration is included. GitHub Actions verification is pending.
+updated_at: '2026-09-06T06:25:00Z'
