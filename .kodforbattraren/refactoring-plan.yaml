@@ -5,7 +5,7 @@ project:
   repository: erland/developer-analytics
 source_snapshot:
   mode: github
-  captured_at: '2026-09-06T05:40:00Z'
+  captured_at: '2026-09-06T05:50:00Z'
   base_identifier: main@645ca57218fcdeb163857830160df25b1674eaae
 objectives:
 - Minska lagerövertramp i centrala API-flöden utan onödiga kontraktsförändringar.
@@ -33,7 +33,7 @@ steps:
 - id: R-012
   order: 13
   title: Migrera useProjectInventory till gemensam getJson
-  status: planned
+  status: verification_pending
   change_classification: refactoring
   finding_ids: [F-006]
   risk: low
@@ -47,6 +47,11 @@ steps:
   - direkt fetch/status/json-hantering är ersatt av gemensam getJson
   - URL/query, AbortSignal och feltext är beteendemässigt oförändrade
   - state-semantik är oförändrad
+  verification:
+  - relevanta frontend unit tests
+  - frontend lint
+  - frontend typecheck
+  - frontend build
 - id: R-013
   order: 14
   title: Migrera useMatchingProjects till gemensam getJson
