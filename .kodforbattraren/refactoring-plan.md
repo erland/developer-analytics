@@ -4,44 +4,25 @@ R-001–R-014 är klara och verifierade.
 
 ## Rebaseline efter R-014
 
-Rebaselinen är gjord mot aktuell `main` efter merge av PR #66.
+Rebaselinen mot aktuell `main` efter PR #66 hittade ingen ny bred arkitektur- eller maintainability-refaktorering som motiveras. Däremot bekräftades **F-007**, en beteenderegression från R-009 i `useOverviewDashboard`.
 
-Ingen ny bred arkitektur- eller maintainability-refaktorering rekommenderas. Däremot identifierades ett konkret beteendefel i `useOverviewDashboard` som introducerades av R-009.
+Före R-009 gav HTTP-fel `<url> failed with HTTP <status>`. Efter R-009 gav samma fel `<url> with HTTP <status>` eftersom caller-specifik `errorMessage` endast bestod av URL:en.
 
-Före R-009 hade hookens lokala helper följande felkontrakt:
-
-`<url> failed with HTTP <status>`
-
-Efter migrationen till gemensam `getJson` skickas bara URL:en som `errorMessage`, vilket ger:
-
-`<url> with HTTP <status>`
-
-Detta är en beteenderegression och klassificeras som defect-fix, inte refaktorering.
-
-## R-015 – Återställ useOverviewDashboard felmeddelandekontrakt
+## R-015 – implementerat
 
 **Finding:** F-007  
 **Klassificering:** defect-fix  
 **Risk:** low
 
-### Scope
+- `useOverviewDashboard` skickar nu `<url> failed` som caller-specifik `errorMessage` till befintlig `getJson`.
+- Därmed återställs tidigare kontrakt `<url> failed with HTTP <status>` utan att ändra den gemensamma helpern.
+- `frontend/src/test-layers/api-error/OverviewDashboardApiError.test.tsx` verifierar att ett 503-fel från `/api/me/activity` ger exakt `/api/me/activity failed with HTTP 503`.
+- Success-flöde, abort-hantering, state-semantik och övriga hooks är utanför scope och oförändrade.
 
-- Justera endast caller-specifik `errorMessage` i `useOverviewDashboard` så att tidigare feltext återställs.
-- Lägg till ett fokuserat regressionstest som fångar HTTP-feltexten.
+### Verifiering
 
-### Out of scope
-
-- Ingen global ändring av `getJson`.
-- Ingen ändring av overview-successflödet.
-- Ingen ytterligare fetch-migrering.
-- Inga andra hooks.
-
-### Done when
-
-- HTTP-fel åter ger `<url> failed with HTTP <status>`.
-- Regressionstestet passerar.
-- Success-, abort- och state-semantik är oförändrade.
+R-015 markeras klar först när regressionstest, frontend unit tests, lint, typecheck och build passerar på PR #67:s uppdaterade head.
 
 ## Nästa steg
 
-**R-015 – återställ `useOverviewDashboard` felmeddelandekontrakt och skydda det med ett regressionstest.**
+**Verifiera R-015.** Om verifieringen är grön och ingen ny konkret risk framkommer bör refaktoreringsomgången avslutas i stället för att fortsätta med generell städning.
