@@ -4,9 +4,9 @@ source:
   mode: github
   repository: erland/developer-analytics
   base_branch: main
-  base_commit: 645ca57218fcdeb163857830160df25b1674eaae
+  base_commit: 7bc779f51811aa0a9fabfe586a82f8b32337ffe7
 progress:
-  current_step_id: R-012
+  current_step_id: R-013
   completed_step_ids:
   - R-001
   - R-002
@@ -20,6 +20,7 @@ progress:
   - R-009
   - R-010
   - R-011
+  - R-012
   skipped_step_ids: []
   blocked_step_ids: []
 findings:
@@ -31,16 +32,16 @@ findings:
   F-006: open
 blockers: []
 next_step:
-  recommended: verify_R-012
+  recommended: verify_R-013
   reason: >-
-    R-012 is implemented on PR #64 by migrating only useProjectInventory GET request mechanics to
-    frontend/src/api/request.ts. Do not start R-013 until frontend unit tests, lint, typecheck and build
-    pass on the updated PR head.
+    R-012 passed GitHub Actions CI #270 and Dependency Review #186 before PR #64 merged.
+    R-013 is implemented on its own branch from current main. Do not start R-014 until frontend unit tests,
+    lint, typecheck and build pass on the updated PR head.
 delivery:
-  last_completed_step_id: R-011
+  last_completed_step_id: R-012
   verification_status: pending
   verification_summary: >-
-    useProjectInventory now delegates credentials, Accept header, HTTP status handling and JSON parsing to
-    the shared getJson helper while preserving URL/query construction, AbortSignal, caller-specific error
-    text and state semantics. GitHub Actions verification is pending.
-updated_at: '2026-09-06T05:50:00Z'
+    R-013 delegates useMatchingProjects GET request mechanics to the shared getJson helper while preserving
+    scope/paging URL construction, AbortSignal, caller-specific error text, InventoryResponse contract and
+    loading/ready/error state semantics. GitHub Actions verification is pending.
+updated_at: '2026-09-06T06:00:00Z'

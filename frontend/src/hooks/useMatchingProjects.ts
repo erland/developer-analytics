@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { AnalysisScope } from '../analysis/AnalysisScope'
 import { analysisScopeToSearchParams } from '../analysis/AnalysisScopeUrl'
+import { getJson } from '../api/request'
 import type { InventoryResponse } from './useProjectInventory'
 
 type State =
@@ -33,20 +34,13 @@ export function useMatchingProjects(
       setState({ status: 'loading', data: null, error: null })
 
       try {
-        const response = await fetch(
+        const data = await getJson<InventoryResponse>(
           `/api/me/project-inventory?${paramsKey}`,
           {
-            credentials: 'include',
-            headers: { Accept: 'application/json' },
             signal: controller.signal,
+            errorMessage: 'Matching projects request failed',
           },
         )
-
-        if (!response.ok) {
-          throw new Error(`Matching projects request failed with HTTP ${response.status}`)
-        }
-
-        const data = (await response.json()) as InventoryResponse
         setState({ status: 'ready', data, error: null })
       } catch (error) {
         if (controller.signal.aborted) return
