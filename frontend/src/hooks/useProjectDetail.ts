@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getJson } from '../api/request'
 
 export type ProjectDetail = {
   metadata: {
@@ -79,11 +80,10 @@ export function useProjectDetail(repositoryId: string | null): State {
     async function load() {
       setState({ status: 'loading', data: null, error: null })
       try {
-        const response = await fetch(`/api/me/projects/${repositoryId}`, {
-          credentials: 'include', headers: { Accept: 'application/json' }, signal: controller.signal,
-        })
-        if (!response.ok) throw new Error(`Project detail request failed with HTTP ${response.status}`)
-        const raw = (await response.json()) as ProjectDetail
+        const raw = await getJson<ProjectDetail>(
+          `/api/me/projects/${repositoryId}`,
+          { signal: controller.signal, errorMessage: 'Project detail request failed' },
+        )
         const data: ProjectDetail = {
           ...raw,
           activity: {
