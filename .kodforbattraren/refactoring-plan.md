@@ -1,35 +1,33 @@
 # Refaktoreringsplan – Developer Analytics
 
-1. **R-001 – Skydda activity-use-caset med characterization tests** *(klar)*
-2. **R-002 – Extrahera activity application service** *(klar)*
-3. **R-003 – Ersätt implementationstätt activity-querytest** *(klar)*
-4. **R-004 – Etablera use-case-gräns för externa analys-API:t** *(klar)*
-5. **R-005A – Generera frontend-lockfil i nätverksansluten CI** *(klar)*
-6. **R-005 – Lås frontendens dependency-resolution** *(klar)*
-7. **R-006 – Extrahera minimal gemensam frontend request-mekanik** *(klar och verifierad)*
-8. **R-007 – Slutför external analysis application-service-gränsen** *(klar och verifierad via PR #58)*
-9. **R-008 – Säkra och korrigera profile contribution-count privacy semantics** *(klar och verifierad via PR #60)*
-10. **R-009 – Använd gemensam `getJson` i `useOverviewDashboard`** *(klar och verifierad via PR #61)*
-11. **R-010 – Migrera request-delen i `useActivityView` till gemensam `getJson`** *(klar och verifierad via PR #62)*
-12. **R-011 – Migrera request-delen i `useContributions` till gemensam `getJson`** *(klar och verifierad via PR #63)*
+R-001–R-011 är klara och verifierade.
 
-## R-011 – resultat
+## Rebaseline efter R-011
 
-R-011 verifierades grönt i GitHub Actions CI #257 och Dependency Review #174 på PR #63.
+Rebaselinen är gjord mot `main@645ca57218fcdeb163857830160df25b1674eaae` efter merge av PR #63. Ingen ny hög-riskfinding identifierades i backend. Ett nytt fokuserat maintainability-fynd, **F-006**, identifierades i frontend: flera projektorienterade hooks använder fortfarande lokal `fetch` + credentials + Accept-header + statuskontroll + JSON-deserialisering trots att samma mekanik redan finns i `frontend/src/api/request.ts`.
 
-### Genomfört
+Detta gäller tydligt `useProjectInventory`, `useMatchingProjects` och request-delen i `useProjectDetail`. `useDataFreshness` och andra callers med mer specialiserad fel-/state-semantik lämnas uttryckligen utanför.
 
-- `useContributions.ts` använder befintlig `frontend/src/api/request.ts` för contributions-GET-anropet.
+## R-012 – implementerat
+
+**Finding:** F-006  
+**Klassificering:** beteendebevarande refaktorering  
+**Risk:** low
+
+- `useProjectInventory.ts` använder nu befintlig `getJson` från `frontend/src/api/request.ts`.
 - Direkt `fetch`, lokal HTTP-statuskontroll och lokal JSON-deserialisering är borttagna från hooken.
-- Samma URL/query och samma `AbortSignal` används.
-- Feltexten `Contributions request failed with HTTP <status>` är bevarad.
-- Response-defaulting (`?? 0`, `?? []`) och state-semantik är oförändrade och ligger kvar lokalt.
+- URL/querybyggande, paging och samma `AbortSignal` är oförändrade.
+- Feltexten `Project inventory request failed with HTTP <status>` bevaras via caller-specifik `errorMessage`.
+- State-semantik och `InventoryResponse`-kontrakt är oförändrade.
+- Övriga hooks är utanför scopet.
 
 ### Verifiering
 
-- GitHub Actions CI #257: success.
-- GitHub Actions Dependency Review #174: success.
+R-012 markeras inte klar förrän relevanta frontend unit tests, lint, typecheck och build passerar i GitHub Actions på den uppdaterade PR-headen.
 
-## Nästa steg
+## Efterföljande steg
 
-Efter merge av PR #63 görs en ny riskbaserad rebaseline mot aktuell `main` innan ytterligare refaktorering väljs. Ingen automatisk massmigrering av fler `fetch`-callers ska följa.
+14. **R-013 – Migrera `useMatchingProjects` till gemensam `getJson`** *(planerad efter grön R-012)*
+15. **R-014 – Migrera request-delen i `useProjectDetail` till gemensam `getJson`** *(planerad efter R-013)*
+
+Ingen massmigrering eller generell API-client-abstraktion ska följa automatiskt.

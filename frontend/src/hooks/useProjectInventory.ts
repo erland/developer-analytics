@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { type AnalysisScope } from '../analysis/AnalysisScope'
 import { analysisScopeToSearchParams } from '../analysis/AnalysisScopeUrl'
+import { getJson } from '../api/request'
 
 export type ProjectInventoryQuery = {
   page: number
@@ -76,20 +77,13 @@ export function useProjectInventory(query: ProjectInventoryQuery): State {
       setState({ status: 'loading', data: null, error: null })
 
       try {
-        const response = await fetch(
+        const data = await getJson<InventoryResponse>(
           `/api/me/project-inventory?${requestSearch}`,
           {
-            credentials: 'include',
-            headers: { Accept: 'application/json' },
             signal: controller.signal,
+            errorMessage: 'Project inventory request failed',
           },
         )
-
-        if (!response.ok) {
-          throw new Error(`Project inventory request failed with HTTP ${response.status}`)
-        }
-
-        const data = (await response.json()) as InventoryResponse
         setState({ status: 'ready', data, error: null })
       } catch (error) {
         if (controller.signal.aborted) return
