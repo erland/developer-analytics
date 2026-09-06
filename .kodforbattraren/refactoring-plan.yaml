@@ -5,8 +5,8 @@ project:
   repository: erland/developer-analytics
 source_snapshot:
   mode: github
-  captured_at: '2026-09-06T06:00:00Z'
-  base_identifier: main@7bc779f51811aa0a9fabfe586a82f8b32337ffe7
+  captured_at: '2026-09-06T06:05:00Z'
+  base_identifier: main@a513dfac815331bf002e605a8e8c4d8faeaff022
 objectives:
 - Minska lagerövertramp i centrala API-flöden utan onödiga kontraktsförändringar.
 - Förbättra testbarheten före riskfyllda beteendeändringar.
@@ -43,38 +43,37 @@ steps:
 - id: R-013
   order: 14
   title: Migrera useMatchingProjects till gemensam getJson
-  status: verification_pending
+  status: completed
   change_classification: refactoring
   finding_ids: [F-006]
   depends_on: [R-012]
   risk: low
+  verification:
+  - GitHub Actions CI #272
+  - GitHub Actions Dependency Review #187
+- id: R-014
+  order: 15
+  title: Migrera request-delen i useProjectDetail till gemensam getJson
+  status: verification_pending
+  change_classification: refactoring
+  finding_ids: [F-006]
+  depends_on: [R-013]
+  risk: low-medium
   scope:
-  - frontend/src/hooks/useMatchingProjects.ts
+  - endast GET-requestmekanik i frontend/src/hooks/useProjectDetail.ts
   out_of_scope:
-  - scope/paging-logik
-  - InventoryResponse-kontrakt
-  - andra hooks
+  - activity timeline-normalisering
+  - contributors-defaulting
+  - state-semantik
   done_when:
   - direkt fetch/status/json-hantering är ersatt av gemensam getJson
-  - URL/query, AbortSignal och feltext är beteendemässigt oförändrade
-  - state-semantik är oförändrad
+  - URL, AbortSignal och Project detail request failed-feltext är oförändrade
+  - timeline-normalisering, contributors-defaulting och state-semantik är oförändrade
   verification:
   - relevanta frontend unit tests
   - frontend lint
   - frontend typecheck
   - frontend build
-- id: R-014
-  order: 15
-  title: Migrera request-delen i useProjectDetail till gemensam getJson
-  status: planned
-  change_classification: refactoring
-  finding_ids: [F-006]
-  depends_on: [R-013]
-  risk: low-medium
-  out_of_scope:
-  - activity timeline-normalisering
-  - contributors-defaulting
-  - state-semantik
 replanning_history:
 - date: '2026-09-06'
   type: insert
