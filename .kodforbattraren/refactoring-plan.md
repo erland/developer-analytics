@@ -1,6 +1,6 @@
 # Refaktoreringsplan – Developer Analytics
 
-R-001–R-012 är klara och verifierade.
+R-001–R-013 är klara och verifierade.
 
 ## Rebaseline efter R-011
 
@@ -8,25 +8,30 @@ Rebaselinen gjordes mot `main@645ca57218fcdeb163857830160df25b1674eaae`. Ingen n
 
 ## R-012 – resultat
 
-R-012 verifierades grönt i GitHub Actions CI #270 och Dependency Review #186 innan PR #64 mergades till `main` i `7bc779f51811aa0a9fabfe586a82f8b32337ffe7`.
+R-012 verifierades grönt i GitHub Actions CI #270 och Dependency Review #186 innan PR #64 mergades.
 
-## R-013 – implementerat
+## R-013 – resultat
+
+R-013 verifierades grönt i GitHub Actions CI #272 och Dependency Review #187 innan PR #65 mergades till `main` i `a513dfac815331bf002e605a8e8c4d8faeaff022`.
+
+## R-014 – implementerat
 
 **Finding:** F-006  
 **Klassificering:** beteendebevarande refaktorering  
-**Risk:** low
+**Risk:** low–medium
 
-- `useMatchingProjects.ts` använder nu befintlig `getJson` från `frontend/src/api/request.ts`.
+- `useProjectDetail.ts` använder nu befintlig `getJson` från `frontend/src/api/request.ts` endast för GET-requestmekaniken.
 - Direkt `fetch`, lokal HTTP-statuskontroll och lokal JSON-deserialisering är borttagna.
-- Scope/paging och URL/querybyggande är oförändrade.
-- Samma `AbortSignal` används.
-- Feltexten `Matching projects request failed with HTTP <status>` bevaras via caller-specifik `errorMessage`.
-- `InventoryResponse` och loading/ready/error-state är oförändrade.
+- Samma `/api/me/projects/${repositoryId}` URL och samma `AbortSignal` används.
+- Feltexten `Project detail request failed with HTTP <status>` bevaras via caller-specifik `errorMessage`.
+- Timeline-normalisering är oförändrad och ligger kvar lokalt.
+- Contributors-defaulting är oförändrad och ligger kvar lokalt.
+- Idle/loading/ready/error-state och abort-hantering är oförändrade.
 
 ### Verifiering
 
-R-013 markeras inte klar förrän relevanta frontend unit tests, lint, typecheck och build passerar i GitHub Actions på den nya PR-headen.
+R-014 markeras inte klar förrän relevanta frontend unit tests, lint, typecheck och build passerar i GitHub Actions på PR-headen.
 
-## Nästa steg
+## Efterföljande steg
 
-**R-014 – migrera endast request-delen i `useProjectDetail` till gemensam `getJson` efter grön R-013.** Timeline-normalisering, contributors-defaulting och state-semantik ska lämnas oförändrade.
+Efter grön R-014 görs en ny riskbaserad bedömning innan ytterligare refaktorering väljs. `useDataFreshness` och andra specialiserade callers migreras inte automatiskt.
