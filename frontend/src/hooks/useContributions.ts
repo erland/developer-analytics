@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { getJson } from '../api/request'
 import type { AnalysisScope } from '../analysis/AnalysisScope'
 import { analysisScopeToSearchParams } from '../analysis/AnalysisScopeUrl'
 
@@ -33,12 +34,11 @@ export function useContributions(scope: AnalysisScope): State {
   useEffect(() => {
     const controller = new AbortController()
     setState({ status: 'loading' })
-    fetch(`/api/me/contributions?${paramsKey}`, {
-      credentials: 'include', headers: { Accept: 'application/json' }, signal: controller.signal,
+    getJson<Partial<ContributionSummary>>(`/api/me/contributions?${paramsKey}`, {
+      signal: controller.signal,
+      errorMessage: 'Contributions request failed',
     })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`Contributions request failed with HTTP ${response.status}`)
-        const raw = (await response.json()) as Partial<ContributionSummary>
+      .then((raw) => {
         setState({ status: 'ready', data: {
           total: raw.total ?? 0,
           commits: raw.commits ?? 0,

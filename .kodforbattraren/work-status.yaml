@@ -4,9 +4,9 @@ source:
   mode: github
   repository: erland/developer-analytics
   base_branch: main
-  base_commit: c68c13d8d62768fda967e56d0360a49337ffef64
+  base_commit: f996c5533d5bf7a603ae72c80dffd3caf7e8c302
 progress:
-  current_step_id: R-010
+  current_step_id: null
   completed_step_ids:
   - R-001
   - R-002
@@ -18,25 +18,28 @@ progress:
   - R-007
   - R-008
   - R-009
+  - R-010
+  - R-011
   skipped_step_ids: []
   blocked_step_ids: []
 findings:
   F-001: resolved
   F-002: resolved
-  F-003: partially_resolved
+  F-003: resolved
   F-004: resolved
   F-005: resolved
 blockers: []
 next_step:
-  recommended: verify_R-010
+  recommended: risk_rebaseline
   reason: >-
-    R-010 is implemented on its own branch. Do not start R-011 until the updated PR head has passed
-    frontend unit tests, lint, typecheck and build in GitHub Actions.
+    R-011 is complete and verified in GitHub Actions CI #257 and Dependency Review #174.
+    The planned incremental frontend GET migrations R-009 through R-011 are now complete. After PR #63
+    is merged, perform a new risk-based reassessment against current main before selecting any further step.
 delivery:
-  last_completed_step_id: R-009
-  verification_status: pending
+  last_completed_step_id: R-011
+  verification_status: verified
   verification_summary: >-
-    R-009 was verified green in CI #253 and Dependency Review #172 before PR #61 merged.
-    R-010 now delegates the activity GET request to the shared frontend request helper while preserving
-    period/scope calculation, response normalization and state semantics. Verification is pending.
-updated_at: '2026-09-06T05:25:00Z'
+    R-011 delegates the contributions GET request to the existing shared frontend request helper while
+    preserving caller-specific error text, response defaulting, abort behavior and state semantics.
+    GitHub Actions CI #257 and Dependency Review #174 completed successfully on PR #63.
+updated_at: '2026-09-06T05:35:00Z'

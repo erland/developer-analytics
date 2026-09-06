@@ -1,12 +1,11 @@
 # Kodförbättraren – status
 
-- **R-001–R-009 är klara och verifierade.**
-- PR #61 är mergad till `main` i `c68c13d8d62768fda967e56d0360a49337ffef64`.
-- R-009 verifierades grönt före merge i GitHub Actions CI #253 och Dependency Review #172.
-- F-001, F-002, F-004 och F-005 är lösta. **F-003 kvarstår delvis löst.**
-- **R-010 är implementerad på en separat branch och väntar på CI-verifiering.**
-- `useActivityView.ts` använder nu gemensam `frontend/src/api/request.ts` för själva GET-anropet.
-- Period-/scope-logik, querybyggande, activity-normalisering och state-semantik är oförändrade.
-- Feltexten `Activity request failed with HTTP <status>` bevaras genom caller-specifik `errorMessage`.
-- Ingen annan hook eller generell API-client-abstraktion ingår i R-010.
-- **Nästa implementationssteg är R-011 först efter att R-010 verifierats grönt.**
+- **R-001–R-011 är klara och verifierade.**
+- PR #62 är mergad till `main` i `f996c5533d5bf7a603ae72c80dffd3caf7e8c302`.
+- R-011 verifierades grönt i GitHub Actions CI #257 och Dependency Review #174 på PR #63.
+- F-001, F-002, F-003, F-004 och F-005 är nu lösta.
+- `useContributions.ts` använder gemensam `frontend/src/api/request.ts` för GET-anropet.
+- URL/query, AbortSignal, feltext, response-defaulting och state-semantik är bevarade.
+- De planerade inkrementella frontendstegen R-009–R-011 är nu slutförda.
+- **Nästa steg efter merge av PR #63 är en ny riskbaserad rebaseline mot aktuell `main`.**
+- Ingen ytterligare fetch-migrering eller annan refaktorering ska väljas automatiskt före denna nya bedömning.
