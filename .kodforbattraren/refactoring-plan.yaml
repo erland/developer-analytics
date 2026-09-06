@@ -5,7 +5,7 @@ project:
   repository: erland/developer-analytics
 source_snapshot:
   mode: github
-  captured_at: '2026-09-06T06:25:00Z'
+  captured_at: '2026-09-06T06:30:00Z'
   base_identifier: main@da4ab11ad9920448377827edc3fa38c9c9323787
 objectives:
 - Minska lagerövertramp i centrala API-flöden utan onödiga kontraktsförändringar.
@@ -36,27 +36,13 @@ steps:
 - id: R-015
   order: 16
   title: Återställ useOverviewDashboard felmeddelandekontrakt efter R-009
-  status: verification_pending
+  status: completed
   change_classification: defect_fix
   finding_ids: [F-007]
   risk: low
-  scope:
-  - frontend/src/hooks/useOverviewDashboard.ts
-  - frontend/src/test-layers/api-error/OverviewDashboardApiError.test.tsx
-  out_of_scope:
-  - övriga overview-dataflöden
-  - getJson-kontraktet globalt
-  - andra hooks
-  done_when:
-  - HTTP-fel åter ger '<url> failed with HTTP <status>' som före R-009
-  - ett test fångar regressionen
-  - success-, abort- och state-semantik är oförändrade
   verification:
-  - focused API error regression test
-  - frontend unit tests
-  - frontend lint
-  - frontend typecheck
-  - frontend build
+  - GitHub Actions CI #290
+  - GitHub Actions Dependency Review #201
 replanning_history:
 - date: '2026-09-06'
   type: insert
@@ -70,5 +56,5 @@ replanning_history:
   type: insert
   affected_steps: [R-015]
   reason: >-
-    Post-R-014 rebaseline compared current useOverviewDashboard with pre-R-009 behavior and confirmed a
-    behavior regression in HTTP error text. R-015 is implemented as a defect fix and awaits verification.
+    Post-R-014 rebaseline confirmed a behavior regression in useOverviewDashboard HTTP error text. R-015 restored
+    the previous contract and passed CI #290 plus Dependency Review #201. No further concrete refactoring step is planned.
