@@ -1,12 +1,11 @@
 # Kodförbättraren – status
 
 - **R-001–R-014 är klara och verifierade.**
-- PR #65 är mergad till `main` i `a513dfac815331bf002e605a8e8c4d8faeaff022`.
-- R-014 verifierades grönt i GitHub Actions CI #274 och Dependency Review #188 på PR #66.
-- **F-001–F-006 är nu lösta.**
-- `useProjectDetail.ts` använder gemensam `frontend/src/api/request.ts` för GET-anropet.
-- Repository-URL, AbortSignal och feltexten `Project detail request failed with HTTP <status>` är bevarade.
-- Timeline-normalisering, contributors-defaulting samt idle/loading/ready/error-state är fortsatt lokala och oförändrade.
-- `useDataFreshness` och övriga specialiserade callers är fortsatt utanför scope.
-- **Nästa steg efter merge av PR #66 är en ny riskbaserad rebaseline mot aktuell `main`.**
-- Ingen ytterligare fetch-migrering eller annan refaktorering ska väljas automatiskt före denna bedömning.
+- PR #66 är mergad till `main` i `61c927951f8ec04542f2c06fb09c08cea1d3dff7`.
+- **F-001–F-006 är lösta.**
+- Post-R-014 rebaseline är genomförd mot aktuell `main`.
+- Ingen ny bred arkitektur- eller maintainability-refaktorering rekommenderas.
+- **F-007 är öppnad:** R-009 ändrade oavsiktligt HTTP-feltexten i `useOverviewDashboard` från `<url> failed with HTTP <status>` till `<url> with HTTP <status>`.
+- Jämförelse med pre-R-009-koden bekräftar att ordet `failed` tidigare ingick i kontraktet.
+- **Nästa rekommenderade steg är R-015**, en liten defect-fix som återställer felmeddelandet och lägger till ett fokuserat regressionstest.
+- Ingen generell ändring av `getJson` eller ytterligare massmigrering ska göras som del av R-015.
