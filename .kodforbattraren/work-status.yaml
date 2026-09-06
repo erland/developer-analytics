@@ -6,7 +6,7 @@ source:
   base_branch: main
   base_commit: 645ca57218fcdeb163857830160df25b1674eaae
 progress:
-  current_step_id: null
+  current_step_id: R-012
   completed_step_ids:
   - R-001
   - R-002
@@ -31,17 +31,16 @@ findings:
   F-006: open
 blockers: []
 next_step:
-  recommended: R-012
+  recommended: verify_R-012
   reason: >-
-    Post-R-011 risk rebaseline on main@645ca572 identified a new focused maintainability finding F-006:
-    project-oriented frontend hooks still duplicate the same authenticated GET request mechanics already
-    centralized in frontend/src/api/request.ts. Start with useProjectInventory because it is a direct,
-    behavior-preserving migration with no response normalization. Keep specialized callers such as
-    useDataFreshness out of scope.
+    R-012 is implemented on PR #64 by migrating only useProjectInventory GET request mechanics to
+    frontend/src/api/request.ts. Do not start R-013 until frontend unit tests, lint, typecheck and build
+    pass on the updated PR head.
 delivery:
   last_completed_step_id: R-011
-  verification_status: verified
+  verification_status: pending
   verification_summary: >-
-    R-001 through R-011 are complete. The post-R-011 risk rebaseline found no new high-risk backend issue
-    and introduced only a narrowly scoped follow-up sequence R-012 through R-014 for F-006.
-updated_at: '2026-09-06T05:40:00Z'
+    useProjectInventory now delegates credentials, Accept header, HTTP status handling and JSON parsing to
+    the shared getJson helper while preserving URL/query construction, AbortSignal, caller-specific error
+    text and state semantics. GitHub Actions verification is pending.
+updated_at: '2026-09-06T05:50:00Z'
