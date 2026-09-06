@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getJson } from '../api/request'
 
 type Repository = { id: string; visibility: string; ownershipRelation: string; includedInAnalysis: boolean; syncStatus: string }
 type Activity = { commitCount: number; activeProjects: number; additions: number; deletions: number; lineStatisticsCommitCount: number; firstActivityAt: string | null; lastActivityAt: string | null }
@@ -12,16 +13,17 @@ export type OverviewDashboardData = {
   keyTechnologies: TechnologyAssessment[]; projectCategories: Array<{categoryKey:string;categoryName:string;confidence:string}>; significantProjects: SignificantProject[]
 }
 type State = { status:'loading'; data:null; error:null } | { status:'ready'; data:OverviewDashboardData; error:null } | {status:'error';data:null;error:string}
-async function getJson<T>(url:string, signal:AbortSignal):Promise<T>{ const r=await fetch(url,{credentials:'include',headers:{Accept:'application/json'},signal}); if(!r.ok) throw new Error(`${url} failed with HTTP ${r.status}`); return await r.json() as T }
 
 export function useOverviewDashboard(enabled:boolean):State {
  const [state,setState]=useState<State>({status:'loading',data:null,error:null})
  useEffect(()=>{ if(!enabled)return; const c=new AbortController();
   async function load(){ try {
    const [repositories,activity,technologies,projectTypes,significantProjects]=await Promise.all([
-    getJson<Repository[]>('/api/me/repositories',c.signal), getJson<Activity>('/api/me/activity',c.signal),
-    getJson<TechnologyAssessment[]>('/api/me/technologies',c.signal), getJson<ProjectType[]>('/api/me/project-types',c.signal),
-    getJson<SignificantProject[]>('/api/me/significant-external-projects',c.signal)])
+    getJson<Repository[]>('/api/me/repositories',{signal:c.signal,errorMessage:'/api/me/repositories'}),
+    getJson<Activity>('/api/me/activity',{signal:c.signal,errorMessage:'/api/me/activity'}),
+    getJson<TechnologyAssessment[]>('/api/me/technologies',{signal:c.signal,errorMessage:'/api/me/technologies'}),
+    getJson<ProjectType[]>('/api/me/project-types',{signal:c.signal,errorMessage:'/api/me/project-types'}),
+    getJson<SignificantProject[]>('/api/me/significant-external-projects',{signal:c.signal,errorMessage:'/api/me/significant-external-projects'})])
    const included=repositories.filter(r=>r.includedInAnalysis !== false)
    setState({status:'ready',error:null,data:{
     repositoriesAnalysed:included.length,

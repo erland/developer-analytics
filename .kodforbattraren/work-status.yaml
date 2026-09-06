@@ -4,9 +4,9 @@ source:
   mode: github
   repository: erland/developer-analytics
   base_branch: main
-  base_commit: 0a4a8259d62a56bf8faeb1df9e4a4ad3631f8151
+  base_commit: 980a2e50cb776df88769e9dfa455d5e2aace8430
 progress:
-  current_step_id: null
+  current_step_id: R-009
   completed_step_ids:
   - R-001
   - R-002
@@ -27,16 +27,14 @@ findings:
   F-005: resolved
 blockers: []
 next_step:
-  recommended: risk_rebaseline
+  recommended: verify_R-009
   reason: >-
-    R-008 is complete and verified. After PR #60 is merged to main, perform a new risk-based
-    assessment of the current codebase before selecting another refactoring step.
+    R-009 is implemented on PR #61. Do not start R-010 until the updated PR head has passed
+    frontend unit tests, lint, typecheck and build in GitHub Actions.
 delivery:
   last_completed_step_id: R-008
-  verification_status: verified
+  verification_status: pending
   verification_summary: >-
-    R-008 adds PROFILE_READ coverage to ExternalAnalysisPrivacyCharacterizationTest for PUBLIC_ONLY
-    and PUBLIC_PLUS_PRIVATE_AGGREGATES. ExternalAnalysisApplicationService.profile now applies the
-    aggregate privacy scope to contributionCount. GitHub Actions CI run #244 and Dependency Review
-    #164 both completed successfully on PR #60.
-updated_at: '2026-09-05T03:40:00Z'
+    R-009 removes the local useOverviewDashboard getJson implementation and delegates the same
+    GET semantics to the existing shared frontend request helper. GitHub Actions verification is pending.
+updated_at: '2026-09-06T05:20:00Z'
