@@ -4,7 +4,7 @@ source:
   mode: github
   repository: erland/developer-analytics
   base_branch: main
-  base_commit: 0a4a8259d62a56bf8faeb1df9e4a4ad3631f8151
+  base_commit: 980a2e50cb776df88769e9dfa455d5e2aace8430
 progress:
   current_step_id: null
   completed_step_ids:
@@ -27,16 +27,16 @@ findings:
   F-005: resolved
 blockers: []
 next_step:
-  recommended: risk_rebaseline
+  recommended: R-009
   reason: >-
-    R-008 is complete and verified. After PR #60 is merged to main, perform a new risk-based
-    assessment of the current codebase before selecting another refactoring step.
+    Post-R-008 risk rebaseline found no new high-risk backend issue. F-003 remains partially resolved,
+    and useOverviewDashboard contains a concrete duplicate local getJson implementation despite the
+    existing shared frontend request helper. Migrate only that caller next.
 delivery:
   last_completed_step_id: R-008
-  verification_status: verified
+  verification_status: not_applicable
   verification_summary: >-
-    R-008 adds PROFILE_READ coverage to ExternalAnalysisPrivacyCharacterizationTest for PUBLIC_ONLY
-    and PUBLIC_PLUS_PRIVATE_AGGREGATES. ExternalAnalysisApplicationService.profile now applies the
-    aggregate privacy scope to contributionCount. GitHub Actions CI run #244 and Dependency Review
-    #164 both completed successfully on PR #60.
-updated_at: '2026-09-05T03:40:00Z'
+    The 2026-09-06 risk rebaseline was read-only for production code. It updated analysis/plan/status
+    against main@980a2e50cb776df88769e9dfa455d5e2aace8430; no build or test verification is required for
+    production behavior in this planning-only step.
+updated_at: '2026-09-06T05:15:00Z'
