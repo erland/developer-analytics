@@ -5,8 +5,8 @@ project:
   repository: erland/developer-analytics
 source_snapshot:
   mode: github
-  captured_at: '2026-09-06T05:25:00Z'
-  base_identifier: main@c68c13d8d62768fda967e56d0360a49337ffef64
+  captured_at: '2026-09-06T05:30:00Z'
+  base_identifier: main@f996c5533d5bf7a603ae72c80dffd3caf7e8c302
 objectives:
 - Minska lagerövertramp i centrala API-flöden utan onödiga kontraktsförändringar.
 - Förbättra testbarheten före riskfyllda beteendeändringar.
@@ -39,39 +39,38 @@ steps:
 - id: R-010
   order: 11
   title: Migrera request-delen i useActivityView till gemensam getJson
-  status: verification_pending
+  status: completed
   change_classification: refactoring
   finding_ids: [F-003]
   depends_on: [R-009]
   risk: low-medium
+  verification:
+  - GitHub Actions CI #255
+  - GitHub Actions Dependency Review #173
+- id: R-011
+  order: 12
+  title: Migrera request-delen i useContributions till gemensam getJson
+  status: verification_pending
+  change_classification: refactoring
+  finding_ids: [F-003]
+  depends_on: [R-010]
+  risk: low-medium
   scope:
-  - endast GET-requestmekanik i frontend/src/hooks/useActivityView.ts
+  - endast GET-requestmekanik i frontend/src/hooks/useContributions.ts
   - använd befintlig frontend/src/api/request.ts utan API-utökning
   out_of_scope:
-  - activity-normalisering
-  - period- och scope-logik
+  - response-defaulting
   - state-semantik
+  - andra hooks
   done_when:
-  - direkt fetch/status/json-hantering i useActivityView är ersatt av gemensam getJson
-  - URL- och querybyggande är oförändrat
-  - Activity request failed-feltext är oförändrad
-  - normalisering och state-semantik är oförändrade
+  - direkt fetch/status/json-hantering i useContributions är ersatt av gemensam getJson
+  - URL/query, AbortSignal och Contributions request failed-feltext är oförändrade
+  - response-defaulting och state-semantik är oförändrade
   verification:
   - relevanta frontend unit tests
   - frontend lint
   - frontend typecheck
   - frontend build
-- id: R-011
-  order: 12
-  title: Migrera request-delen i useContributions till gemensam getJson
-  status: planned
-  change_classification: refactoring
-  finding_ids: [F-003]
-  depends_on: [R-010]
-  risk: low-medium
-  out_of_scope:
-  - response-defaulting
-  - state-semantik
 replanning_history:
 - date: '2026-09-06'
   type: insert
