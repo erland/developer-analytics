@@ -5,7 +5,7 @@ project:
   repository: erland/developer-analytics
 source_snapshot:
   mode: github
-  captured_at: '2026-09-06T05:30:00Z'
+  captured_at: '2026-09-06T05:35:00Z'
   base_identifier: main@f996c5533d5bf7a603ae72c80dffd3caf7e8c302
 objectives:
 - Minska lagerövertramp i centrala API-flöden utan onödiga kontraktsförändringar.
@@ -50,31 +50,19 @@ steps:
 - id: R-011
   order: 12
   title: Migrera request-delen i useContributions till gemensam getJson
-  status: verification_pending
+  status: completed
   change_classification: refactoring
   finding_ids: [F-003]
   depends_on: [R-010]
   risk: low-medium
-  scope:
-  - endast GET-requestmekanik i frontend/src/hooks/useContributions.ts
-  - använd befintlig frontend/src/api/request.ts utan API-utökning
-  out_of_scope:
-  - response-defaulting
-  - state-semantik
-  - andra hooks
-  done_when:
-  - direkt fetch/status/json-hantering i useContributions är ersatt av gemensam getJson
-  - URL/query, AbortSignal och Contributions request failed-feltext är oförändrade
-  - response-defaulting och state-semantik är oförändrade
   verification:
-  - relevanta frontend unit tests
-  - frontend lint
-  - frontend typecheck
-  - frontend build
+  - GitHub Actions CI #257
+  - GitHub Actions Dependency Review #174
 replanning_history:
 - date: '2026-09-06'
   type: insert
   affected_steps: [R-009, R-010, R-011]
   reason: >-
-    Risk-rebaseline after merged R-008 found no new high-risk backend issue. F-003 remains partially
-    resolved with concrete duplicate GET request mechanics. Continue with narrowly scoped caller migrations.
+    Risk-rebaseline after merged R-008 found no new high-risk backend issue. F-003 remained partially
+    resolved with concrete duplicate GET request mechanics. The three narrowly scoped caller migrations
+    are now completed and verified; perform a new risk-based reassessment after PR #63 merges.
