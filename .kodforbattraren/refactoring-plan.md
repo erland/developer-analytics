@@ -1,32 +1,31 @@
 # Refaktoreringsplan – Developer Analytics
 
-R-001–R-014 är klara och verifierade.
+R-001–R-015 är klara och verifierade.
 
-## Rebaseline efter R-011
+## Rebaseline efter R-014
 
-Rebaselinen gjordes mot `main@645ca57218fcdeb163857830160df25b1674eaae`. Ingen ny hög-riskfinding identifierades i backend. F-006 avgränsade kvarvarande duplicerad autentiserad GET-mekanik till `useProjectInventory`, `useMatchingProjects` och request-delen i `useProjectDetail`. Specialiserade callers som `useDataFreshness` är fortsatt utanför scope.
+Rebaselinen mot aktuell `main` efter PR #66 hittade ingen ny bred arkitektur- eller maintainability-refaktorering som motiveras. Däremot bekräftades **F-007**, en beteenderegression från R-009 i `useOverviewDashboard`.
 
-## R-012 – resultat
+Före R-009 gav HTTP-fel `<url> failed with HTTP <status>`. Efter R-009 gav samma fel `<url> with HTTP <status>` eftersom caller-specifik `errorMessage` endast bestod av URL:en.
 
-R-012 verifierades grönt i GitHub Actions CI #270 och Dependency Review #186 innan PR #64 mergades.
+## R-015 – resultat
 
-## R-013 – resultat
+**Finding:** F-007  
+**Klassificering:** defect-fix  
+**Risk:** low
 
-R-013 verifierades grönt i GitHub Actions CI #272 och Dependency Review #187 innan PR #65 mergades till `main` i `a513dfac815331bf002e605a8e8c4d8faeaff022`.
+- `useOverviewDashboard` skickar nu `<url> failed` som caller-specifik `errorMessage` till befintlig `getJson`.
+- Därmed är tidigare kontrakt `<url> failed with HTTP <status>` återställt utan ändring av den gemensamma helpern.
+- `frontend/src/test-layers/api-error/OverviewDashboardApiError.test.tsx` verifierar att ett 503-fel från `/api/me/activity` ger exakt `/api/me/activity failed with HTTP 503`.
+- Success-flöde, abort-hantering, state-semantik och övriga hooks är oförändrade.
 
-## R-014 – resultat
+### Verifiering
 
-R-014 verifierades grönt i GitHub Actions CI #274 och Dependency Review #188 på PR #66.
+- GitHub Actions CI #290: success.
+- GitHub Actions Dependency Review #201: success.
 
-- `useProjectDetail.ts` använder befintlig `getJson` från `frontend/src/api/request.ts` endast för GET-requestmekaniken.
-- Samma `/api/me/projects/${repositoryId}` URL och samma `AbortSignal` används.
-- Feltexten `Project detail request failed with HTTP <status>` är bevarad.
-- Timeline-normalisering är oförändrad och ligger kvar lokalt.
-- Contributors-defaulting är oförändrad och ligger kvar lokalt.
-- Idle/loading/ready/error-state och abort-hantering är oförändrade.
+F-007 är därmed löst.
 
-F-006 är därmed löst.
+## Avslut
 
-## Nästa steg
-
-Efter merge av PR #66 görs en ny riskbaserad rebaseline mot aktuell `main` innan ytterligare refaktorering väljs. `useDataFreshness` och andra specialiserade callers migreras inte automatiskt.
+Post-R-014-rebaselinen identifierade inget ytterligare konkret arkitektur- eller maintainability-fynd med tillräcklig nytta för ännu ett steg. Efter merge av PR #67 avslutas därför denna refaktoreringsomgång. Nytt arbete bör startas först vid ett nytt konkret fynd, förändrat behov eller ny riskbild.

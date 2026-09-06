@@ -1,12 +1,10 @@
 # Kodförbättraren – status
 
-- **R-001–R-014 är klara och verifierade.**
-- PR #65 är mergad till `main` i `a513dfac815331bf002e605a8e8c4d8faeaff022`.
-- R-014 verifierades grönt i GitHub Actions CI #274 och Dependency Review #188 på PR #66.
-- **F-001–F-006 är nu lösta.**
-- `useProjectDetail.ts` använder gemensam `frontend/src/api/request.ts` för GET-anropet.
-- Repository-URL, AbortSignal och feltexten `Project detail request failed with HTTP <status>` är bevarade.
-- Timeline-normalisering, contributors-defaulting samt idle/loading/ready/error-state är fortsatt lokala och oförändrade.
-- `useDataFreshness` och övriga specialiserade callers är fortsatt utanför scope.
-- **Nästa steg efter merge av PR #66 är en ny riskbaserad rebaseline mot aktuell `main`.**
-- Ingen ytterligare fetch-migrering eller annan refaktorering ska väljas automatiskt före denna bedömning.
+- **R-001–R-015 är klara och verifierade.**
+- Post-R-014 rebaseline identifierade ingen ny bred refaktorering som motiveras.
+- **F-001–F-007 är lösta.**
+- R-015 återställde `useOverviewDashboard` HTTP-felkontraktet från `<url> with HTTP <status>` till `<url> failed with HTTP <status>`.
+- Ett fokuserat regressionstest skyddar nu felkontraktet.
+- GitHub Actions **CI #290** och **Dependency Review #201** passerade på PR #67.
+- Ingen global ändring av `getJson`, overview-successflödet eller andra hooks ingår.
+- **Denna refaktoreringsomgång kan avslutas efter merge av PR #67.** Ingen ytterligare generell städning rekommenderas utan ett nytt konkret fynd eller förändrat behov.

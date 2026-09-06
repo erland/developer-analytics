@@ -19,11 +19,11 @@ export function useOverviewDashboard(enabled:boolean):State {
  useEffect(()=>{ if(!enabled)return; const c=new AbortController();
   async function load(){ try {
    const [repositories,activity,technologies,projectTypes,significantProjects]=await Promise.all([
-    getJson<Repository[]>('/api/me/repositories',{signal:c.signal,errorMessage:'/api/me/repositories'}),
-    getJson<Activity>('/api/me/activity',{signal:c.signal,errorMessage:'/api/me/activity'}),
-    getJson<TechnologyAssessment[]>('/api/me/technologies',{signal:c.signal,errorMessage:'/api/me/technologies'}),
-    getJson<ProjectType[]>('/api/me/project-types',{signal:c.signal,errorMessage:'/api/me/project-types'}),
-    getJson<SignificantProject[]>('/api/me/significant-external-projects',{signal:c.signal,errorMessage:'/api/me/significant-external-projects'})])
+    getJson<Repository[]>('/api/me/repositories',{signal:c.signal,errorMessage:'/api/me/repositories failed'}),
+    getJson<Activity>('/api/me/activity',{signal:c.signal,errorMessage:'/api/me/activity failed'}),
+    getJson<TechnologyAssessment[]>('/api/me/technologies',{signal:c.signal,errorMessage:'/api/me/technologies failed'}),
+    getJson<ProjectType[]>('/api/me/project-types',{signal:c.signal,errorMessage:'/api/me/project-types failed'}),
+    getJson<SignificantProject[]>('/api/me/significant-external-projects',{signal:c.signal,errorMessage:'/api/me/significant-external-projects failed'})])
    const included=repositories.filter(r=>r.includedInAnalysis !== false)
    setState({status:'ready',error:null,data:{
     repositoriesAnalysed:included.length,
