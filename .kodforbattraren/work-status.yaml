@@ -6,7 +6,7 @@ source:
   base_branch: main
   base_commit: da4ab11ad9920448377827edc3fa38c9c9323787
 progress:
-  current_step_id: R-015
+  current_step_id: null
   completed_step_ids:
   - R-001
   - R-002
@@ -23,6 +23,7 @@ progress:
   - R-012
   - R-013
   - R-014
+  - R-015
   skipped_step_ids: []
   blocked_step_ids: []
 findings:
@@ -32,18 +33,18 @@ findings:
   F-004: resolved
   F-005: resolved
   F-006: resolved
-  F-007: open
+  F-007: resolved
 blockers: []
 next_step:
-  recommended: verify_R-015
+  recommended: conclude_refactoring_round
   reason: >-
-    R-015 is implemented on PR #67. useOverviewDashboard now restores the pre-R-009 '<url> failed with HTTP <status>'
-    contract through caller-specific errorMessage values, and a focused api-error regression test protects the behavior.
-    Mark R-015 complete only after the updated PR head passes relevant frontend tests, lint, typecheck and build.
+    R-015 passed GitHub Actions CI #290 and Dependency Review #201. The focused F-007 regression is fixed
+    and protected by a regression test. The post-R-014 rebaseline found no additional broad architecture or
+    maintainability work with enough concrete value to justify another step, so this refactoring round should conclude.
 delivery:
-  last_completed_step_id: R-014
-  verification_status: pending
+  last_completed_step_id: R-015
+  verification_status: verified
   verification_summary: >-
-    R-015 changes only useOverviewDashboard caller-specific error messages and adds a focused regression test.
-    No global getJson change, success-flow change or additional fetch migration is included. GitHub Actions verification is pending.
-updated_at: '2026-09-06T06:25:00Z'
+    R-015 restores the pre-R-009 useOverviewDashboard HTTP error contract and adds a focused regression test.
+    GitHub Actions CI #290 and Dependency Review #201 completed successfully on PR #67.
+updated_at: '2026-09-06T06:30:00Z'
