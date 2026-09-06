@@ -4,7 +4,7 @@ source:
   mode: github
   repository: erland/developer-analytics
   base_branch: main
-  base_commit: f996c5533d5bf7a603ae72c80dffd3caf7e8c302
+  base_commit: 645ca57218fcdeb163857830160df25b1674eaae
 progress:
   current_step_id: null
   completed_step_ids:
@@ -28,18 +28,20 @@ findings:
   F-003: resolved
   F-004: resolved
   F-005: resolved
+  F-006: open
 blockers: []
 next_step:
-  recommended: risk_rebaseline
+  recommended: R-012
   reason: >-
-    R-011 is complete and verified in GitHub Actions CI #257 and Dependency Review #174.
-    The planned incremental frontend GET migrations R-009 through R-011 are now complete. After PR #63
-    is merged, perform a new risk-based reassessment against current main before selecting any further step.
+    Post-R-011 risk rebaseline on main@645ca572 identified a new focused maintainability finding F-006:
+    project-oriented frontend hooks still duplicate the same authenticated GET request mechanics already
+    centralized in frontend/src/api/request.ts. Start with useProjectInventory because it is a direct,
+    behavior-preserving migration with no response normalization. Keep specialized callers such as
+    useDataFreshness out of scope.
 delivery:
   last_completed_step_id: R-011
   verification_status: verified
   verification_summary: >-
-    R-011 delegates the contributions GET request to the existing shared frontend request helper while
-    preserving caller-specific error text, response defaulting, abort behavior and state semantics.
-    GitHub Actions CI #257 and Dependency Review #174 completed successfully on PR #63.
-updated_at: '2026-09-06T05:35:00Z'
+    R-001 through R-011 are complete. The post-R-011 risk rebaseline found no new high-risk backend issue
+    and introduced only a narrowly scoped follow-up sequence R-012 through R-014 for F-006.
+updated_at: '2026-09-06T05:40:00Z'
