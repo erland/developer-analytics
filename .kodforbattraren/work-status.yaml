@@ -4,9 +4,9 @@ source:
   mode: github
   repository: erland/developer-analytics
   base_branch: main
-  base_commit: c68c13d8d62768fda967e56d0360a49337ffef64
+  base_commit: f996c5533d5bf7a603ae72c80dffd3caf7e8c302
 progress:
-  current_step_id: R-010
+  current_step_id: R-011
   completed_step_ids:
   - R-001
   - R-002
@@ -18,6 +18,7 @@ progress:
   - R-007
   - R-008
   - R-009
+  - R-010
   skipped_step_ids: []
   blocked_step_ids: []
 findings:
@@ -28,15 +29,16 @@ findings:
   F-005: resolved
 blockers: []
 next_step:
-  recommended: verify_R-010
+  recommended: verify_R-011
   reason: >-
-    R-010 is implemented on its own branch. Do not start R-011 until the updated PR head has passed
-    frontend unit tests, lint, typecheck and build in GitHub Actions.
+    R-010 was verified green in GitHub Actions CI #255 and Dependency Review #173 before PR #62 merged.
+    R-011 is now implemented on its own branch. Do not perform the post-R-011 reassessment until the
+    updated PR head has passed frontend unit tests, lint, typecheck and build in GitHub Actions.
 delivery:
-  last_completed_step_id: R-009
+  last_completed_step_id: R-010
   verification_status: pending
   verification_summary: >-
-    R-009 was verified green in CI #253 and Dependency Review #172 before PR #61 merged.
-    R-010 now delegates the activity GET request to the shared frontend request helper while preserving
-    period/scope calculation, response normalization and state semantics. Verification is pending.
-updated_at: '2026-09-06T05:25:00Z'
+    R-011 delegates the contributions GET request to the existing shared frontend request helper while
+    preserving the Contributions request failed error text, response defaulting, abort behavior and state semantics.
+    GitHub Actions verification is pending.
+updated_at: '2026-09-06T05:30:00Z'
