@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implementerad; CI-verifiering väntar.**
+**Klar och verifierad.**
 
 ## Genomfört
 
@@ -24,6 +24,7 @@
 
 ## Verifiering
 
-GitHub Actions ska verifiera relevanta frontend unit tests, lint, typecheck och build innan R-014 markeras klar.
+- GitHub Actions CI #274: success.
+- GitHub Actions Dependency Review #188: success.
 
-Efter grön verifiering görs en ny riskbaserad bedömning innan ytterligare refaktorering väljs.
+F-006 är därmed löst. Efter merge av PR #66 görs en ny riskbaserad bedömning innan ytterligare refaktorering väljs.
