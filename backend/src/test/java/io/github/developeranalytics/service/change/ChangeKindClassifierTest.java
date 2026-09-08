@@ -25,7 +25,7 @@ class ChangeKindClassifierTest {
         ChangeKindClassification result = classifier.classify("docs/examples/Example.java");
 
         assertEquals(ChangeKind.DOCUMENTATION, result.kind());
-        assertEquals("documentation-path-or-extension", result.ruleKey());
+        assertEquals("documentation-directory", result.ruleKey());
     }
 
     @Test
