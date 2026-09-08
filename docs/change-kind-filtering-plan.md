@@ -2,7 +2,7 @@
 
 **Repository:** `erland/developer-analytics`  
 **Scope:** Add evidence-based classification of changed files so activity can be filtered by code, documentation, CI/CD, or combinations of these.  
-**Status:** Proposed implementation plan
+**Status:** Implementation in progress
 
 ## Goal
 
@@ -34,107 +34,60 @@ Classification should happen at changed-file level, not repository level or comm
 
 ---
 
-## Step 1 – Establish the change-kind domain model
+## Step 1 – Establish the change-kind domain model ✅
 
-Add the core backend representation for change kinds.
-
-Initial values:
-
-- `CODE`
-- `DOCUMENTATION`
-- `CI_CD`
-- `OTHER`
-
-Define an extensible classifier result containing at minimum:
-
-- change kind
-- confidence
-- classifier rule/key
-- classifier version
-
-Document the semantics, especially that the category describes the changed file contribution, not the whole repository or commit.
-
-**Acceptance criteria**
-
-- Domain representation exists and is covered by unit tests.
-- Unknown files fall back safely to `OTHER`.
-- No existing activity endpoint behaviour changes yet.
+Implemented.
 
 ---
 
-## Step 2 – Persist per-file contribution/change statistics
+## Step 2 – Persist per-file contribution/change statistics ✅
 
-Extend persistence so commit/contribution data can retain a per-file breakdown sufficient for later aggregation.
-
-For each changed file retain at minimum:
-
-- contribution/commit reference
-- repository reference
-- path
-- additions
-- deletions
-- change kind
-- classifier metadata
-
-Do not persist patch contents or unnecessary source code.
-
-Add a Flyway migration and indexes for the main user/repository/time/change-kind query paths.
-
-**Acceptance criteria**
-
-- Mixed commits can contain rows for several change kinds.
-- `CODE` and `DOCUMENTATION` line counts can be aggregated independently.
-- Existing contribution records remain valid after migration.
-- Privacy provenance is retained/inherited appropriately.
+Implemented.
 
 ---
 
-## Step 3 – Implement deterministic file classification
+## Step 3 – Implement deterministic file classification ✅
 
-Create a central `ChangeKindClassifier`.
+Implemented with a central `ChangeKindClassifier`.
 
-Initial high-confidence rules should include:
+Initial high-confidence rules include:
 
 ### Documentation
-
-Examples:
 
 - `*.md`
 - `*.mdx`
 - `*.rst`
 - `*.adoc`
+- `*.asciidoc`
 - `*.tex`
-- clear documentation/book paths such as `docs/**`, `documentation/**`, `chapters/**`, `book/**`, `manus/**` where appropriate
+- `*.txt`
+- clear documentation/book paths such as `docs/**`, `documentation/**`, `chapters/**`, `book/**`, `manus/**`, `manuscript/**`
 
-Files such as `README.md`, `CHANGELOG.md`, and `CONTRIBUTING.md` are documentation even in code repositories.
+Documentation-path classification intentionally takes precedence over source-code extensions so code examples living inside documentation trees count as documentation activity.
 
 ### CI/CD
 
-Only classify high-confidence CI/CD locations/files initially, for example:
+Only high-confidence CI/CD locations/files are classified as CI/CD:
 
 - `.github/workflows/**`
 - `.github/actions/**`
-- `.gitlab-ci.yml`
+- `.gitlab-ci.yml` / `.gitlab-ci.yaml`
 - `.gitlab/**`
 - `.circleci/**`
 - `Jenkinsfile`
-- `azure-pipelines.yml`
+- `azure-pipelines.yml` / `azure-pipelines.yaml`
 
-Do **not** classify generic `scripts/*.sh`, `scripts/*.py`, `tools/**`, etc. as CI/CD merely because they may be used by automation.
+CI/CD has the highest precedence. Generic `scripts/*.sh`, `scripts/*.py`, `tools/**`, etc. are not promoted to CI/CD merely because they may be used by automation.
 
 ### Code
 
-Use known source-code extensions/language mappings already available to Developer Analytics where practical.
+A conservative set of common source-code/script extensions is classified as `CODE`. Configuration/manifests such as `pom.xml`, `package.json`, and `docker-compose.yml` remain `OTHER` in this first version.
 
 ### Other
 
-Fallback for files that cannot be classified confidently.
+Unknown or missing paths fall back safely to `OTHER`.
 
-**Acceptance criteria**
-
-- Rule set has focused unit tests covering positive and negative cases.
-- Generic scripts are not incorrectly promoted to CI/CD.
-- Classification remains deterministic and explainable.
+The classifier normalizes case and Windows path separators and returns stable classifier metadata (`ruleKey`, confidence and classifier version). Focused unit tests cover positive and negative cases.
 
 ---
 
