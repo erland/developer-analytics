@@ -113,7 +113,16 @@ public class MeReportExportResource {
             ReportExportService.PrivateDataMode privateDataMode,
             Boolean hidePrivateRepositoryNames,
             List<String> changeKinds
-    ) {}
+    ) {
+        public PreviewRequest(
+                OutputFormat outputFormat,
+                MarkdownReportType reportType,
+                ReportExportService.PrivateDataMode privateDataMode,
+                Boolean hidePrivateRepositoryNames
+        ) {
+            this(outputFormat, reportType, privateDataMode, hidePrivateRepositoryNames, List.of());
+        }
+    }
 
     public record ExportRequest(
             OutputFormat outputFormat,
@@ -122,5 +131,15 @@ public class MeReportExportResource {
             Boolean hidePrivateRepositoryNames,
             Boolean generationConfirmed,
             List<String> changeKinds
-    ) {}
+    ) {
+        public ExportRequest(
+                OutputFormat outputFormat,
+                MarkdownReportType reportType,
+                ReportExportService.PrivateDataMode privateDataMode,
+                Boolean hidePrivateRepositoryNames,
+                Boolean generationConfirmed
+        ) {
+            this(outputFormat, reportType, privateDataMode, hidePrivateRepositoryNames, generationConfirmed, List.of());
+        }
+    }
 }
