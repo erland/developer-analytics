@@ -49,8 +49,12 @@ public class ChangeKindClassifier {
             return classification(ChangeKind.CI_CD, 1.0, "known-ci-cd-path");
         }
 
-        if (isDocumentation(normalized, fileName)) {
-            return classification(ChangeKind.DOCUMENTATION, 1.0, "documentation-path-or-extension");
+        if (isDocumentationPath(normalized)) {
+            return classification(ChangeKind.DOCUMENTATION, 1.0, "documentation-directory");
+        }
+
+        if (hasExtension(fileName, DOCUMENTATION_EXTENSIONS)) {
+            return classification(ChangeKind.DOCUMENTATION, 1.0, "documentation-extension");
         }
 
         if (hasExtension(fileName, CODE_EXTENSIONS)) {
@@ -74,11 +78,7 @@ public class ChangeKindClassifier {
                 || fileName.equals("azure-pipelines.yaml");
     }
 
-    private boolean isDocumentation(String path, String fileName) {
-        if (hasExtension(fileName, DOCUMENTATION_EXTENSIONS)) {
-            return true;
-        }
-
+    private boolean isDocumentationPath(String path) {
         return hasDirectorySegment(path, "docs")
                 || hasDirectorySegment(path, "documentation")
                 || hasDirectorySegment(path, "doc")
