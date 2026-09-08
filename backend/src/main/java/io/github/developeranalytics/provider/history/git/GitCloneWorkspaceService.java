@@ -66,6 +66,7 @@ public class GitCloneWorkspaceService {
             long sizeBytes = directorySize(parent);
             TemporaryGitRepository result = new TemporaryGitRepository(
                     parent,
+                    target,
                     Duration.between(started, Instant.now()),
                     sizeBytes
             );
@@ -109,7 +110,7 @@ public class GitCloneWorkspaceService {
 
     private static void deleteRecursively(Path root) throws IOException {
         if (!Files.exists(root)) return;
-        try (TemporaryGitRepository ignored = new TemporaryGitRepository(root, Duration.ZERO, 0)) {
+        try (TemporaryGitRepository ignored = new TemporaryGitRepository(root, root, Duration.ZERO, 0)) {
             // AutoCloseable performs recursive cleanup.
         }
     }
