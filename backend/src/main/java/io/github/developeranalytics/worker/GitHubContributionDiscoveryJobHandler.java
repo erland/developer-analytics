@@ -41,10 +41,11 @@ public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandl
                 UUID.fromString(repositoryId.toString()), job.getUser().getId())
                 .orElseThrow(() -> new IllegalStateException("Repository not found for job user"));
 
-        // A scope-version change still forces a complete rebuild. Normal refreshes start
-        // just before the latest stored commit to tolerate timestamp/force-push edge cases
-        // without repeatedly downloading a fixed 30-day window.
-        OffsetDateTime since = repository.getContributionScopeVersion() < 2
+        // A scope-version change forces a complete scan so new persisted dimensions can be
+        // backfilled. Normal refreshes start just before the latest stored commit to tolerate
+        // timestamp/force-push edge cases without repeatedly downloading full history.
+        OffsetDateTime since = repository.getContributionScopeVersion()
+                < SourceRepository.CURRENT_CONTRIBUTION_SCOPE_VERSION
                 ? null
                 : contributions.latestCommitAt(job.getUser().getId(), repository.getId())
                         .map(latest -> latest.minusDays(INCREMENTAL_OVERLAP_DAYS))
