@@ -2,7 +2,7 @@
 
 **Repository:** `erland/developer-analytics`  
 **Branch:** `feature/git-history-backfill`  
-**Status:** Steg 2 klart; steg 3 nästa  
+**Status:** Steg 3 klart; steg 4 nästa  
 **Mål:** Ersätta REST-anrop per historisk commit med Git-baserad lokal historikanalys för change-kind-backfill, utan att ändra den ordinarie inkrementella GitHub-synken.
 
 ## Målbild
@@ -41,16 +41,16 @@ Ordinarie löpande synk för metadata, languages, pull requests, issues, reviews
 
 **Klart:** `GitCloneWorkspaceService` skapar ett temporärt bare repository med `--filter=blob:none --no-tags`. GitHub-token skickas via Git-konfiguration i processens miljö i stället för i clone-URL eller kommandorad. `TemporaryGitRepository` exponerar det bare repository som nästa steg ska analysera och raderar hela arbetsytan vid `close()`. Clone har timeout och arbetsytan registrerar transfer-tid samt faktisk temporär diskstorlek.
 
-## Steg 3 – Extrahera historiska filförändringar lokalt
+## Steg 3 – Extrahera historiska filförändringar lokalt ✅
 
-- [ ] Läs commit-SHA och tidsordning från Git.
-- [ ] Extrahera ändrade filnamn och per-fil additions/deletions, exempelvis via `git diff-tree --root --numstat -r`.
-- [ ] Hantera merge commits deterministiskt och dokumentera vald semantik.
-- [ ] Hantera renames/binary files konservativt.
-- [ ] Mata resultatet genom befintlig `ChangeKindClassifier`.
-- [ ] Lägg tester med kod-, dokumentations-, CI/CD- och mixed commits.
+- [x] Läs commit-SHA och tidsordning från Git.
+- [x] Extrahera ändrade filnamn och per-fil additions/deletions via lokal Git `numstat`.
+- [x] Hantera merge commits deterministiskt och dokumentera vald semantik.
+- [x] Hantera renames/binary files konservativt.
+- [x] Mata resultatet genom befintlig `ChangeKindClassifier` i tester och kommande persistensflöde.
+- [x] Lägg tester med kod-, dokumentations-, CI/CD- och mixed commits.
 
-**Klart när:** samma persistensdata som commit-detail-API:t behöver kan produceras lokalt från Git-historiken.
+**Klart:** `GitLocalHistoryReader` läser begärda commit-SHA:n från det bare repositoryt och använder `git diff-tree --root --numstat` för root commits samt `git diff --numstat` mot första föräldern för övriga commits. Merge commits mäts därmed mot första föräldern för att undvika dubbelräkning av sidogrenens historik. Rename detection är avstängd för stabil semantik och binära `-/-`-värden bevaras som filförändringar med 0/0 rader. `GitContributionHistoryProvider` binder ihop den temporära klonen med den provider-neutrala historikmodellen.
 
 ## Steg 4 – Byt endast historisk backfill till Git
 
