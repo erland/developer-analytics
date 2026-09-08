@@ -33,6 +33,15 @@ public class GitHubCommitFileChangeService {
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
 
+    public boolean hasCurrentClassification(Contribution contribution) {
+        return fileChanges.hasCurrentClassification(contribution, ChangeKindClassifier.CLASSIFIER_VERSION);
+    }
+
+    public boolean hasMissingCurrentClassification(AppUser user, SourceRepository repository) {
+        return fileChanges.hasMissingCurrentClassification(
+                user.getId(), repository.getId(), ChangeKindClassifier.CLASSIFIER_VERSION);
+    }
+
     public CommitDetails refresh(
             AppUser user,
             SourceRepository repository,
