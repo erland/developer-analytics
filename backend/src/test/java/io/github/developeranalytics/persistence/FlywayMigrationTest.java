@@ -30,6 +30,10 @@ class FlywayMigrationTest {
             assertTrue(weeklyTable.next()); assertTrue(weeklyTable.getBoolean(1));
         }
         try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement();
+             ResultSet fileChangesTable = statement.executeQuery("SELECT to_regclass('public.contribution_file_change') IS NOT NULL")) {
+            assertTrue(fileChangesTable.next()); assertTrue(fileChangesTable.getBoolean(1));
+        }
+        try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement();
              ResultSet valueResult = statement.executeQuery("SELECT metadata_value FROM application_metadata WHERE metadata_key = 'schema_baseline'")) {
             assertTrue(valueResult.next()); assertEquals("1", valueResult.getString(1));
         }
@@ -40,7 +44,7 @@ class FlywayMigrationTest {
         try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement();
              ResultSet result = statement.executeQuery(
                      "SELECT count(*) FILTER (WHERE success = false), count(*) FILTER (WHERE version IS NOT NULL) FROM flyway_schema_history")) {
-            assertTrue(result.next()); assertEquals(0, result.getInt(1)); assertEquals(35, result.getInt(2));
+            assertTrue(result.next()); assertEquals(0, result.getInt(1)); assertEquals(36, result.getInt(2));
         }
     }
 }
