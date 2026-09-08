@@ -17,6 +17,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.List;
 
 @ApplicationScoped
 public class GitHubCommitFileChangeService {
@@ -41,12 +43,10 @@ public class GitHubCommitFileChangeService {
             throw new ProviderException("GitHub repository full name is required", 0);
         }
 
-        fileChanges.deleteForContribution(contribution);
-
         int page = 1;
         int additions = 0;
         int deletions = 0;
-        int changedFiles = 0;
+        List<FileInput> fetchedFiles = new ArrayList<>();
 
         while (true) {
             JsonNode root = fetchCommitPage(repository.getFullName(), contribution.getProviderContributionId(), page, token);
@@ -65,19 +65,11 @@ public class GitHubCommitFileChangeService {
             for (JsonNode file : files) {
                 String path = file.path("filename").asText(null);
                 if (path == null || path.isBlank()) continue;
-                int fileAdditions = Math.max(0, file.path("additions").asInt(0));
-                int fileDeletions = Math.max(0, file.path("deletions").asInt(0));
-                fileChanges.persist(new ContributionFileChange(
-                        contribution,
-                        user,
-                        repository,
+                fetchedFiles.add(new FileInput(
                         path,
-                        fileAdditions,
-                        fileDeletions,
-                        classifier.classify(path),
-                        contribution.getOccurredAt()
+                        Math.max(0, file.path("additions").asInt(0)),
+                        Math.max(0, file.path("deletions").asInt(0))
                 ));
-                changedFiles++;
                 pageCount++;
             }
 
@@ -85,7 +77,23 @@ public class GitHubCommitFileChangeService {
             page++;
         }
 
-        return new CommitDetails(additions, deletions, changedFiles);
+        // Replace only after every GitHub page has been fetched successfully. This keeps an
+        // existing classification intact if GitHub rate-limits or fails part-way through.
+        fileChanges.deleteForContribution(contribution);
+        for (FileInput file : fetchedFiles) {
+            fileChanges.persist(new ContributionFileChange(
+                    contribution,
+                    user,
+                    repository,
+                    file.path(),
+                    file.additions(),
+                    file.deletions(),
+                    classifier.classify(file.path()),
+                    contribution.getOccurredAt()
+            ));
+        }
+
+        return new CommitDetails(additions, deletions, fetchedFiles.size());
     }
 
     private JsonNode fetchCommitPage(String fullName, String sha, int page, ProviderAccessToken token)
@@ -111,6 +119,8 @@ public class GitHubCommitFileChangeService {
             throw new ProviderException("GitHub commit detail request failed", 0, e);
         }
     }
+
+    record FileInput(String path, int additions, int deletions) {}
 
     public record CommitDetails(int additions, int deletions, int changedFiles) {}
 }
