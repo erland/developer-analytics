@@ -33,16 +33,16 @@ public class BackgroundJobRepository {
 
     public boolean existsActiveRepositoryJobExcept(
             UUID userId, String jobType, UUID repositoryId, UUID excludedJobId) {
-        Number count = (Number) em.createNativeQuery(
-                "SELECT count(*) FROM background_job WHERE user_id=:userId AND job_type=:jobType " +
-                        "AND status IN ('QUEUED','WAITING','RUNNING') " +
-                        "AND payload->>'repositoryId'=:repositoryId " +
-                        "AND (:excludedJobId IS NULL OR id<>:excludedJobId)")
+        String sql = "SELECT count(*) FROM background_job WHERE user_id=:userId AND job_type=:jobType " +
+                "AND status IN ('QUEUED','WAITING','RUNNING') " +
+                "AND payload->>'repositoryId'=:repositoryId" +
+                (excludedJobId == null ? "" : " AND id<>:excludedJobId");
+        var query = em.createNativeQuery(sql)
                 .setParameter("userId", userId)
                 .setParameter("jobType", jobType)
-                .setParameter("repositoryId", repositoryId.toString())
-                .setParameter("excludedJobId", excludedJobId)
-                .getSingleResult();
+                .setParameter("repositoryId", repositoryId.toString());
+        if (excludedJobId != null) query.setParameter("excludedJobId", excludedJobId);
+        Number count = (Number) query.getSingleResult();
         return count != null && count.longValue() > 0;
     }
 
