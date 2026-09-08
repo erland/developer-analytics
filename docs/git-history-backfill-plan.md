@@ -2,7 +2,7 @@
 
 **Repository:** `erland/developer-analytics`  
 **Branch:** `feature/git-history-backfill`  
-**Status:** Steg 1 klart; steg 2 nästa  
+**Status:** Steg 2 klart; steg 3 nästa  
 **Mål:** Ersätta REST-anrop per historisk commit med Git-baserad lokal historikanalys för change-kind-backfill, utan att ändra den ordinarie inkrementella GitHub-synken.
 
 ## Målbild
@@ -29,17 +29,17 @@ Ordinarie löpande synk för metadata, languages, pull requests, issues, reviews
 
 **Klart:** `ContributionHistoryProvider` abstraherar transporten och returnerar `HistoricalCommitFileChanges` med befintliga provider-neutrala per-fil-statistikobjekt. Ingen Git-processhantering har lagts i GitHub REST-adaptern.
 
-## Steg 2 – Säker temporär blobless clone/fetch
+## Steg 2 – Säker temporär blobless clone/fetch ✅
 
-- [ ] Implementera temporär arbetsyta per backfill-jobb.
-- [ ] Använd bare/blobless partial clone där Git/GitHub stöder det, t.ex. `--filter=blob:none`.
-- [ ] Undvik working tree.
-- [ ] Stöd privata repositories utan att exponera token i loggar eller processargument där det går att undvika.
-- [ ] Säkerställ cleanup i `finally` även vid timeout/fel.
-- [ ] Lägg timeout för clone/fetch.
-- [ ] Mät clone/fetch-tid och temporär diskstorlek.
+- [x] Implementera temporär arbetsyta per backfill-jobb.
+- [x] Använd bare/blobless partial clone där Git/GitHub stöder det, t.ex. `--filter=blob:none`.
+- [x] Undvik working tree.
+- [x] Stöd privata repositories utan att exponera token i loggar eller processargument där det går att undvika.
+- [x] Säkerställ cleanup i `finally` även vid timeout/fel.
+- [x] Lägg timeout för clone/fetch.
+- [x] Mät clone/fetch-tid och temporär diskstorlek.
 
-**Klart när:** ett repository kan hämtas temporärt, analyseras och tas bort utan kvarvarande credentials eller filer.
+**Klart:** `GitCloneWorkspaceService` skapar ett temporärt bare repository med `--filter=blob:none --no-tags`. GitHub-token skickas via Git-konfiguration i processens miljö i stället för i clone-URL eller kommandorad. `TemporaryGitRepository` exponerar det bare repository som nästa steg ska analysera och raderar hela arbetsytan vid `close()`. Clone har timeout och arbetsytan registrerar transfer-tid samt faktisk temporär diskstorlek.
 
 ## Steg 3 – Extrahera historiska filförändringar lokalt
 
