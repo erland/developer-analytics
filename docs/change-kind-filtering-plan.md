@@ -87,7 +87,7 @@ A conservative set of common source-code/script extensions is classified as `COD
 
 Unknown or missing paths fall back safely to `OTHER`.
 
-The classifier normalizes case and Windows path separators and returns stable classifier metadata (`ruleKey`, confidence and classifier version). Focused unit tests cover positive and negative cases.
+The classifier normalizes case and Windows path separators and returns stable classifier metadata. Current rule keys are `known-ci-cd-path`, `documentation-directory`, `documentation-extension`, `source-code-extension`, and the shared `fallback-other`; classifier version is `1`. Focused unit tests cover positive and negative cases.
 
 ---
 
