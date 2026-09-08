@@ -17,13 +17,18 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @ApplicationScoped
 public class GitHubCommitFileChangeService {
     private static final String API_VERSION = "2022-11-28";
     private static final int PAGE_SIZE = 100;
+    private static final long SECONDARY_RATE_LIMIT_FALLBACK_SECONDS = 60;
 
     @Inject ObjectMapper mapper;
     @Inject ChangeKindClassifier classifier;
@@ -70,7 +75,7 @@ public class GitHubCommitFileChangeService {
                 throw new ProviderException("GitHub commit files response was not an array", 0);
             }
 
-            int pageCount = 0;
+            int returnedFileCount = files.size();
             for (JsonNode file : files) {
                 String path = file.path("filename").asText(null);
                 if (path == null || path.isBlank()) continue;
@@ -79,10 +84,9 @@ public class GitHubCommitFileChangeService {
                         Math.max(0, file.path("additions").asInt(0)),
                         Math.max(0, file.path("deletions").asInt(0))
                 ));
-                pageCount++;
             }
 
-            if (pageCount < PAGE_SIZE) break;
+            if (returnedFileCount < PAGE_SIZE) break;
             page++;
         }
 
@@ -119,7 +123,7 @@ public class GitHubCommitFileChangeService {
                     .build();
             HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new ProviderException("GitHub commit detail request failed", response.statusCode());
+                throw providerFailure(response);
             }
             return mapper.readTree(response.body());
         } catch (ProviderException e) {
@@ -127,6 +131,53 @@ public class GitHubCommitFileChangeService {
         } catch (Exception e) {
             throw new ProviderException("GitHub commit detail request failed", 0, e);
         }
+    }
+
+    private ProviderException providerFailure(HttpResponse<?> response) {
+        int status = response.statusCode();
+        OffsetDateTime retryAt = null;
+
+        if (status == 429 || status == 403) {
+            retryAt = retryAt(response);
+        }
+
+        String remaining = response.headers().firstValue("X-RateLimit-Remaining").orElse(null);
+        boolean primaryExhausted = "0".equals(remaining);
+        boolean rateLimited = status == 429 || (status == 403 && (primaryExhausted || retryAt != null));
+        String message = rateLimited
+                ? "GitHub commit detail request rate-limited"
+                : "GitHub commit detail request failed";
+
+        return new ProviderException(message, status, retryAt);
+    }
+
+    private OffsetDateTime retryAt(HttpResponse<?> response) {
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+
+        Optional<String> retryAfter = response.headers().firstValue("Retry-After");
+        if (retryAfter.isPresent()) {
+            try {
+                long seconds = Math.max(1, Long.parseLong(retryAfter.get().trim()));
+                return now.plusSeconds(seconds);
+            } catch (NumberFormatException ignored) {
+                // Fall through to the primary-rate-limit reset header.
+            }
+        }
+
+        Optional<String> reset = response.headers().firstValue("X-RateLimit-Reset");
+        if (reset.isPresent()) {
+            try {
+                long epochSeconds = Long.parseLong(reset.get().trim());
+                OffsetDateTime resetAt = OffsetDateTime.ofInstant(Instant.ofEpochSecond(epochSeconds), ZoneOffset.UTC);
+                if (resetAt.isAfter(now)) return resetAt.plusSeconds(1);
+            } catch (NumberFormatException ignored) {
+                // Fall through to conservative secondary-limit backoff.
+            }
+        }
+
+        // A 403 secondary limit may omit Retry-After. Stop immediately and wait before the
+        // background worker is allowed to issue another provider request.
+        return now.plusSeconds(SECONDARY_RATE_LIMIT_FALLBACK_SECONDS);
     }
 
     record FileInput(String path, int additions, int deletions) {}
