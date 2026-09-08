@@ -109,7 +109,28 @@ public class ReportExportService {
             int contributionCount,
             String reportModelVersion,
             CanonicalReport.ChangeScope changeScope
-    ) {}
+    ) {
+        public PreviewResult(
+                MarkdownReportType reportType,
+                PrivateDataMode privateDataMode,
+                CanonicalReport.PrivacyScope privacyScope,
+                boolean privateRepositoriesIncluded,
+                boolean privateNamesIncluded,
+                boolean aiAssessmentsIncluded,
+                OffsetDateTime firstActivityAt,
+                OffsetDateTime lastActivityAt,
+                int repositoryCount,
+                int publicRepositoryCount,
+                int privateRepositoryCount,
+                int contributionCount,
+                String reportModelVersion
+        ) {
+            this(reportType, privateDataMode, privacyScope, privateRepositoriesIncluded, privateNamesIncluded,
+                    aiAssessmentsIncluded, firstActivityAt, lastActivityAt, repositoryCount, publicRepositoryCount,
+                    privateRepositoryCount, contributionCount, reportModelVersion,
+                    new CanonicalReport.ChangeScope(true, java.util.List.of()));
+        }
+    }
 
     public record PdfExportResult(
             byte[] pdf,
@@ -119,7 +140,13 @@ public class ReportExportService {
             MarkdownReportType reportType,
             String filename,
             CanonicalReport.ChangeScope changeScope
-    ) {}
+    ) {
+        public PdfExportResult(byte[] pdf, PrivateDataMode privateDataMode, boolean hidePrivateRepositoryNames,
+                               String reportModelVersion, MarkdownReportType reportType, String filename) {
+            this(pdf, privateDataMode, hidePrivateRepositoryNames, reportModelVersion, reportType, filename,
+                    new CanonicalReport.ChangeScope(true, java.util.List.of()));
+        }
+    }
 
     public record ExportResult(
             String markdown,
@@ -131,5 +158,13 @@ public class ReportExportService {
             MarkdownReportType reportType,
             String filename,
             CanonicalReport.ChangeScope changeScope
-    ) {}
+    ) {
+        public ExportResult(String markdown, int publicRepositoryCount, int privateRepositoryCount,
+                            PrivateDataMode privateDataMode, boolean hidePrivateRepositoryNames,
+                            String reportModelVersion, MarkdownReportType reportType, String filename) {
+            this(markdown, publicRepositoryCount, privateRepositoryCount, privateDataMode,
+                    hidePrivateRepositoryNames, reportModelVersion, reportType, filename,
+                    new CanonicalReport.ChangeScope(true, java.util.List.of()));
+        }
+    }
 }
