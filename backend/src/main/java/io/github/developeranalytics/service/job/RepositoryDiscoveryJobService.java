@@ -17,8 +17,7 @@ import java.util.UUID;
 @ApplicationScoped
 public class RepositoryDiscoveryJobService {
 
-    @Inject
-    BackgroundJobRepository jobs;
+    @Inject BackgroundJobRepository jobs;
 
     @Transactional
     public BackgroundJob enqueueLanguageEvidence(AppUser user, UUID repositoryId) {
@@ -37,9 +36,7 @@ public class RepositoryDiscoveryJobService {
 
     @Transactional
     public BackgroundJob enqueueDeterministicClassification(AppUser user, UUID repositoryId, OffsetDateTime analysisActivityAt) {
-        Map<String, String> extraPayload = analysisActivityAt == null
-                ? Map.of()
-                : Map.of("analysisActivityAt", analysisActivityAt.toString());
+        Map<String, String> extraPayload = analysisActivityAt == null ? Map.of() : Map.of("analysisActivityAt", analysisActivityAt.toString());
         return enqueueDeduplicated(user, repositoryId, DeterministicProjectClassificationJobHandler.JOB_TYPE,
                 130, "project-classification:", extraPayload);
     }
@@ -52,62 +49,58 @@ public class RepositoryDiscoveryJobService {
 
     @Transactional
     public BackgroundJob enqueueChangeKindBackfill(AppUser user, UUID repositoryId) {
+        if (jobs.existsActiveRepositoryJobExcept(user.getId(), GitHubChangeKindBackfillJobHandler.JOB_TYPE, repositoryId, null)) {
+            return null;
+        }
         return enqueueDeduplicated(user, repositoryId, GitHubChangeKindBackfillJobHandler.JOB_TYPE,
                 115, "github:change-kind-backfill:");
     }
 
     @Transactional
-    public BackgroundJob enqueueChangeKindBackfillContinuation(AppUser user, UUID repositoryId) {
-        BackgroundJob job = BackgroundJob.queuedDeduplicated(
+    public BackgroundJob enqueueChangeKindBackfillContinuation(AppUser user, UUID repositoryId, UUID currentJobId) {
+        if (jobs.existsActiveRepositoryJobExcept(user.getId(), GitHubChangeKindBackfillJobHandler.JOB_TYPE, repositoryId, currentJobId)) {
+            return null;
+        }
+        BackgroundJob next = BackgroundJob.queuedDeduplicated(
                 user,
                 GitHubChangeKindBackfillJobHandler.JOB_TYPE,
                 115,
                 Map.of("provider", "github", "repositoryId", repositoryId.toString()),
                 5,
                 OffsetDateTime.now(ZoneOffset.UTC),
-                "github:change-kind-backfill:" + repositoryId + ":" + UUID.randomUUID()
+                "github:change-kind-backfill:" + repositoryId
         );
-        jobs.persist(job);
-        return job;
+        jobs.persist(next);
+        return next;
     }
 
     @Transactional
     public BackgroundJob enqueueTechnologyAssessmentRecalculation(AppUser user) {
-        return enqueueUserDeduplicated(user, TechnologyAssessmentRecalculationJobHandler.JOB_TYPE,
-                140, "analysis:technology-assessment");
+        return enqueueUserDeduplicated(user, TechnologyAssessmentRecalculationJobHandler.JOB_TYPE, 140, "analysis:technology-assessment");
     }
 
     @Transactional
     public BackgroundJob enqueueTechnologyTimelineRecalculation(AppUser user) {
-        return enqueueUserDeduplicated(user, TechnologyTimelineRecalculationJobHandler.JOB_TYPE,
-                145, "analysis:technology-timeline");
+        return enqueueUserDeduplicated(user, TechnologyTimelineRecalculationJobHandler.JOB_TYPE, 145, "analysis:technology-timeline");
     }
 
     @Transactional
     public BackgroundJob enqueueProjectSignificanceRecalculation(AppUser user) {
-        return enqueueUserDeduplicated(user, ProjectSignificanceRecalculationJobHandler.JOB_TYPE,
-                150, "analysis:project-significance");
+        return enqueueUserDeduplicated(user, ProjectSignificanceRecalculationJobHandler.JOB_TYPE, 150, "analysis:project-significance");
     }
 
     @Transactional
     public BackgroundJob enqueueGitHubDiscovery(AppUser user) {
-        BackgroundJob job = BackgroundJob.queued(
-                user,
-                GitHubRepositoryDiscoveryJobHandler.JOB_TYPE,
-                100,
-                Map.of("provider", "github"),
-                5,
-                OffsetDateTime.now(ZoneOffset.UTC)
-        );
+        BackgroundJob job = BackgroundJob.queued(user, GitHubRepositoryDiscoveryJobHandler.JOB_TYPE, 100,
+                Map.of("provider", "github"), 5, OffsetDateTime.now(ZoneOffset.UTC));
         jobs.persist(job);
         return job;
     }
 
     private BackgroundJob enqueueUserDeduplicated(AppUser user, String jobType, int priority, String deduplicationKey) {
         if (jobs.existsActiveDeduplicatedJob(user.getId(), deduplicationKey)) return null;
-        BackgroundJob job = BackgroundJob.queuedDeduplicated(
-                user, jobType, priority, Map.of("scope", "user-analysis"), 5,
-                OffsetDateTime.now(ZoneOffset.UTC), deduplicationKey);
+        BackgroundJob job = BackgroundJob.queuedDeduplicated(user, jobType, priority,
+                Map.of("scope", "user-analysis"), 5, OffsetDateTime.now(ZoneOffset.UTC), deduplicationKey);
         jobs.persist(job);
         return job;
     }
@@ -128,8 +121,7 @@ public class RepositoryDiscoveryJobService {
         payload.put("repositoryId", repositoryId.toString());
         payload.putAll(extraPayload);
 
-        BackgroundJob job = BackgroundJob.queuedDeduplicated(
-                user, jobType, priority, payload, 5,
+        BackgroundJob job = BackgroundJob.queuedDeduplicated(user, jobType, priority, payload, 5,
                 OffsetDateTime.now(ZoneOffset.UTC), deduplicationKey);
         jobs.persist(job);
         return job;
