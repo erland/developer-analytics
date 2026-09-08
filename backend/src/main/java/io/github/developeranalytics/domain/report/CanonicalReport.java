@@ -11,6 +11,7 @@ public record CanonicalReport(
         Summary summary,
         Period period,
         DataCoverage dataCoverage,
+        ChangeScope changeScope,
         List<ProjectCategory> projectCategories,
         List<TechnologyAnalysis> technologyAnalysis,
         Activity activity,
@@ -19,7 +20,7 @@ public record CanonicalReport(
         Methodology methodology,
         PrivacyScope privacyScope
 ) {
-    public static final String MODEL_VERSION = "report-v1";
+    public static final String MODEL_VERSION = "report-v2";
 
     public enum PrivacyScope {
         PUBLIC_ONLY,
@@ -27,15 +28,9 @@ public record CanonicalReport(
         FULL_PRIVATE_DETAIL
     }
 
-    public record Summary(
-            String title,
-            String overview
-    ) {}
+    public record Summary(String title, String overview) {}
 
-    public record Period(
-            OffsetDateTime firstActivityAt,
-            OffsetDateTime lastActivityAt
-    ) {}
+    public record Period(OffsetDateTime firstActivityAt, OffsetDateTime lastActivityAt) {}
 
     public record DataCoverage(
             int repositoryCount,
@@ -45,11 +40,13 @@ public record CanonicalReport(
             int contributionCount
     ) {}
 
-    public record ProjectCategory(
-            String key,
-            String name,
-            int projectCount
-    ) {}
+    /**
+     * Explicit activity scope used by this report. allChanges=true preserves the historical
+     * report behaviour; otherwise changeKinds identifies the changed-file categories included.
+     */
+    public record ChangeScope(boolean allChanges, List<String> changeKinds) {}
+
+    public record ProjectCategory(String key, String name, int projectCount) {}
 
     public record TechnologyAnalysis(
             String key,
@@ -68,11 +65,7 @@ public record CanonicalReport(
             List<ActivityMonth> monthly
     ) {}
 
-    public record ActivityMonth(
-            String month,
-            int contributionCount,
-            int activeProjectCount
-    ) {}
+    public record ActivityMonth(String month, int contributionCount, int activeProjectCount) {}
 
     public record SignificantProject(
             UUID repositoryId,
@@ -98,23 +91,17 @@ public record CanonicalReport(
             String privacyProvenance
     ) {
         public static RoleAiAssessment unavailable() {
-            return new RoleAiAssessment(
-                    false, false, List.of(),
-                    "", "", "", "", null, null, "PUBLIC_ONLY"
-            );
+            return new RoleAiAssessment(false, false, List.of(), "", "", "", "", null, null, "PUBLIC_ONLY");
         }
     }
 
-    public record Role(
-            String role,
-            double confidence,
-            String rationale
-    ) {}
+    public record Role(String role, double confidence, String rationale) {}
 
     public record Methodology(
             String measuredDataStatement,
             String inferenceStatement,
             String correctionStatement,
+            String changeScopeStatement,
             List<String> sourceTypes
     ) {}
 }
