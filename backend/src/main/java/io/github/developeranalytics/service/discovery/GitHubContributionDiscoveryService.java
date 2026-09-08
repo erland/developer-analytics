@@ -24,6 +24,7 @@ public class GitHubContributionDiscoveryService {
     @Inject ContributionRepository contributions;
     @Inject ContributionSyncRunRepository syncRuns;
     @Inject GitHubWeeklyActivityService weeklyActivity;
+    @Inject GitHubCommitFileChangeService commitFileChanges;
 
     @Transactional
     public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since)
@@ -75,6 +76,20 @@ public class GitHubContributionDiscoveryService {
                     }
                     contribution.updateFromDiscovery(pc.title(), pc.occurredAt(), mapState(pc.state()),
                             pc.additions(), pc.deletions(), pc.changedFiles(), pc.merged());
+
+                    if (type == Contribution.Type.COMMIT) {
+                        GitHubCommitFileChangeService.CommitDetails details =
+                                commitFileChanges.refresh(user, repository, contribution, token);
+                        contribution.updateFromDiscovery(
+                                pc.title(),
+                                pc.occurredAt(),
+                                mapState(pc.state()),
+                                details.additions(),
+                                details.deletions(),
+                                details.changedFiles(),
+                                pc.merged()
+                        );
+                    }
                     seen++;
                 }
 
@@ -96,8 +111,8 @@ public class GitHubContributionDiscoveryService {
                         StructuredLog.fields("repositoryId", repository.getId(), "httpStatus", statisticsError.getStatusCode()));
             }
 
-            // GitHub's commit list does not contain additions/deletions. The contributor
-            // statistics endpoint does, grouped by week, so keep that separately for time charts.
+            // Keep the existing GitHub contributor-statistics series for compatibility with
+            // current time charts. Step 5 will switch change-kind-aware activity to file rows.
             weeklyActivity.refresh(user.getId(), repository, token, providerUser.login());
 
             OffsetDateTime completedAt = OffsetDateTime.now(java.time.ZoneOffset.UTC);
