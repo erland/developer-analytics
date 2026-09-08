@@ -22,7 +22,7 @@ type ReportPreview = {
   privateRepositoryCount: number
   contributionCount: number
   reportModelVersion: string
-  changeScope: ChangeScope
+  changeScope?: ChangeScope
 }
 
 type Props = { changeKinds: ChangeKind[]; onChangeKinds: (value: ChangeKind[]) => void }
@@ -128,7 +128,7 @@ export function ReportsView({ changeKinds, onChangeKinds }: Props) {
 
     {preview ? <section className="dashboard-section report-privacy-preview"><span className="card-kicker">Preview</span><h2>Review before generation</h2>
       <dl className="privacy-preview-grid">
-        <div><dt>Change scope</dt><dd>{preview.changeScope.allChanges ? 'All changes' : preview.changeScope.changeKinds.join(', ')}</dd></div>
+        <div><dt>Change scope</dt><dd>{!preview.changeScope || preview.changeScope.allChanges ? 'All changes' : preview.changeScope.changeKinds.join(', ')}</dd></div>
         <div><dt>Private repositories included?</dt><dd>{yesNo(preview.privateRepositoriesIncluded)}</dd></div>
         <div><dt>Private names included?</dt><dd>{yesNo(preview.privateNamesIncluded)}</dd></div>
         <div><dt>AI assessments included?</dt><dd>{yesNo(preview.aiAssessmentsIncluded)}</dd></div>
