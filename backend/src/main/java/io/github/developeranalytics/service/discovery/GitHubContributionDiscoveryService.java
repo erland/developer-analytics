@@ -66,7 +66,8 @@ public class GitHubContributionDiscoveryService {
                     Contribution.Type type = mapType(pc.type());
                     Contribution contribution = contributions.findByProviderIdentity(
                             user.getId(), "github", pc.externalContributionId(), type).orElse(null);
-                    if (contribution == null) {
+                    boolean existing = contribution != null;
+                    if (!existing) {
                         contribution = new Contribution(user, repository, "github",
                                 pc.externalContributionId(), type, pc.occurredAt());
                         contributions.persist(contribution);
@@ -74,21 +75,23 @@ public class GitHubContributionDiscoveryService {
                     } else {
                         updated++;
                     }
-                    contribution.updateFromDiscovery(pc.title(), pc.occurredAt(), mapState(pc.state()),
-                            pc.additions(), pc.deletions(), pc.changedFiles(), pc.merged());
 
-                    if (type == Contribution.Type.COMMIT) {
+                    boolean cachedCommitDetails = type == Contribution.Type.COMMIT
+                            && existing
+                            && commitFileChanges.hasCurrentClassification(contribution);
+
+                    contribution.updateFromDiscovery(
+                            pc.title(), pc.occurredAt(), mapState(pc.state()),
+                            cachedCommitDetails ? contribution.getAdditions() : pc.additions(),
+                            cachedCommitDetails ? contribution.getDeletions() : pc.deletions(),
+                            cachedCommitDetails ? contribution.getChangedFiles() : pc.changedFiles(),
+                            pc.merged());
+
+                    if (type == Contribution.Type.COMMIT && !cachedCommitDetails) {
                         GitHubCommitFileChangeService.CommitDetails details =
                                 commitFileChanges.refresh(user, repository, contribution, token);
-                        contribution.updateFromDiscovery(
-                                pc.title(),
-                                pc.occurredAt(),
-                                mapState(pc.state()),
-                                details.additions(),
-                                details.deletions(),
-                                details.changedFiles(),
-                                pc.merged()
-                        );
+                        contribution.updateFileStatistics(
+                                details.additions(), details.deletions(), details.changedFiles());
                     }
                     seen++;
                 }
@@ -111,13 +114,13 @@ public class GitHubContributionDiscoveryService {
                         StructuredLog.fields("repositoryId", repository.getId(), "httpStatus", statisticsError.getStatusCode()));
             }
 
-            // Keep the existing GitHub contributor-statistics series for compatibility with
-            // current time charts. Step 5 will switch change-kind-aware activity to file rows.
             weeklyActivity.refresh(user.getId(), repository, token, providerUser.login());
 
             OffsetDateTime completedAt = OffsetDateTime.now(java.time.ZoneOffset.UTC);
             run.complete(completedAt);
-            repository.markContributionScopeCurrent();
+            if (!commitFileChanges.hasMissingCurrentClassification(user, repository)) {
+                repository.markContributionScopeCurrent();
+            }
             repository.markSynced(completedAt);
             StructuredLog.info(LOG, "contribution_sync_completed",
                     StructuredLog.fields("syncId", run.getId(), "repositoryId", repository.getId(),
