@@ -110,6 +110,9 @@ public class GitHubContributionDiscoveryService {
                         statistics.userCommitCount(), statistics.repositoryCommitCount(), statistics.userAdditions(),
                         statistics.userDeletions(), statistics.observedAt());
             } catch (ProviderException statisticsError) {
+                if (statisticsError.getStatusCode() == 403 || statisticsError.getStatusCode() == 429) {
+                    throw statisticsError;
+                }
                 StructuredLog.warn(LOG, "contributor_statistics_unavailable", statisticsError,
                         StructuredLog.fields("repositoryId", repository.getId(), "httpStatus", statisticsError.getStatusCode()));
             }
@@ -129,11 +132,13 @@ public class GitHubContributionDiscoveryService {
         } catch (ProviderException e) {
             StructuredLog.warn(LOG, "contribution_sync_provider_error", e,
                     StructuredLog.fields("syncId", run.getId(), "provider", "github",
-                            "repositoryId", repository.getId(), "httpStatus", e.getStatusCode()));
+                            "repositoryId", repository.getId(), "httpStatus", e.getStatusCode(),
+                            "retryAt", e.getRetryAt()));
             OffsetDateTime failedAt = OffsetDateTime.now(java.time.ZoneOffset.UTC);
             repository.markSyncFailed(e.getMessage());
             if (e.getStatusCode() == 403 || e.getStatusCode() == 429) {
-                run.rateLimited(e.getMessage(), run.getRateLimitResetAt(), failedAt);
+                OffsetDateTime resetAt = e.getRetryAt() != null ? e.getRetryAt() : run.getRateLimitResetAt();
+                run.rateLimited(e.getMessage(), resetAt, failedAt);
             } else {
                 run.fail(e.getMessage(), failedAt);
             }
