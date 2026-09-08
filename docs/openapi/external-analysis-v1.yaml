@@ -77,7 +77,14 @@ paths:
       tags: [Analysis]
       operationId: getDeveloperActivity
       summary: Get compact contribution activity
-      description: Requires `ACTIVITY_READ`.
+      description: |
+        Requires `ACTIVITY_READ`.
+
+        Omit `changeKinds` to preserve historical all-contribution activity.
+        When a change-kind scope is supplied, the result contains commits that
+        touch at least one selected changed-file category. A mixed commit is
+        counted once; non-commit contributions are excluded because they do not
+        have changed-file classifications. Privacy scope is enforced independently.
       parameters:
         - $ref: '#/components/parameters/AnalysisAccept'
         - name: months
@@ -87,6 +94,16 @@ paths:
             minimum: 1
             maximum: 120
             default: 24
+        - name: changeKinds
+          in: query
+          required: false
+          description: |
+            Optional comma-separated changed-file categories. The server also
+            accepts repeated `changeKinds` parameters. Supported values are
+            `CODE`, `DOCUMENTATION`, `CI_CD`, and `OTHER`.
+          schema:
+            type: string
+            example: CODE,DOCUMENTATION
       responses:
         '200':
           description: Activity summary
@@ -94,6 +111,8 @@ paths:
             application/vnd.developer-analytics.analysis.v1+json:
               schema:
                 $ref: '#/components/schemas/Activity'
+        '400':
+          description: Unknown change-kind value.
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
@@ -156,7 +175,7 @@ paths:
       tags: [Analysis]
       operationId: getDeveloperContributions
       summary: Get contribution totals by type
-      description: Requires `CONTRIBUTIONS_READ`.
+      description: Requires `CONTRIBUTIONS_READ`. This endpoint remains unfiltered; use `/activity?changeKinds=...` for changed-file activity scope.
       parameters:
         - $ref: '#/components/parameters/AnalysisAccept'
       responses:
@@ -265,6 +284,22 @@ components:
         - PUBLIC_PLUS_PRIVATE_AGGREGATES
         - FULL_AUTHORISED_ANALYSIS
 
+    ChangeKind:
+      type: string
+      enum: [CODE, DOCUMENTATION, CI_CD, OTHER]
+
+    ChangeScope:
+      type: object
+      required: [allChanges, changeKinds]
+      properties:
+        allChanges:
+          type: boolean
+          description: True when no explicit change-kind filter was supplied and historical All semantics are used.
+        changeKinds:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChangeKind'
+
     Profile:
       type: object
       required:
@@ -340,6 +375,7 @@ components:
         - contributionTypes
         - monthly
         - privacyProvenance
+        - changeScope
       properties:
         contributionCount: { type: integer }
         activeProjectCount: { type: integer }
@@ -353,6 +389,8 @@ components:
             $ref: '#/components/schemas/ActivityMonth'
         privacyProvenance:
           $ref: '#/components/schemas/PrivacyProvenance'
+        changeScope:
+          $ref: '#/components/schemas/ChangeScope'
 
     ActivityMonth:
       type: object
