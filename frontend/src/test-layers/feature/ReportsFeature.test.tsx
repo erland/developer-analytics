@@ -33,6 +33,7 @@ describe('feature layer: reports', () => {
           privateRepositoryCount: 0,
           contributionCount: 10,
           reportModelVersion: 'report-v1',
+          changeScope: { allChanges: true, changeKinds: [] },
         }),
         {
           status: 200,
@@ -51,7 +52,7 @@ describe('feature layer: reports', () => {
     chooseRequiredReportSettings()
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Preview report privacy' }),
+      screen.getByRole('button', { name: 'Preview report privacy and scope' }),
     )
 
     expect(
