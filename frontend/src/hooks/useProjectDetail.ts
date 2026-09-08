@@ -1,111 +1,11 @@
 import { useEffect, useState } from 'react'
 import { getJson } from '../api/request'
+import { appendChangeKinds, changeKindSelectionKey, type ChangeKind } from '../analysis/ChangeKind'
 
-export type ProjectDetail = {
-  metadata: {
-    id: string
-    provider: string
-    name: string
-    fullName: string | null
-    description: string | null
-    htmlUrl: string | null
-    visibility: string
-    ownershipRelation: string
-    ownerLogin: string | null
-    fork: boolean
-    archived: boolean
-    topics: string[]
-    lastActivityAt: string | null
-    excludedFromAiProfile: boolean
-  }
-  activity: {
-    commits: number
-    pullRequests: number
-    reviews: number
-    issues: number
-    additions: number
-    deletions: number
-    firstActivityAt: string | null
-    lastActivityAt: string | null
-    excludedFromAiProfile: boolean
-    timeline: Array<{
-      month: string
-      commits: number
-      additions: number
-      deletions: number
-      changedLines: number
-      lineStatisticsCommitCount: number
-    }>
-  }
-  technologies: Array<{ technologyKey: string; technologyName: string; strength: string }>
-  categories: Array<{
-    categoryKey: string
-    categoryName: string
-    source: string
-    confidence: string
-    rationale: Record<string, unknown>
-    privacyProvenance: string
-    rejectedByUser: boolean
-  }>
-  assessment: null | {
-    significanceLevel: string
-    significanceScore: number
-    significanceRationale: Record<string, unknown>
-    involvementLevel: string
-    involvementScore: number
-    involvementRationale: Record<string, unknown>
-    calculatedAt: string
-    privacyProvenance: string
-  }
-  synchronisation: { status: string; lastSeenAt: string | null; error: string | null }
-  contributors: { total: number | null; humans: number | null; bots: number | null; userCommits: number | null }
-}
+export type ProjectDetail={metadata:{id:string;provider:string;name:string;fullName:string|null;description:string|null;htmlUrl:string|null;visibility:string;ownershipRelation:string;ownerLogin:string|null;fork:boolean;archived:boolean;topics:string[];lastActivityAt:string|null;excludedFromAiProfile:boolean};activity:{commits:number;pullRequests:number;reviews:number;issues:number;additions:number;deletions:number;firstActivityAt:string|null;lastActivityAt:string|null;excludedFromAiProfile:boolean;timeline:Array<{month:string;commits:number;additions:number;deletions:number;changedLines:number;lineStatisticsCommitCount:number}>};technologies:Array<{technologyKey:string;technologyName:string;strength:string}>;categories:Array<{categoryKey:string;categoryName:string;source:string;confidence:string;rationale:Record<string,unknown>;privacyProvenance:string;rejectedByUser:boolean}>;assessment:null|{significanceLevel:string;significanceScore:number;significanceRationale:Record<string,unknown>;involvementLevel:string;involvementScore:number;involvementRationale:Record<string,unknown>;calculatedAt:string;privacyProvenance:string};synchronisation:{status:string;lastSeenAt:string|null;error:string|null};contributors:{total:number|null;humans:number|null;bots:number|null;userCommits:number|null}}
+type State={status:'idle';data:null;error:null}|{status:'loading';data:null;error:null}|{status:'ready';data:ProjectDetail;error:null}|{status:'error';data:null;error:string}
 
-type State =
-  | { status: 'idle'; data: null; error: null }
-  | { status: 'loading'; data: null; error: null }
-  | { status: 'ready'; data: ProjectDetail; error: null }
-  | { status: 'error'; data: null; error: string }
-
-export function useProjectDetail(repositoryId: string | null): State {
-  const [state, setState] = useState<State>({ status: 'idle', data: null, error: null })
-
-  useEffect(() => {
-    if (!repositoryId) {
-      setState({ status: 'idle', data: null, error: null })
-      return
-    }
-
-    const controller = new AbortController()
-    async function load() {
-      setState({ status: 'loading', data: null, error: null })
-      try {
-        const raw = await getJson<ProjectDetail>(
-          `/api/me/projects/${repositoryId}`,
-          { signal: controller.signal, errorMessage: 'Project detail request failed' },
-        )
-        const data: ProjectDetail = {
-          ...raw,
-          activity: {
-            ...raw.activity,
-            timeline: (raw.activity.timeline ?? []).map(point => ({
-              ...point,
-              additions: Number(point.additions ?? 0),
-              deletions: Number(point.deletions ?? 0),
-              changedLines: Number(point.changedLines ?? (Number(point.additions ?? 0) + Number(point.deletions ?? 0))),
-            })),
-          },
-          contributors: raw.contributors ?? { total: null, humans: null, bots: null, userCommits: null },
-        }
-        setState({ status: 'ready', data, error: null })
-      } catch (error) {
-        if (controller.signal.aborted) return
-        setState({ status: 'error', data: null, error: error instanceof Error ? error.message : 'Unable to load project' })
-      }
-    }
-    void load()
-    return () => controller.abort()
-  }, [repositoryId])
-
-  return state
+export function useProjectDetail(repositoryId:string|null,changeKinds:readonly ChangeKind[]):State{
+ const [state,setState]=useState<State>({status:'idle',data:null,error:null});const key=changeKindSelectionKey(changeKinds)
+ useEffect(()=>{if(!repositoryId){setState({status:'idle',data:null,error:null});return}const controller=new AbortController();async function load(){setState({status:'loading',data:null,error:null});try{const params=new URLSearchParams();appendChangeKinds(params,changeKinds);const raw=await getJson<ProjectDetail>(`/api/me/projects/${repositoryId}${params.size?`?${params}`:''}`,{signal:controller.signal,errorMessage:'Project detail request failed'});const data:ProjectDetail={...raw,activity:{...raw.activity,timeline:(raw.activity.timeline??[]).map(point=>({...point,additions:Number(point.additions??0),deletions:Number(point.deletions??0),changedLines:Number(point.changedLines??(Number(point.additions??0)+Number(point.deletions??0)))}))},contributors:raw.contributors??{total:null,humans:null,bots:null,userCommits:null}};setState({status:'ready',data,error:null})}catch(error){if(controller.signal.aborted)return;setState({status:'error',data:null,error:error instanceof Error?error.message:'Unable to load project'})}}void load();return()=>controller.abort()},[repositoryId,key]);return state
 }
