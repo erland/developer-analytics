@@ -22,6 +22,7 @@ public class GitHubProviderAdapter implements SourceControlProvider {
     static final String API_BASE = "https://api.github.com";
     static final String API_VERSION = "2022-11-28";
     static final int PAGE_SIZE = 100;
+    private static final long SECONDARY_RATE_LIMIT_FALLBACK_SECONDS = 60;
 
     @Inject ObjectMapper mapper;
 
@@ -262,7 +263,7 @@ public class GitHubProviderAdapter implements SourceControlProvider {
             if (since != null && updatedAt != null && updatedAt.isBefore(since)) continue;
             ProviderContribution.State state = "open".equals(node.path("state").asText())
                     ? ProviderContribution.State.OPEN : ProviderContribution.State.CLOSED;
-            result.add(new ProviderContribution("issue-" + node.path("id").asText(), ProviderContribution.Type.ISSUE,
+            contributions.add(new ProviderContribution("issue-" + node.path("id").asText(), ProviderContribution.Type.ISSUE,
                     node.path("title").asText(null), updatedAt, state, null, null, null, null));
         }
         return result;
@@ -290,12 +291,11 @@ public class GitHubProviderAdapter implements SourceControlProvider {
         int contributors = 0, humans = 0, bots = 0, userCommits = 0, repositoryCommits = 0;
         long userAdditions = 0, userDeletions = 0;
         for (JsonNode node : array) {
-            JsonNode author = node.path("author");
-            String login = author.path("login").asText("");
-            boolean bot = "Bot".equalsIgnoreCase(author.path("type").asText("")) || login.toLowerCase(Locale.ROOT).endsWith("[bot]");
-            contributors++;
             repositoryCommits += node.path("total").asInt(0);
+            String login = node.path("author").path("login").asText("");
+            boolean bot = login.endsWith("[bot]") || login.toLowerCase(Locale.ROOT).contains("bot");
             if (bot) bots++; else humans++;
+            contributors++;
             if (userLogin != null && userLogin.equalsIgnoreCase(login)) {
                 userCommits += node.path("total").asInt(0);
                 for (JsonNode week : node.path("weeks")) {
@@ -323,7 +323,7 @@ public class GitHubProviderAdapter implements SourceControlProvider {
                 String message = "GitHub API " + endpointLabel(uri) + " failed with HTTP " + response.statusCode();
                 if (providerMessage != null) message += ": " + providerMessage;
                 if (sso != null && !sso.isBlank()) message += " (GitHub SSO: " + sso + ")";
-                throw new ProviderException(message, response.statusCode());
+                throw new ProviderException(message, response.statusCode(), rateLimitRetryAt(response, providerMessage));
             }
             return response;
         } catch (ProviderException e) {
@@ -331,6 +331,39 @@ public class GitHubProviderAdapter implements SourceControlProvider {
         } catch (Exception e) {
             throw new ProviderException("GitHub API " + endpointLabel(uri) + " request failed", 0, e);
         }
+    }
+
+    private OffsetDateTime rateLimitRetryAt(HttpResponse<?> response, String providerMessage) {
+        int status = response.statusCode();
+        if (status != 403 && status != 429) return null;
+
+        String remaining = response.headers().firstValue("X-RateLimit-Remaining").orElse(null);
+        boolean exhausted = "0".equals(remaining);
+        String normalizedMessage = providerMessage == null ? "" : providerMessage.toLowerCase(Locale.ROOT);
+        boolean messageSignalsLimit = normalizedMessage.contains("rate limit") || normalizedMessage.contains("secondary rate");
+        Optional<String> retryAfter = response.headers().firstValue("Retry-After");
+        Optional<String> reset = response.headers().firstValue("X-RateLimit-Reset");
+        boolean rateLimited = status == 429 || exhausted || retryAfter.isPresent() || messageSignalsLimit;
+        if (!rateLimited) return null;
+
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        if (retryAfter.isPresent()) {
+            try {
+                return now.plusSeconds(Math.max(1, Long.parseLong(retryAfter.get().trim())));
+            } catch (NumberFormatException ignored) {
+                // Fall through to X-RateLimit-Reset.
+            }
+        }
+        if (reset.isPresent()) {
+            try {
+                OffsetDateTime resetAt = OffsetDateTime.ofInstant(
+                        Instant.ofEpochSecond(Long.parseLong(reset.get().trim())), ZoneOffset.UTC);
+                if (resetAt.isAfter(now)) return resetAt.plusSeconds(1);
+            } catch (NumberFormatException ignored) {
+                // Fall through to conservative secondary-limit backoff.
+            }
+        }
+        return now.plusSeconds(SECONDARY_RATE_LIMIT_FALLBACK_SECONDS);
     }
 
     private String githubErrorMessage(String body) {
@@ -427,6 +460,12 @@ public class GitHubProviderAdapter implements SourceControlProvider {
             throw new ProviderException("Invalid GitHub page cursor", 0, e);
         }
     }
+
+    private ProviderRepository mapRepositoryLegacy(JsonNode node) { return mapRepository(node); }
+
+    private List<String> mapTopicsLegacy(JsonNode node) { return mapTopics(node); }
+
+    private Long repositorySizeBytesLegacy(JsonNode node) { return repositorySizeBytes(node); }
 
     private OffsetDateTime parseDate(JsonNode node, String field) {
         return node.hasNonNull(field) ? OffsetDateTime.parse(node.get(field).asText()) : null;
