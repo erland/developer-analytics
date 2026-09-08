@@ -58,13 +58,15 @@ This makes the operation resumable and rate-limit friendly:
 4. provider errors leave previously stored file-change rows intact,
 5. contribution scope version is marked current only when no unclassified historical commits remain.
 
+GitHub throttling stops work immediately. Commit-detail requests inspect `Retry-After`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`. On HTTP 429, or on a rate-limit-related HTTP 403, the current batch aborts and the background job is scheduled no earlier than the provider-supplied retry/reset time. If GitHub reports a secondary limit without a retry time, Developer Analytics waits at least 60 seconds and still applies the worker's exponential retry backoff. No further commit-detail requests are issued from that failed batch.
+
 Repositories older than contribution scope version `2` retain the older complete-rescan migration behaviour needed by that earlier scope transition.
 
 Operationally:
 
 1. upgrade normally and let Flyway apply migration `V36`,
 2. allow background contribution refresh to enqueue historical change-kind backfill where needed,
-3. monitor the existing sync/job status views for progress, rate limiting and failures,
+3. monitor the existing sync/job status views for progress, rate limiting, reset time and failures,
 4. retry/recover through the normal worker/job mechanisms rather than manually editing classification rows.
 
 ## Privacy
@@ -105,6 +107,7 @@ The automated suite covers these feature-specific cases:
 | Large account | Existing 240-repository bounded acceptance flow remains green |
 | Repeated incremental sync | Already classified commit SHAs do not trigger another detail fetch |
 | Scope-2 historical upgrade | Existing commit rows are enriched in bounded 100-commit background batches |
+| GitHub rate limit | Current batch stops and retries no earlier than Retry-After/reset |
 
 ## Deferred refinements
 
