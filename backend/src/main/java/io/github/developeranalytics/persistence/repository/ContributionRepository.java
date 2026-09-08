@@ -6,6 +6,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,6 +36,27 @@ public class ContributionRepository {
                 .getResultStream()
                 .filter(java.util.Objects::nonNull)
                 .findFirst();
+    }
+
+    public List<Contribution> findCommitsMissingFileClassification(
+            UUID userId,
+            UUID repositoryId,
+            String classifierVersion,
+            int limit
+    ) {
+        return entityManager.createQuery(
+                "select c from Contribution c " +
+                        "where c.user.id=:userId and c.repository.id=:repositoryId and c.type=:type " +
+                        "and (c.changedFiles is null or c.changedFiles<>0) " +
+                        "and not exists (select f.id from ContributionFileChange f " +
+                        "where f.contribution=c and f.classifierVersion=:version) " +
+                        "order by c.occurredAt desc", Contribution.class)
+                .setParameter("userId", userId)
+                .setParameter("repositoryId", repositoryId)
+                .setParameter("type", Contribution.Type.COMMIT)
+                .setParameter("version", classifierVersion)
+                .setMaxResults(Math.max(1, Math.min(limit, 500)))
+                .getResultList();
     }
 
     public Optional<Contribution> findByProviderIdentity(
