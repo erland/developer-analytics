@@ -43,22 +43,28 @@ class GitCloneWorkspaceServiceTest {
     @Test
     void closingWorkspaceRemovesTemporaryRepositoryRecursively() throws Exception {
         Path root = Files.createTempDirectory("git-workspace-test-");
-        Files.createDirectories(root.resolve("objects/pack"));
-        Files.writeString(root.resolve("objects/pack/test.pack"), "data");
+        Path repository = root.resolve("repository.git");
+        Files.createDirectories(repository.resolve("objects/pack"));
+        Files.writeString(repository.resolve("objects/pack/test.pack"), "data");
 
-        TemporaryGitRepository workspace = new TemporaryGitRepository(root, Duration.ofSeconds(1), 4);
+        TemporaryGitRepository workspace = new TemporaryGitRepository(
+                root, repository, Duration.ofSeconds(1), 4);
         workspace.close();
 
         assertFalse(Files.exists(root));
     }
 
     @Test
-    void workspaceExposesTransferMetrics() throws Exception {
+    void workspaceExposesRepositoryPathAndTransferMetrics() throws Exception {
         Path root = Files.createTempDirectory("git-workspace-metrics-");
-        try (TemporaryGitRepository workspace = new TemporaryGitRepository(root, Duration.ofSeconds(2), 1234)) {
+        Path repository = root.resolve("repository.git");
+        Files.createDirectories(repository);
+        try (TemporaryGitRepository workspace = new TemporaryGitRepository(
+                root, repository, Duration.ofSeconds(2), 1234)) {
             assertEquals(Duration.ofSeconds(2), workspace.transferDuration());
             assertEquals(1234, workspace.sizeBytes());
-            assertEquals(root, workspace.path());
+            assertEquals(root, workspace.workspaceRoot());
+            assertEquals(repository, workspace.repositoryPath());
         }
     }
 }
