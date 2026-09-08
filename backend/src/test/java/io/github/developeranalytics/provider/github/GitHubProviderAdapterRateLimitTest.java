@@ -2,6 +2,7 @@ package io.github.developeranalytics.provider.github;
 
 import io.github.developeranalytics.provider.ProviderAccessToken;
 import io.github.developeranalytics.provider.ProviderException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
@@ -17,6 +18,7 @@ import javax.net.ssl.SSLSession;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("github-adapter")
 class GitHubProviderAdapterRateLimitTest {
 
     @Test
