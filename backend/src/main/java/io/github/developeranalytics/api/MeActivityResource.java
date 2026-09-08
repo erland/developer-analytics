@@ -2,6 +2,7 @@ package io.github.developeranalytics.api;
 
 import io.github.developeranalytics.auth.AuthenticationService;
 import io.github.developeranalytics.auth.CurrentUserService;
+import io.github.developeranalytics.domain.change.ChangeKind;
 import io.github.developeranalytics.service.activity.ActivityApplicationService;
 import io.github.developeranalytics.service.activity.ChangeKindActivityService;
 import io.github.developeranalytics.service.change.ChangeKindSelection;
@@ -11,6 +12,7 @@ import jakarta.ws.rs.core.MediaType;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Path("/api/me")
@@ -32,7 +34,7 @@ public class MeActivityResource {
                                 @QueryParam("changeKinds") List<String> rawChangeKinds) {
         var current = currentUserService.requireCurrentUser(sessionToken);
         var period = AnalysisPeriod.resolve(from, to, year, month, week);
-        final var changeKinds;
+        final Set<ChangeKind> changeKinds;
         try {
             changeKinds = ChangeKindSelection.parse(rawChangeKinds);
         } catch (IllegalArgumentException error) {
