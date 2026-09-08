@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { AnalysisScope } from '../analysis/AnalysisScope'
-import { ALL_CHANGE_KINDS, normalizeChangeKinds, type ChangeKind } from '../analysis/ChangeKind'
+import { normalizeChangeKinds, type ChangeKind } from '../analysis/ChangeKind'
 import { useAnalysisScope } from '../hooks/useAnalysisScope'
 import { type ActivityData, type ActivityMetric, type ActivityPeriod, useActivityView } from '../hooks/useActivityView'
 import { ActivityTimelineAnalysis, type ActivityColourBy } from './ActivityTimelineAnalysis'
