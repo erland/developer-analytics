@@ -69,7 +69,7 @@ public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler 
         boolean remaining = fileChanges.hasMissingCurrentClassification(
                 job.getUser().getId(), repositoryId, ChangeKindClassifier.CLASSIFIER_VERSION);
         if (remaining) {
-            jobs.enqueueChangeKindBackfillContinuation(job.getUser(), repositoryId);
+            jobs.enqueueChangeKindBackfillContinuation(job.getUser(), repositoryId, job.getId());
         } else {
             repository.markContributionScopeCurrent();
         }
