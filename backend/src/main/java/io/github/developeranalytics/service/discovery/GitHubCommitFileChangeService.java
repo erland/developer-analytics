@@ -22,6 +22,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -133,17 +134,17 @@ public class GitHubCommitFileChangeService {
         }
     }
 
-    private ProviderException providerFailure(HttpResponse<?> response) {
+    private ProviderException providerFailure(HttpResponse<String> response) {
         int status = response.statusCode();
-        OffsetDateTime retryAt = null;
-
-        if (status == 429 || status == 403) {
-            retryAt = retryAt(response);
-        }
-
         String remaining = response.headers().firstValue("X-RateLimit-Remaining").orElse(null);
         boolean primaryExhausted = "0".equals(remaining);
-        boolean rateLimited = status == 429 || (status == 403 && (primaryExhausted || retryAt != null));
+        boolean retryAfterPresent = response.headers().firstValue("Retry-After").isPresent();
+        String body = response.body() == null ? "" : response.body().toLowerCase(Locale.ROOT);
+        boolean bodySignalsRateLimit = body.contains("rate limit") || body.contains("abuse detection");
+        boolean rateLimited = status == 429
+                || (status == 403 && (primaryExhausted || retryAfterPresent || bodySignalsRateLimit));
+
+        OffsetDateTime retryAt = rateLimited ? retryAt(response) : null;
         String message = rateLimited
                 ? "GitHub commit detail request rate-limited"
                 : "GitHub commit detail request failed";
@@ -175,7 +176,7 @@ public class GitHubCommitFileChangeService {
             }
         }
 
-        // A 403 secondary limit may omit Retry-After. Stop immediately and wait before the
+        // A secondary limit may omit Retry-After. Stop immediately and wait before the
         // background worker is allowed to issue another provider request.
         return now.plusSeconds(SECONDARY_RATE_LIMIT_FALLBACK_SECONDS);
     }
