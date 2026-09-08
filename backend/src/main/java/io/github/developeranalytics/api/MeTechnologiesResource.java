@@ -3,17 +3,17 @@ package io.github.developeranalytics.api;
 import io.github.developeranalytics.auth.AuthenticationService;
 import io.github.developeranalytics.auth.CurrentUser;
 import io.github.developeranalytics.auth.CurrentUserService;
+import io.github.developeranalytics.domain.change.ChangeKind;
 import io.github.developeranalytics.domain.technology.UserTechnologyAssessment;
 import io.github.developeranalytics.persistence.technology.RepositoryTechnologyEvidenceRepository;
 import io.github.developeranalytics.persistence.technology.TechnologyTimelineRepository;
 import io.github.developeranalytics.persistence.technology.UserTechnologyAssessmentRepository;
+import io.github.developeranalytics.service.activity.ChangeKindDimensionActivityService;
+import io.github.developeranalytics.service.change.ChangeKindSelection;
 import io.github.developeranalytics.service.technology.TechnologyEvidenceStrengthService;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.CookieParam;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import org.jboss.logging.Logger;
 
@@ -31,13 +31,19 @@ public class MeTechnologiesResource {
     @Inject TechnologyTimelineRepository timelines;
     @Inject RepositoryTechnologyEvidenceRepository evidence;
     @Inject TechnologyEvidenceStrengthService strengthService;
+    @Inject ChangeKindDimensionActivityService filteredActivity;
 
     @GET
     @Path("/technologies")
     @Transactional
-    public List<Entry> list(@CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken) {
+    public List<Entry> list(@CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken,
+                            @QueryParam("changeKinds") List<String> rawChangeKinds) {
         CurrentUser current = currentUserService.requireCurrentUser(sessionToken);
         UUID userId = current.user().getId();
+        Set<ChangeKind> changeKinds;
+        try { changeKinds = ChangeKindSelection.parse(rawChangeKinds); }
+        catch (IllegalArgumentException error) { throw new BadRequestException(error.getMessage()); }
+
         List<UserTechnologyAssessment> currentAssessments = assessments.findForUser(userId);
         if (currentAssessments.isEmpty()) {
             try {
@@ -49,6 +55,15 @@ public class MeTechnologiesResource {
                         userId, exception.getClass().getSimpleName(), exception.getMessage());
                 throw exception;
             }
+        }
+
+        if (!ChangeKindSelection.isAll(changeKinds)) {
+            Map<String, List<ChangeKindDimensionActivityService.MetricRow>> filtered =
+                    filteredActivity.technologyActivity(userId, changeKinds);
+            return currentAssessments.stream()
+                    .map(assessment -> toFilteredEntry(userId, assessment,
+                            filtered.getOrDefault(assessment.getTechnology().getTechnologyKey(), List.of())))
+                    .toList();
         }
 
         Map<String, List<TechnologyTimelineRepository.MetricActivityRow>> activityByTechnology =
@@ -68,19 +83,32 @@ public class MeTechnologiesResource {
         }
     }
 
+    private Entry toFilteredEntry(UUID userId, UserTechnologyAssessment assessment,
+                                  List<ChangeKindDimensionActivityService.MetricRow> activity) {
+        var timeline = activity.stream()
+                .filter(row -> row.commits() > 0 || row.changedLines() > 0 || row.activeProjectCount() > 0)
+                .map(row -> new TimelinePoint(row.month(), row.commits(), row.changedLines(),
+                        row.lineStatisticsCommitCount(), row.activeProjectCount()))
+                .toList();
+        return baseEntry(userId, assessment, timeline);
+    }
+
     private Entry toEntry(UUID userId, UserTechnologyAssessment assessment,
                           List<TechnologyTimelineRepository.MetricActivityRow> activity) {
-        var projects = evidence.findRepresentativeProjects(
-                        userId, assessment.getTechnology().getId(), 1000).stream()
-                .map(project -> new RepresentativeProject(
-                        project.repositoryId(), project.repositoryName(), project.htmlUrl(), project.visibility(),
-                        project.ownershipRelation(), project.lastActivityAt(), project.evidenceCount()))
-                .toList();
         var timeline = activity.stream()
                 .filter(MeTechnologiesResource::hasActivity)
                 .sorted(Comparator.comparing(TechnologyTimelineRepository.MetricActivityRow::month))
                 .map(month -> new TimelinePoint(month.month(), month.commits(), month.changedLines(),
                         month.lineStatisticsCommitCount(), month.activeProjectCount()))
+                .toList();
+        return baseEntry(userId, assessment, timeline);
+    }
+
+    private Entry baseEntry(UUID userId, UserTechnologyAssessment assessment, List<TimelinePoint> timeline) {
+        var projects = evidence.findRepresentativeProjects(userId, assessment.getTechnology().getId(), 1000).stream()
+                .map(project -> new RepresentativeProject(
+                        project.repositoryId(), project.repositoryName(), project.htmlUrl(), project.visibility(),
+                        project.ownershipRelation(), project.lastActivityAt(), project.evidenceCount()))
                 .toList();
         return new Entry(
                 assessment.getTechnology().getTechnologyKey(), assessment.getTechnology().getDisplayName(),
@@ -92,20 +120,10 @@ public class MeTechnologiesResource {
     }
 
     static boolean hasActivity(TechnologyTimelineRepository.MetricActivityRow row) {
-        return row.commits() > 0
-                || row.changedLines() > 0
-                || row.lineStatisticsCommitCount() > 0
-                || row.activeProjectCount() > 0;
+        return row.commits() > 0 || row.changedLines() > 0 || row.lineStatisticsCommitCount() > 0 || row.activeProjectCount() > 0;
     }
 
-    public record Entry(String technologyKey, String technologyName, String technologyCategory,
-                        String evidenceLevel, int evidenceScore, int projectCount, int evidenceCount,
-                        int independentEvidenceTypes, OffsetDateTime firstObservedAt, OffsetDateTime lastObservedAt,
-                        int recentProjectCount, String privacyProvenance, Map<String, Object> rationale,
-                        List<TimelinePoint> timeline, List<RepresentativeProject> representativeProjects) {}
-    public record TimelinePoint(String month, int commits, long changedLines,
-                                int lineStatisticsCommitCount, int projectCount) {}
-    public record RepresentativeProject(UUID repositoryId, String repositoryName, String htmlUrl,
-                                        String visibility, String ownershipRelation,
-                                        OffsetDateTime lastActivityAt, int evidenceCount) {}
+    public record Entry(String technologyKey,String technologyName,String technologyCategory,String evidenceLevel,int evidenceScore,int projectCount,int evidenceCount,int independentEvidenceTypes,OffsetDateTime firstObservedAt,OffsetDateTime lastObservedAt,int recentProjectCount,String privacyProvenance,Map<String,Object> rationale,List<TimelinePoint> timeline,List<RepresentativeProject> representativeProjects) {}
+    public record TimelinePoint(String month,int commits,long changedLines,int lineStatisticsCommitCount,int projectCount) {}
+    public record RepresentativeProject(UUID repositoryId,String repositoryName,String htmlUrl,String visibility,String ownershipRelation,OffsetDateTime lastActivityAt,int evidenceCount) {}
 }
