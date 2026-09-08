@@ -18,6 +18,7 @@ class ChangeKindClassifierTest {
         assertKind(ChangeKind.DOCUMENTATION, "chapters/01-introduction.adoc");
         assertKind(ChangeKind.DOCUMENTATION, "novel/manuscript/chapter-12.txt");
         assertKind(ChangeKind.DOCUMENTATION, "book/main.tex");
+        assertEquals("documentation-extension", classifier.classify("README.md").ruleKey());
     }
 
     @Test
@@ -36,6 +37,7 @@ class ChangeKindClassifierTest {
         assertKind(ChangeKind.CI_CD, "Jenkinsfile");
         assertKind(ChangeKind.CI_CD, "azure-pipelines.yaml");
         assertKind(ChangeKind.CI_CD, ".github/actions/custom/README.md");
+        assertEquals("known-ci-cd-path", classifier.classify(".github/workflows/ci.yml").ruleKey());
     }
 
     @Test
@@ -43,6 +45,7 @@ class ChangeKindClassifierTest {
         assertKind(ChangeKind.CODE, "scripts/release.sh");
         assertKind(ChangeKind.CODE, "tools/deploy.py");
         assertKind(ChangeKind.CODE, "build/release.ps1");
+        assertEquals("source-code-extension", classifier.classify("scripts/release.sh").ruleKey());
     }
 
     @Test
