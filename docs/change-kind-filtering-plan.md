@@ -50,64 +50,28 @@ Implemented.
 
 Implemented with a central `ChangeKindClassifier`.
 
-Initial high-confidence rules include:
-
-### Documentation
-
-- `*.md`
-- `*.mdx`
-- `*.rst`
-- `*.adoc`
-- `*.asciidoc`
-- `*.tex`
-- `*.txt`
-- clear documentation/book paths such as `docs/**`, `documentation/**`, `chapters/**`, `book/**`, `manus/**`, `manuscript/**`
-
-Documentation-path classification intentionally takes precedence over source-code extensions so code examples living inside documentation trees count as documentation activity.
-
-### CI/CD
-
-Only high-confidence CI/CD locations/files are classified as CI/CD:
-
-- `.github/workflows/**`
-- `.github/actions/**`
-- `.gitlab-ci.yml` / `.gitlab-ci.yaml`
-- `.gitlab/**`
-- `.circleci/**`
-- `Jenkinsfile`
-- `azure-pipelines.yml` / `azure-pipelines.yaml`
-
-CI/CD has the highest precedence. Generic `scripts/*.sh`, `scripts/*.py`, `tools/**`, etc. are not promoted to CI/CD merely because they may be used by automation.
-
-### Code
-
-A conservative set of common source-code/script extensions is classified as `CODE`. Configuration/manifests such as `pom.xml`, `package.json`, and `docker-compose.yml` remain `OTHER` in this first version.
-
-### Other
-
-Unknown or missing paths fall back safely to `OTHER`.
-
-The classifier normalizes case and Windows path separators and returns stable classifier metadata. Current rule keys are `known-ci-cd-path`, `documentation-directory`, `documentation-extension`, `source-code-extension`, and the shared `fallback-other`; classifier version is `1`. Focused unit tests cover positive and negative cases.
+Initial high-confidence rules include documentation, high-confidence CI/CD, common source-code/script extensions and safe `OTHER` fallback. Classification is deterministic, explainable and path-normalized.
 
 ---
 
-## Step 4 – Populate change-kind data during GitHub contribution ingestion
+## Step 4 – Populate change-kind data during GitHub contribution ingestion ✅
 
-Extend GitHub commit discovery so changed-file metadata is collected and classified as contributions are ingested/refreshed.
+Implemented.
 
-Avoid cloning repositories.
+GitHub commit detail is fetched for commit contributions so changed-file paths and line statistics can be classified and persisted.
 
-Handle GitHub API pagination/rate-limit behaviour consistently with existing ingestion.
+Key properties:
 
-For existing historical commits, provide a bounded re-analysis/backfill mechanism rather than requiring destructive re-import.
+- only commit contributions receive file-level change rows,
+- GitHub `files[]` is paginated at 100 files per page,
+- owning commit additions/deletions/changed-files are refreshed from commit detail,
+- all remote pages are fetched before existing file rows are replaced,
+- re-running sync is idempotent,
+- contribution scope version is now `3`, forcing one historical scan for existing installations,
+- existing contribution rows are retained and upserted rather than destructively rebuilt,
+- current weekly activity remains available until Step 5 switches filtered activity to file-level aggregation.
 
-**Acceptance criteria**
-
-- Newly ingested commits receive per-file change-kind data.
-- Mixed commits are represented correctly.
-- Re-running ingestion is idempotent.
-- Existing accounts can backfill the new dimension.
-- Worker/job progress and failure handling remain visible.
+Very-large-history operational tuning remains part of Step 8 acceptance/backfill validation.
 
 ---
 
@@ -155,97 +119,25 @@ Recommended default UX:
 - **Documentation**
 - **Custom…**
 
-The custom/advanced selection can expose:
-
-- Code
-- Documentation
-- CI/CD
-- Other
-
-Preserve `All` as the default so current users see unchanged behaviour until they choose a filter.
-
-Apply the control to all views where activity/change statistics are meaningful, including:
-
-- Overview
-- Activity
-- Projects
-- Project detail
-- Technologies where activity metrics are shown
-- Project types
-- report/export configuration where relevant
-
-Ensure the control is mobile-friendly.
-
-**Acceptance criteria**
-
-- One shared component/semantic is used instead of per-page bespoke filters.
-- Filter state updates all affected metrics in a view consistently.
-- Responsive/mobile tests cover the control.
-- Existing privacy labels remain correct.
+The custom/advanced selection can expose Code, Documentation, CI/CD and Other.
 
 ---
 
 ## Step 7 – Extend reports and External Analysis API
 
-Update the canonical report model so report activity can be generated for:
-
-- all change kinds
-- code only
-- documentation only
-- selected combinations
-
-Record the effective change-kind scope in report methodology/coverage so exported results remain interpretable.
-
-Extend External Analysis API documentation and OpenAPI schemas with the same filtering concept.
-
-**Acceptance criteria**
-
-- Markdown and PDF remain aligned because both use `CanonicalReport`.
-- Export clearly states which change kinds were included.
-- Public/private privacy semantics remain unchanged.
-- External API clients can request filtered activity without a new incompatible API family.
+Update the canonical report model and External Analysis API with the same change-kind scope while preserving backwards compatibility and privacy semantics.
 
 ---
 
 ## Step 8 – Backfill, acceptance testing and documentation
 
-Add an explicit migration/backfill operational path for existing installations.
+Finalize operational backfill behaviour, performance/rate-limit validation, end-to-end acceptance scenarios and product documentation.
 
-Update relevant documentation:
-
-- functional specification
-- architecture specification if persistence/query flow changes materially
-- operator/upgrade guidance
-- External Analysis API docs
-- README/development status as appropriate
-
-Add end-to-end acceptance scenarios using repositories that model:
-
-1. a code-centric application,
-2. a Markdown-heavy textbook/novel repository,
-3. a mixed code + documentation repository,
-4. a repository with GitHub Actions and generic shell scripts.
-
-Validate especially that:
-
-- book/novel edits no longer inflate code-only activity,
-- code-only views still include normal source-code work,
-- CI/CD filtering only removes confidently classified workflow changes,
-- “All” matches previous aggregate behaviour,
-- private-data isolation and privacy provenance still hold,
-- large-account processing remains bounded.
-
-**Acceptance criteria**
-
-- backend, frontend, privacy, migration, Compose smoke and mobile suites pass.
-- representative historical data can be backfilled.
-- change-kind filtering is documented and consistent across the product.
+Validate especially that book/novel edits no longer inflate code-only activity, CI/CD remains conservatively classified, “All” matches previous aggregate behaviour, privacy holds, and large-account processing remains bounded.
 
 ---
 
 ## Deferred refinements
-
-The first implementation should intentionally defer lower-confidence categories and inference.
 
 Potential later additions:
 
@@ -257,8 +149,6 @@ Potential later additions:
 - recognising scripts referenced directly by CI workflows
 - repository-specific/user correction rules for misclassified paths
 - activity composition visualisations by change kind over time
-
-The persistence/API model should allow these additions without another fundamental redesign.
 
 ## Suggested implementation order
 
