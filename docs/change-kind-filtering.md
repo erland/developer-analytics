@@ -46,12 +46,24 @@ No patch bodies or source-file contents are stored for this feature.
 
 GitHub commit-detail ingestion fetches changed-file metadata and classifies each file with classifier version `1`. Contribution scope version `3` is the historical re-analysis boundary for existing repositories.
 
-Backfill uses the existing contribution-sync/background-job mechanism rather than an unbounded one-shot database migration. Existing rows remain usable while repositories are progressively refreshed. Provider failures are fetch-before-replace: previously stored file-change data is not erased merely because a later provider request fails.
+Normal contribution refresh remains incremental with the existing three-day overlap. If a commit already has file-change rows for the current classifier version, Developer Analytics reuses those rows and skips the GitHub commit-detail request. Because a Git commit SHA is immutable, the overlap therefore does not repeatedly pay the per-commit detail cost.
+
+Historical change-kind backfill is separate from normal discovery. Repositories that already reached contribution scope version `2` reuse the commit rows already stored locally instead of relisting their complete GitHub history. A background job selects at most 100 commits that still lack current file classification, fetches details only for those commits, and queues another batch when work remains. Only one backfill chain is active per repository.
+
+This makes the operation resumable and rate-limit friendly:
+
+1. normal incremental contribution sync continues,
+2. each backfill job enriches at most 100 historical commits,
+3. successfully classified commits are skipped by later jobs,
+4. provider errors leave previously stored file-change rows intact,
+5. contribution scope version is marked current only when no unclassified historical commits remain.
+
+Repositories older than contribution scope version `2` retain the older complete-rescan migration behaviour needed by that earlier scope transition.
 
 Operationally:
 
 1. upgrade normally and let Flyway apply migration `V36`,
-2. allow background contribution refresh to populate historical file changes,
+2. allow background contribution refresh to enqueue historical change-kind backfill where needed,
 3. monitor the existing sync/job status views for progress, rate limiting and failures,
 4. retry/recover through the normal worker/job mechanisms rather than manually editing classification rows.
 
@@ -71,7 +83,9 @@ External Analysis API `GET /api/me/activity` accepts repeated or comma-separated
 
 Filtered aggregation is backed by the change-kind/time indexes introduced in `V36`. The existing CI large-account acceptance scenario seeds 240 repositories, enforces bounded pagination, checks API requests against a five-second ceiling, exercises partial enrichment, worker recovery and surfaced provider rate limiting.
 
-The change-kind implementation deliberately reuses those bounded repository/job mechanisms. It does not introduce repository cloning, patch storage or an unbounded synchronous historical scan.
+The expensive provider operation is the first file-level enrichment of a historical commit. It requires a GitHub commit-detail request because weekly aggregate statistics do not contain changed file paths. That cost is paid once per commit and spread over bounded 100-commit background batches rather than one unbounded sync. Subsequent incremental refreshes reuse current classification rows.
+
+The change-kind implementation does not introduce repository cloning, patch storage or an unbounded synchronous historical scan.
 
 ## Acceptance scenarios
 
@@ -89,6 +103,8 @@ The automated suite covers these feature-specific cases:
 | External activity filter | Same selection syntax, privacy still enforced |
 | Fresh database | `V36` present and all Flyway migrations successful |
 | Large account | Existing 240-repository bounded acceptance flow remains green |
+| Repeated incremental sync | Already classified commit SHAs do not trigger another detail fetch |
+| Scope-2 historical upgrade | Existing commit rows are enriched in bounded 100-commit background batches |
 
 ## Deferred refinements
 
