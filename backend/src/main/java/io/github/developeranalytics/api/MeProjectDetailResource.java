@@ -3,6 +3,7 @@ package io.github.developeranalytics.api;
 import io.github.developeranalytics.auth.AuthenticationService;
 import io.github.developeranalytics.auth.CurrentUser;
 import io.github.developeranalytics.auth.CurrentUserService;
+import io.github.developeranalytics.domain.change.ChangeKind;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.domain.project.ProjectSignificanceAssessment;
 import io.github.developeranalytics.persistence.project.ProjectSignificanceRepository;
@@ -10,6 +11,8 @@ import io.github.developeranalytics.persistence.project.RepositoryProjectCategor
 import io.github.developeranalytics.persistence.repository.RepositoryUserActivityWeekRepository;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
 import io.github.developeranalytics.persistence.technology.RepositoryTechnologyEvidenceRepository;
+import io.github.developeranalytics.service.activity.ProjectChangeKindActivityService;
+import io.github.developeranalytics.service.change.ChangeKindSelection;
 import io.github.developeranalytics.service.correction.UserCorrectionService;
 import io.github.developeranalytics.service.project.ProjectSignificanceService;
 import jakarta.inject.Inject;
@@ -34,13 +37,19 @@ public class MeProjectDetailResource {
     @Inject RepositoryUserActivityWeekRepository weeklyActivity;
     @Inject UserCorrectionService corrections;
     @Inject ProjectSignificanceService significanceService;
+    @Inject ProjectChangeKindActivityService filteredActivity;
 
     @GET
     @Transactional
     public Detail get(@CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken,
-                      @PathParam("repositoryId") UUID repositoryId) {
+                      @PathParam("repositoryId") UUID repositoryId,
+                      @QueryParam("changeKinds") List<String> rawChangeKinds) {
         CurrentUser current=currentUserService.requireCurrentUser(sessionToken);
         SourceRepository repository=repositories.findByIdForUser(repositoryId,current.user().getId()).orElseThrow(NotFoundException::new);
+        Set<ChangeKind> changeKinds;
+        try { changeKinds = ChangeKindSelection.parse(rawChangeKinds); }
+        catch (IllegalArgumentException error) { throw new BadRequestException(error.getMessage()); }
+
         Map<String,TechnologyEvidence> technologyMap=new LinkedHashMap<>();
         for(var item:technologyEvidence.findForRepository(current.user().getId(),repositoryId)){
             technologyMap.putIfAbsent(item.getTechnology().getTechnologyKey(),new TechnologyEvidence(
@@ -51,17 +60,50 @@ public class MeProjectDetailResource {
                 assignment.getConfidence().name(),assignment.getRationale(),assignment.getPrivacyProvenance().name(),false)).toList();
         ProjectSignificanceAssessment assessment=significance.find(current.user().getId(),repositoryId)
                 .orElseGet(()->significanceService.calculateAndStore(current.user(),repository));
+        Activity activity = ChangeKindSelection.isAll(changeKinds)
+                ? loadActivity(current.user().getId(),repository)
+                : loadFilteredActivity(current.user().getId(), repository, changeKinds);
         return new Detail(
                 new Metadata(repository.getId(),repository.getProvider(),repository.getName(),repository.getFullName(),repository.getDescription(),
                         repository.getHtmlUrl(),repository.getVisibility().name(),repository.getOwnershipRelation().name(),repository.getOwnerLogin(),
                         repository.isFork(),repository.isArchived(),repository.getTopics(),repository.getLastActivityAt(),
                         corrections.isProjectExcludedFromAiProfile(current.user().getId(),repository.getId())),
-                loadActivity(current.user().getId(),repository),new ArrayList<>(technologyMap.values()),categories,
+                activity,new ArrayList<>(technologyMap.values()),categories,
                 assessment==null?null:new Assessment(assessment.getSignificanceLevel().name(),assessment.getSignificanceScore(),
                         assessment.getSignificanceRationale(),assessment.getInvolvementLevel().name(),assessment.getInvolvementScore(),
                         assessment.getInvolvementRationale(),assessment.getCalculatedAt(),assessment.getPrivacyProvenance().name()),
                 new Synchronisation(repository.getSyncStatus().name(),repository.getLastSeenAt(),repository.getSyncError()),
                 new Contributors(repository.getContributorCount(),repository.getHumanContributorCount(),repository.getBotContributorCount(),repository.getUserCommitCount()));
+    }
+
+    private Activity loadFilteredActivity(UUID userId, SourceRepository repository, Set<ChangeKind> changeKinds) {
+        var result = filteredActivity.get(userId, repository.getId(), changeKinds);
+        int[] otherCounts = loadNonCommitCounts(userId, repository.getId());
+        List<ActivityPoint> timeline = result.timeline().stream()
+                .map(point -> new ActivityPoint(point.month(), point.commits(), point.additions(), point.deletions(),
+                        point.changedLines(), point.lineStatisticsCommitCount()))
+                .toList();
+        return new Activity(result.commits(), otherCounts[0], otherCounts[1], otherCounts[2],
+                result.additions(), result.deletions(), result.firstActivityAt(), result.lastActivityAt(), timeline);
+    }
+
+    private int[] loadNonCommitCounts(UUID userId, UUID repositoryId) {
+        List<Object[]> rows = entityManager.createQuery(
+                "select c.type,count(c.id) from Contribution c where c.user.id=:userId and c.repository.id=:repositoryId " +
+                        "and c.type<>:commitType group by c.type", Object[].class)
+                .setParameter("userId", userId).setParameter("repositoryId", repositoryId)
+                .setParameter("commitType", io.github.developeranalytics.domain.model.Contribution.Type.COMMIT).getResultList();
+        int prs=0,reviews=0,issues=0;
+        for (Object[] row : rows) {
+            int count=((Number)row[1]).intValue();
+            switch ((io.github.developeranalytics.domain.model.Contribution.Type)row[0]) {
+                case PULL_REQUEST -> prs=count;
+                case REVIEW -> reviews=count;
+                case ISSUE -> issues=count;
+                default -> { }
+            }
+        }
+        return new int[]{prs,reviews,issues};
     }
 
     private Activity loadActivity(UUID userId,SourceRepository repository){

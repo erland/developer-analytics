@@ -1,12 +1,10 @@
 # External Analysis API Contract
 
-
 > Machine-readable OpenAPI: [`openapi/external-analysis-v1.yaml`](openapi/external-analysis-v1.yaml)  
 > Practical GPT/API guide: [`gpt-api-integration.md`](gpt-api-integration.md)  
 > Sample Custom GPT Action: [`openapi/custom-gpt-action-example.yaml`](openapi/custom-gpt-action-example.yaml)
 
-
-Status: **v1 contract, Step 59**
+Status: **v1 contract**
 
 The External Analysis API exposes compact user-scoped analytics suitable for an LLM/GPT client. It deliberately avoids frontend presentation objects, chart configuration, HTML, source-code content, verbose rationales and provider-specific UI state.
 
@@ -56,7 +54,6 @@ Scopes map directly to the compact analysis endpoints:
 
 A missing/invalid/revoked bearer token is rejected. A valid token without the endpoint's scope is forbidden.
 
-
 ## Privacy scopes
 
 Each external token also has exactly one server-enforced privacy scope:
@@ -69,7 +66,7 @@ Each external token also has exactly one server-enforced privacy scope:
 
 `PUBLIC_ONLY` is the default.
 
-Privacy scopes are independent from endpoint read scopes. A token therefore needs both the endpoint scope (for example `PROJECTS_READ`) and a sufficiently permissive privacy scope.
+Privacy scopes are independent from endpoint read scopes and from change-kind filtering. A change-kind filter can narrow activity but can never widen the repositories or private data allowed by the token.
 
 Server enforcement rules include:
 
@@ -133,6 +130,37 @@ Descriptions, repository URLs, source files and detailed evidence are intentiona
 
 Returns compact activity totals and a monthly time series. `months` is capped at 120.
 
+Activity can optionally be restricted by changed-file category:
+
+```http
+GET /api/me/activity?months=24&changeKinds=CODE,DOCUMENTATION
+```
+
+`changeKinds` accepts `CODE`, `DOCUMENTATION`, `CI_CD` and `OTHER`. Comma-separated and repeated query parameters are accepted. Unknown values return HTTP 400.
+
+When `changeKinds` is omitted, the endpoint preserves the historical **All** behaviour and returns all recorded contribution types. When a change-kind filter is explicitly supplied, activity is derived from persisted changed-file classifications: only commits touching at least one selected kind are included, and a mixed commit is counted once even if several selected kinds occur in that commit. Non-commit contributions are excluded from a filtered result because they do not have changed-file classifications.
+
+The response includes an explicit scope:
+
+```json
+{
+  "contributionCount": 412,
+  "activeProjectCount": 18,
+  "contributionTypes": {
+    "COMMIT": 412,
+    "PULL_REQUEST": 0,
+    "REVIEW": 0,
+    "ISSUE": 0
+  },
+  "monthly": [],
+  "privacyProvenance": "PUBLIC_ONLY",
+  "changeScope": {
+    "allChanges": false,
+    "changeKinds": ["CODE", "DOCUMENTATION"]
+  }
+}
+```
+
 Fields:
 
 - `contributionCount`
@@ -140,6 +168,7 @@ Fields:
 - `contributionTypes`
 - `monthly`
 - `privacyProvenance`
+- `changeScope`
 
 ### `GET /api/me/technologies?limit=30`
 
@@ -168,7 +197,7 @@ Fields:
 
 ### `GET /api/me/contributions`
 
-Returns contribution totals grouped by type rather than individual commit/PR/issue titles.
+Returns contribution totals grouped by type rather than individual commit/PR/issue titles. This endpoint is intentionally unfiltered; use `/activity?changeKinds=...` for changed-file activity scope.
 
 ```json
 {
@@ -208,12 +237,11 @@ Project-type evidence fields:
 ## Contract principles
 
 1. **Compact before exhaustive.** The API is intended to provide enough structured context for reasoning, not mirror every database field.
-2. **Measured data remains distinguishable from inference.** Evidence strength, confidence and source fields are retained.
+2. **Measured data remains distinguishable from inference.** Evidence strength, confidence, source and changed-file scope are retained.
 3. **No frontend coupling.** No cards, labels, chart widths or presentation state appear in the contract.
 4. **No raw private source content.** Repository source content is outside this contract.
 5. **Corrections are honored.** User corrections affect the analytical view without deleting source facts.
-6. **Stable version boundary.** Breaking field changes require a new analysis media type version.
-
+6. **Stable version boundary.** Breaking field changes require a new analysis media type version. Optional change-kind filtering and the additive `changeScope` response field remain within v1.
 
 ## Returned AI assessments
 

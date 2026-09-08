@@ -56,6 +56,7 @@ public class PdfReportRenderer {
         out.keyValue("Report model", report.modelVersion());
         out.keyValue("Generated", report.generatedAt().toString());
         out.keyValue("Privacy scope", report.privacyScope().name());
+        out.keyValue("Change scope", changeScopeLabel(report));
         out.keyValue(
                 "Period",
                 date(report.period().firstActivityAt()) + " - " +
@@ -90,8 +91,6 @@ public class PdfReportRenderer {
             return;
         }
 
-        // Intentionally rendered as wrapping cards rather than a 7-column table.
-        // This prevents wide-table clipping on A4.
         for (var item : report.technologyAnalysis()) {
             out.card(
                     item.name(),
@@ -109,6 +108,7 @@ public class PdfReportRenderer {
 
     private void activity(Layout out, CanonicalReport report) throws IOException {
         out.heading("Activity", 14);
+        out.paragraph("Change scope: " + changeScopeLabel(report));
         out.heading("Contribution totals", 11);
         for (var entry : report.activity().byType().entrySet()) {
             out.compactRow(entry.getKey(), Integer.toString(entry.getValue()));
@@ -124,7 +124,6 @@ public class PdfReportRenderer {
                 .mapToInt(CanonicalReport.ActivityMonth::contributionCount)
                 .max().orElse(1);
 
-        // A compact print-native horizontal chart, independent of dashboard CSS.
         for (var month : report.activity().monthly()) {
             out.activityBar(
                     month.month(),
@@ -181,6 +180,7 @@ public class PdfReportRenderer {
     private void methodology(Layout out, CanonicalReport report) throws IOException {
         out.heading("Methodology", 14);
         out.paragraph(report.methodology().measuredDataStatement());
+        out.paragraph(report.methodology().changeScopeStatement());
         out.paragraph(report.methodology().inferenceStatement());
         out.paragraph(report.methodology().correctionStatement());
 
@@ -190,6 +190,12 @@ public class PdfReportRenderer {
                 out.paragraph("- " + source);
             }
         }
+    }
+
+    private String changeScopeLabel(CanonicalReport report) {
+        return report.changeScope().allChanges()
+                ? "ALL"
+                : String.join(", ", report.changeScope().changeKinds());
     }
 
     private String date(OffsetDateTime value) {
@@ -332,8 +338,6 @@ public class PdfReportRenderer {
             stream = new PDPageContentStream(document,page);
             pageNumber++;
             y=page.getMediaBox().getHeight()-MARGIN;
-
-            // Persistent privacy marking on every page.
             String mark="Privacy: "+report.privacyScope().name();
             textLine(mark,bold,7.5f,MARGIN,y+13);
         }

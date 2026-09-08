@@ -24,6 +24,7 @@ public class GitHubContributionDiscoveryService {
     @Inject ContributionRepository contributions;
     @Inject ContributionSyncRunRepository syncRuns;
     @Inject GitHubWeeklyActivityService weeklyActivity;
+    @Inject GitHubCommitFileChangeService commitFileChanges;
 
     @Transactional
     public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since)
@@ -65,7 +66,8 @@ public class GitHubContributionDiscoveryService {
                     Contribution.Type type = mapType(pc.type());
                     Contribution contribution = contributions.findByProviderIdentity(
                             user.getId(), "github", pc.externalContributionId(), type).orElse(null);
-                    if (contribution == null) {
+                    boolean existing = contribution != null;
+                    if (!existing) {
                         contribution = new Contribution(user, repository, "github",
                                 pc.externalContributionId(), type, pc.occurredAt());
                         contributions.persist(contribution);
@@ -73,8 +75,24 @@ public class GitHubContributionDiscoveryService {
                     } else {
                         updated++;
                     }
-                    contribution.updateFromDiscovery(pc.title(), pc.occurredAt(), mapState(pc.state()),
-                            pc.additions(), pc.deletions(), pc.changedFiles(), pc.merged());
+
+                    boolean cachedCommitDetails = type == Contribution.Type.COMMIT
+                            && existing
+                            && commitFileChanges.hasCurrentClassification(contribution);
+
+                    contribution.updateFromDiscovery(
+                            pc.title(), pc.occurredAt(), mapState(pc.state()),
+                            cachedCommitDetails ? contribution.getAdditions() : pc.additions(),
+                            cachedCommitDetails ? contribution.getDeletions() : pc.deletions(),
+                            cachedCommitDetails ? contribution.getChangedFiles() : pc.changedFiles(),
+                            pc.merged());
+
+                    if (type == Contribution.Type.COMMIT && !cachedCommitDetails) {
+                        GitHubCommitFileChangeService.CommitDetails details =
+                                commitFileChanges.refresh(user, repository, contribution, token);
+                        contribution.updateFileStatistics(
+                                details.additions(), details.deletions(), details.changedFiles());
+                    }
                     seen++;
                 }
 
@@ -92,17 +110,20 @@ public class GitHubContributionDiscoveryService {
                         statistics.userCommitCount(), statistics.repositoryCommitCount(), statistics.userAdditions(),
                         statistics.userDeletions(), statistics.observedAt());
             } catch (ProviderException statisticsError) {
+                if (statisticsError.getStatusCode() == 403 || statisticsError.getStatusCode() == 429) {
+                    throw statisticsError;
+                }
                 StructuredLog.warn(LOG, "contributor_statistics_unavailable", statisticsError,
                         StructuredLog.fields("repositoryId", repository.getId(), "httpStatus", statisticsError.getStatusCode()));
             }
 
-            // GitHub's commit list does not contain additions/deletions. The contributor
-            // statistics endpoint does, grouped by week, so keep that separately for time charts.
             weeklyActivity.refresh(user.getId(), repository, token, providerUser.login());
 
             OffsetDateTime completedAt = OffsetDateTime.now(java.time.ZoneOffset.UTC);
             run.complete(completedAt);
-            repository.markContributionScopeCurrent();
+            if (!commitFileChanges.hasMissingCurrentClassification(user, repository)) {
+                repository.markContributionScopeCurrent();
+            }
             repository.markSynced(completedAt);
             StructuredLog.info(LOG, "contribution_sync_completed",
                     StructuredLog.fields("syncId", run.getId(), "repositoryId", repository.getId(),
@@ -111,11 +132,13 @@ public class GitHubContributionDiscoveryService {
         } catch (ProviderException e) {
             StructuredLog.warn(LOG, "contribution_sync_provider_error", e,
                     StructuredLog.fields("syncId", run.getId(), "provider", "github",
-                            "repositoryId", repository.getId(), "httpStatus", e.getStatusCode()));
+                            "repositoryId", repository.getId(), "httpStatus", e.getStatusCode(),
+                            "retryAt", e.getRetryAt()));
             OffsetDateTime failedAt = OffsetDateTime.now(java.time.ZoneOffset.UTC);
             repository.markSyncFailed(e.getMessage());
             if (e.getStatusCode() == 403 || e.getStatusCode() == 429) {
-                run.rateLimited(e.getMessage(), run.getRateLimitResetAt(), failedAt);
+                OffsetDateTime resetAt = e.getRetryAt() != null ? e.getRetryAt() : run.getRateLimitResetAt();
+                run.rateLimited(e.getMessage(), resetAt, failedAt);
             } else {
                 run.fail(e.getMessage(), failedAt);
             }

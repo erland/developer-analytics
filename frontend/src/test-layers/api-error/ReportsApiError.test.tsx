@@ -28,7 +28,7 @@ describe('API error-state layer: reports', () => {
     chooseRequiredReportSettings()
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Preview report privacy' }),
+      screen.getByRole('button', { name: 'Preview report privacy and scope' }),
     )
 
     expect(await screen.findByRole('alert')).toHaveTextContent(

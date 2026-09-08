@@ -12,6 +12,7 @@ import java.util.UUID;
 @Table(name = "source_repository")
 public class SourceRepository {
     public static final int CURRENT_ANALYSIS_VERSION = 2;
+    public static final int CURRENT_CONTRIBUTION_SCOPE_VERSION = 3;
 
     @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -116,7 +117,7 @@ public class SourceRepository {
         codeSizeBytes = Math.max(0L, value);
     }
 
-    public void markContributionScopeCurrent() { contributionScopeVersion = 2; }
+    public void markContributionScopeCurrent() { contributionScopeVersion = CURRENT_CONTRIBUTION_SCOPE_VERSION; }
     public void updateContributorStatistics(int contributors, int humans, int bots, int commits, int repositoryCommits, long additions, long deletions, OffsetDateTime observedAt) {
         this.contributorCount = contributors;
         this.humanContributorCount = humans;

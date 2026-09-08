@@ -34,7 +34,9 @@ class CanonicalReportModelTest {
                 CanonicalReport.PrivacyScope.PUBLIC_ONLY
         );
 
-        assertEquals("report-v1", report.modelVersion());
+        assertEquals("report-v2", report.modelVersion());
+        assertTrue(report.changeScope().allChanges());
+        assertTrue(report.changeScope().changeKinds().isEmpty());
         assertNotNull(report.summary());
         assertNotNull(report.period());
         assertNotNull(report.dataCoverage());

@@ -2,13 +2,17 @@ package io.github.developeranalytics.api;
 
 import io.github.developeranalytics.auth.AuthenticationService;
 import io.github.developeranalytics.auth.CurrentUserService;
+import io.github.developeranalytics.domain.change.ChangeKind;
 import io.github.developeranalytics.service.activity.ActivityApplicationService;
+import io.github.developeranalytics.service.activity.ChangeKindActivityService;
+import io.github.developeranalytics.service.change.ChangeKindSelection;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Path("/api/me")
@@ -16,6 +20,7 @@ import java.util.UUID;
 public class MeActivityResource {
     @Inject CurrentUserService currentUserService;
     @Inject ActivityApplicationService activity;
+    @Inject ChangeKindActivityService filteredActivity;
 
     @GET
     @Path("/activity")
@@ -25,11 +30,22 @@ public class MeActivityResource {
                                 @QueryParam("week") String week, @QueryParam("search") String search,
                                 @QueryParam("ownership") String ownership, @QueryParam("visibility") String visibility,
                                 @QueryParam("projectType") List<String> selectedProjectTypes,
-                                @QueryParam("technology") List<String> technologiesFilter) {
+                                @QueryParam("technology") List<String> technologiesFilter,
+                                @QueryParam("changeKinds") List<String> rawChangeKinds) {
         var current = currentUserService.requireCurrentUser(sessionToken);
         var period = AnalysisPeriod.resolve(from, to, year, month, week);
-        return toResponse(activity.get(current.user().getId(), period.from(), period.to(), search, ownership, visibility,
-                selectedProjectTypes, technologiesFilter));
+        final Set<ChangeKind> changeKinds;
+        try {
+            changeKinds = ChangeKindSelection.parse(rawChangeKinds);
+        } catch (IllegalArgumentException error) {
+            throw new BadRequestException(error.getMessage());
+        }
+        var result = ChangeKindSelection.isAll(changeKinds)
+                ? activity.get(current.user().getId(), period.from(), period.to(), search, ownership, visibility,
+                        selectedProjectTypes, technologiesFilter)
+                : filteredActivity.get(current.user().getId(), period.from(), period.to(), search, ownership, visibility,
+                        selectedProjectTypes, technologiesFilter, changeKinds);
+        return toResponse(result);
     }
 
     private ActivityResponse toResponse(ActivityApplicationService.ActivityResult result) {

@@ -5,6 +5,7 @@ import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.persistence.repository.ContributionRepository;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
 import io.github.developeranalytics.service.discovery.GitHubContributionDiscoveryService;
+import io.github.developeranalytics.service.job.RepositoryDiscoveryJobService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -20,6 +21,7 @@ public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandl
     @Inject SourceRepositoryRepository repositories;
     @Inject ContributionRepository contributions;
     @Inject GitHubContributionDiscoveryService discovery;
+    @Inject RepositoryDiscoveryJobService jobs;
 
     @Override
     public String jobType() {
@@ -41,9 +43,9 @@ public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandl
                 UUID.fromString(repositoryId.toString()), job.getUser().getId())
                 .orElseThrow(() -> new IllegalStateException("Repository not found for job user"));
 
-        // A scope-version change still forces a complete rebuild. Normal refreshes start
-        // just before the latest stored commit to tolerate timestamp/force-push edge cases
-        // without repeatedly downloading a fixed 30-day window.
+        // Version 2 and later already contain the historical contribution rows we need. Do not
+        // force a complete GitHub rescan just to populate change-kind metadata; that backfill is
+        // handled in bounded batches from the local contribution table instead.
         OffsetDateTime since = repository.getContributionScopeVersion() < 2
                 ? null
                 : contributions.latestCommitAt(job.getUser().getId(), repository.getId())
@@ -51,5 +53,9 @@ public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandl
                         .orElse(null);
 
         discovery.discover(job.getUser(), repository, since);
+
+        if (repository.getContributionScopeVersion() < SourceRepository.CURRENT_CONTRIBUTION_SCOPE_VERSION) {
+            jobs.enqueueChangeKindBackfill(job.getUser(), repository.getId());
+        }
     }
 }

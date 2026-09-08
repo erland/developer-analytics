@@ -21,6 +21,7 @@ describe('privacy layer: report indicators', () => {
             privateRepositoryCount: 4,
             contributionCount: 245,
             reportModelVersion: 'report-v1',
+            changeScope: { allChanges: true, changeKinds: [] },
           }),
           {
             status: 200,
@@ -42,7 +43,7 @@ describe('privacy layer: report indicators', () => {
       screen.getByRole('radio', { name: /Hide private repository names/ }),
     )
     fireEvent.click(
-      screen.getByRole('button', { name: 'Preview report privacy' }),
+      screen.getByRole('button', { name: 'Preview report privacy and scope' }),
     )
 
     expect(await screen.findByText('Private scope — aggregates only')).toBeVisible()

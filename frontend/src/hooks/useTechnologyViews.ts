@@ -1,63 +1,11 @@
 import { useEffect, useState } from 'react'
 import { getJson } from '../api/request'
+import { ALL_CHANGE_KINDS, appendChangeKinds, changeKindSelectionKey, type ChangeKind } from '../analysis/ChangeKind'
 
-export type TechnologyView = {
-  technologyKey: string
-  technologyName: string
-  technologyCategory: string
-  evidenceLevel: string
-  evidenceScore: number
-  projectCount: number
-  evidenceCount: number
-  independentEvidenceTypes: number
-  firstObservedAt: string | null
-  lastObservedAt: string | null
-  recentProjectCount: number
-  privacyProvenance: 'PUBLIC_ONLY' | 'INCLUDES_PRIVATE' | 'PRIVATE_AGGREGATE'
-  rationale: Record<string, unknown>
-  timeline: Array<{
-    month: string
-    commits: number
-    changedLines: number
-    lineStatisticsCommitCount: number
-    projectCount: number
-  }>
-  representativeProjects: Array<{
-    repositoryId: string
-    repositoryName: string
-    htmlUrl: string | null
-    visibility: string
-    ownershipRelation: string
-    lastActivityAt: string | null
-    evidenceCount: number
-  }>
-}
+export type TechnologyView={technologyKey:string;technologyName:string;technologyCategory:string;evidenceLevel:string;evidenceScore:number;projectCount:number;evidenceCount:number;independentEvidenceTypes:number;firstObservedAt:string|null;lastObservedAt:string|null;recentProjectCount:number;privacyProvenance:'PUBLIC_ONLY'|'INCLUDES_PRIVATE'|'PRIVATE_AGGREGATE';rationale:Record<string,unknown>;timeline:Array<{month:string;commits:number;changedLines:number;lineStatisticsCommitCount:number;projectCount:number}>;representativeProjects:Array<{repositoryId:string;repositoryName:string;htmlUrl:string|null;visibility:string;ownershipRelation:string;lastActivityAt:string|null;evidenceCount:number}>}
+type State={status:'loading';data:null;error:null}|{status:'ready';data:TechnologyView[];error:null}|{status:'error';data:null;error:string}
 
-type State =
-  | { status: 'loading'; data: null; error: null }
-  | { status: 'ready'; data: TechnologyView[]; error: null }
-  | { status: 'error'; data: null; error: string }
-
-export function useTechnologyViews(): State {
-  const [state, setState] = useState<State>({ status: 'loading', data: null, error: null })
-
-  useEffect(() => {
-    const controller = new AbortController()
-    async function load() {
-      try {
-        const data = await getJson<TechnologyView[]>('/api/me/technologies', {
-          signal: controller.signal,
-          errorMessage: 'Technology request failed',
-        })
-        setState({ status: 'ready', data, error: null })
-      } catch (error) {
-        if (controller.signal.aborted) return
-        setState({ status: 'error', data: null, error: error instanceof Error ? error.message : 'Unable to load technologies' })
-      }
-    }
-    void load()
-    return () => controller.abort()
-  }, [])
-
-  return state
+export function useTechnologyViews(changeKinds: readonly ChangeKind[] = ALL_CHANGE_KINDS):State{
+ const [state,setState]=useState<State>({status:'loading',data:null,error:null}); const key=changeKindSelectionKey(changeKinds)
+ useEffect(()=>{const controller=new AbortController(); async function load(){try{const params=new URLSearchParams();appendChangeKinds(params,changeKinds);const data=await getJson<TechnologyView[]>(`/api/me/technologies${params.size?`?${params}`:''}`,{signal:controller.signal,errorMessage:'Technology request failed'});setState({status:'ready',data,error:null})}catch(error){if(controller.signal.aborted)return;setState({status:'error',data:null,error:error instanceof Error?error.message:'Unable to load technologies'})}}void load();return()=>controller.abort()},[key,changeKinds]);return state
 }
