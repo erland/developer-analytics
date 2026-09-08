@@ -2,7 +2,7 @@
 
 **Repository:** `erland/developer-analytics`  
 **Scope:** Add evidence-based classification of changed files so activity can be filtered by code, documentation, CI/CD, or combinations of these.  
-**Status:** Implementation in progress
+**Status:** Implemented; final CI/acceptance verification in PR #72
 
 ## Goal
 
@@ -71,8 +71,6 @@ Key properties:
 - existing contribution rows are retained and upserted rather than destructively rebuilt,
 - current weekly activity remains available until Step 5 switches filtered activity to file-level aggregation.
 
-Very-large-history operational tuning remains part of Step 8 acceptance/backfill validation.
-
 ---
 
 ## Step 5 – Add change-kind-aware backend aggregations and API filtering ✅
@@ -102,36 +100,49 @@ Commit semantics are explicit:
 - additions/deletions are summed from matching file rows only and are never double-counted inside one query,
 - invalid change-kind values fail with HTTP 400 instead of being silently ignored.
 
-Report/canonical-report and External Analysis API exposure remain Step 7 so their public contract and methodology metadata can be updated together.
-
 ---
 
-## Step 6 – Add reusable frontend filter controls
+## Step 6 – Add reusable frontend filter controls ✅
 
-Introduce one reusable change-kind filter component and use it consistently.
+Implemented with one shared change-kind selection and reusable filter component.
 
-Recommended default UX:
+Default UX:
 
 - **All**
 - **Code**
 - **Documentation**
 - **Custom…**
 
-The custom/advanced selection can expose Code, Documentation, CI/CD and Other.
+Custom selection exposes Code, Documentation, CI/CD and Other. The selection is reused across the relevant analytical views and Reports. Legacy/standalone consumers default safely to **All**.
 
 ---
 
-## Step 7 – Extend reports and External Analysis API
+## Step 7 – Extend reports and External Analysis API ✅
 
-Update the canonical report model and External Analysis API with the same change-kind scope while preserving backwards compatibility and privacy semantics.
+Implemented.
+
+The canonical report model is `report-v2` with explicit `changeScope`. Markdown/PDF reports, preview/export, and External Analysis API activity use the same optional `changeKinds` semantics while preserving historical **All** behaviour and independent privacy enforcement.
 
 ---
 
-## Step 8 – Backfill, acceptance testing and documentation
+## Step 8 – Backfill, acceptance testing and documentation ✅
 
-Finalize operational backfill behaviour, performance/rate-limit validation, end-to-end acceptance scenarios and product documentation.
+Implemented.
 
-Validate especially that book/novel edits no longer inflate code-only activity, CI/CD remains conservatively classified, “All” matches previous aggregate behaviour, privacy holds, and large-account processing remains bounded.
+Operational backfill remains bounded by the existing contribution-sync/background-job architecture rather than a synchronous migration. Contribution scope version `3` triggers historical re-analysis, while Flyway `V36` only creates the file-change persistence/index structures.
+
+Final acceptance/documentation coverage includes:
+
+- Markdown book/manuscript edits classify as Documentation rather than Code,
+- Java/TypeScript/Python/source edits classify as Code,
+- mixed source + documentation + workflow commits retain multiple kinds,
+- CI/CD classification remains conservative and generic deployment/release scripts remain Code,
+- omitted `changeKinds` remains **All**,
+- `report-v2` legacy construction still resolves to **All**,
+- fresh-database migration validation includes `contribution_file_change` and all 36 migrations,
+- existing privacy acceptance remains the boundary for filtered data as well,
+- the existing 240-repository large-account CI scenario remains the bounded performance/rate-limit/recovery gate,
+- product/operator semantics are documented in `docs/change-kind-filtering.md`.
 
 ---
 
@@ -150,4 +161,4 @@ Potential later additions:
 
 ## Suggested implementation order
 
-Execute Steps 1–8 sequentially. Each step should leave the repository buildable and tested. Avoid implementing UI filtering before the persisted per-file data and shared backend semantics are stable.
+Steps 1–8 are now implemented sequentially. The resulting design keeps the persisted per-file evidence and shared backend semantics as the foundation for UI, reports and external API filtering.
