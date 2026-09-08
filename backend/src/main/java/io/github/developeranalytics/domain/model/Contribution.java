@@ -47,6 +47,13 @@ public class Contribution {
         this.changedFiles = changedFiles;
         this.merged = merged;
     }
+
+    public void updateFileStatistics(int additions, int deletions, int changedFiles) {
+        this.additions = additions;
+        this.deletions = deletions;
+        this.changedFiles = changedFiles;
+    }
+
     public Contribution(AppUser user, SourceRepository repository, String provider, String providerContributionId, Type type, OffsetDateTime occurredAt) {
         this.user=user; this.repository=repository; this.provider=provider; this.providerContributionId=providerContributionId; this.type=type; this.occurredAt=occurredAt;
     }
@@ -55,4 +62,7 @@ public class Contribution {
     public String getProviderContributionId() { return providerContributionId; }
     public OffsetDateTime getOccurredAt() { return occurredAt; }
     public String getTitle() { return title; }
+    public Integer getAdditions() { return additions; }
+    public Integer getDeletions() { return deletions; }
+    public Integer getChangedFiles() { return changedFiles; }
 }
