@@ -263,7 +263,7 @@ public class GitHubProviderAdapter implements SourceControlProvider {
             if (since != null && updatedAt != null && updatedAt.isBefore(since)) continue;
             ProviderContribution.State state = "open".equals(node.path("state").asText())
                     ? ProviderContribution.State.OPEN : ProviderContribution.State.CLOSED;
-            contributions.add(new ProviderContribution("issue-" + node.path("id").asText(), ProviderContribution.Type.ISSUE,
+            result.add(new ProviderContribution("issue-" + node.path("id").asText(), ProviderContribution.Type.ISSUE,
                     node.path("title").asText(null), updatedAt, state, null, null, null, null));
         }
         return result;
@@ -460,12 +460,6 @@ public class GitHubProviderAdapter implements SourceControlProvider {
             throw new ProviderException("Invalid GitHub page cursor", 0, e);
         }
     }
-
-    private ProviderRepository mapRepositoryLegacy(JsonNode node) { return mapRepository(node); }
-
-    private List<String> mapTopicsLegacy(JsonNode node) { return mapTopics(node); }
-
-    private Long repositorySizeBytesLegacy(JsonNode node) { return repositorySizeBytes(node); }
 
     private OffsetDateTime parseDate(JsonNode node, String field) {
         return node.hasNonNull(field) ? OffsetDateTime.parse(node.get(field).asText()) : null;
