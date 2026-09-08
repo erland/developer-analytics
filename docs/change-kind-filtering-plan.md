@@ -75,36 +75,34 @@ Very-large-history operational tuning remains part of Step 8 acceptance/backfill
 
 ---
 
-## Step 5 – Add change-kind-aware backend aggregations and API filtering
+## Step 5 – Add change-kind-aware backend aggregations and API filtering ✅
 
-Introduce a common API filter semantic such as:
+Implemented for the product-facing backend activity APIs.
+
+Shared query semantics:
 
 `changeKinds=CODE,DOCUMENTATION`
 
-Apply it to activity-oriented APIs while preserving existing output when omitted.
+The same parser also accepts repeated query parameters. Omitted/empty `changeKinds` means **All** and preserves the pre-existing aggregation path.
 
-At minimum cover:
+Implemented coverage:
 
-- overview activity metrics
-- activity timeline/statistics
-- project activity summaries/details
-- project type/category activity
-- technology-associated activity where activity is derived from commits
-- report input/canonical report model
-- External Analysis API activity-oriented payloads
+- overview/activity metrics and timelines,
+- project lifecycle/activity summaries in the activity response,
+- project detail activity,
+- project type/category activity,
+- technology-associated activity where activity is derived from commits.
 
-Define commit-count semantics explicitly:
+Filtered line statistics are derived from `ContributionFileChange`, while the unfiltered path intentionally retains the existing weekly-statistics behaviour for backwards compatibility.
 
-- a mixed commit may count as “touching code” and “touching documentation”
-- additions/deletions are attributed only to their file/change kind and must not be double-counted
+Commit semantics are explicit:
 
-**Acceptance criteria**
+- a mixed commit touching several selected kinds counts once for the combined selection,
+- the same mixed commit may count in both independent `CODE` and `DOCUMENTATION` queries,
+- additions/deletions are summed from matching file rows only and are never double-counted inside one query,
+- invalid change-kind values fail with HTTP 400 instead of being silently ignored.
 
-- Omitted filter reproduces current all-activity behaviour.
-- `CODE` excludes documentation line changes.
-- `DOCUMENTATION` excludes code line changes.
-- combined filters equal the sum of their underlying line-based activity.
-- mixed-commit semantics are covered by tests.
+Report/canonical-report and External Analysis API exposure remain Step 7 so their public contract and methodology metadata can be updated together.
 
 ---
 
