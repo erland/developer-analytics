@@ -31,6 +31,21 @@ public class BackgroundJobRepository {
         return count != null && count > 0;
     }
 
+    public boolean existsActiveRepositoryJobExcept(
+            UUID userId, String jobType, UUID repositoryId, UUID excludedJobId) {
+        Number count = (Number) em.createNativeQuery(
+                "SELECT count(*) FROM background_job WHERE user_id=:userId AND job_type=:jobType " +
+                        "AND status IN ('QUEUED','WAITING','RUNNING') " +
+                        "AND payload->>'repositoryId'=:repositoryId " +
+                        "AND (:excludedJobId IS NULL OR id<>:excludedJobId)")
+                .setParameter("userId", userId)
+                .setParameter("jobType", jobType)
+                .setParameter("repositoryId", repositoryId.toString())
+                .setParameter("excludedJobId", excludedJobId)
+                .getSingleResult();
+        return count != null && count.longValue() > 0;
+    }
+
     public List<BackgroundJob> findRecentForUser(UUID userId, int limit) {
         return em.createQuery(
                 "select j from BackgroundJob j where j.user.id=:userId order by j.createdAt desc",
