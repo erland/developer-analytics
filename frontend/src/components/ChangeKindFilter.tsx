@@ -1,0 +1,37 @@
+import { useState } from 'react'
+import { ALL_CHANGE_KINDS, type ChangeKind, isAllChangeKinds } from '../analysis/ChangeKind'
+
+type Props = {
+  value: readonly ChangeKind[]
+  onChange: (value: ChangeKind[]) => void
+  className?: string
+}
+
+const options: Array<{ value: ChangeKind; label: string }> = [
+  { value: 'CODE', label: 'Code' },
+  { value: 'DOCUMENTATION', label: 'Documentation' },
+  { value: 'CI_CD', label: 'CI/CD' },
+  { value: 'OTHER', label: 'Other' },
+]
+
+export function ChangeKindFilter({ value, onChange, className = '' }: Props) {
+  const [customOpen, setCustomOpen] = useState(!isAllChangeKinds(value) && value.length !== 1)
+  const preset = isAllChangeKinds(value) ? 'all' : value.length === 1 && value[0] === 'CODE' ? 'code' : value.length === 1 && value[0] === 'DOCUMENTATION' ? 'documentation' : 'custom'
+
+  function selectPreset(next: 'all' | 'code' | 'documentation' | 'custom') {
+    if (next === 'all') { setCustomOpen(false); onChange([...ALL_CHANGE_KINDS]); return }
+    if (next === 'code') { setCustomOpen(false); onChange(['CODE']); return }
+    if (next === 'documentation') { setCustomOpen(false); onChange(['DOCUMENTATION']); return }
+    setCustomOpen(true)
+  }
+
+  function toggle(kind: ChangeKind) {
+    const next = value.includes(kind) ? value.filter(item => item !== kind) : [...value, kind]
+    if (next.length > 0) onChange(next)
+  }
+
+  return <div className={`change-kind-filter ${className}`.trim()}>
+    <label className="change-kind-preset"><span>Change type</span><select aria-label="Change type" value={preset} onChange={event => selectPreset(event.target.value as 'all' | 'code' | 'documentation' | 'custom')}><option value="all">All</option><option value="code">Code</option><option value="documentation">Documentation</option><option value="custom">Custom…</option></select></label>
+    {customOpen ? <fieldset className="change-kind-custom"><legend className="sr-only">Custom change types</legend>{options.map(option => <label key={option.value}><input type="checkbox" checked={value.includes(option.value)} onChange={() => toggle(option.value)} /><span>{option.label}</span></label>)}</fieldset> : null}
+  </div>
+}
