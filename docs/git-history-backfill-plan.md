@@ -2,7 +2,7 @@
 
 **Repository:** `erland/developer-analytics`  
 **Branch:** `feature/git-history-backfill`  
-**Status:** Planerad  
+**Status:** Steg 1 klart; steg 2 nästa  
 **Mål:** Ersätta REST-anrop per historisk commit med Git-baserad lokal historikanalys för change-kind-backfill, utan att ändra den ordinarie inkrementella GitHub-synken.
 
 ## Målbild
@@ -20,14 +20,14 @@ Ordinarie löpande synk för metadata, languages, pull requests, issues, reviews
 - Befintlig REST-baserad commit-detail-funktion behålls som fallback.
 - Ingen ändring av change-kind-taxonomin i denna PR.
 
-## Steg 1 – Introducera ett Git-baserat historikinterface
+## Steg 1 – Introducera ett Git-baserat historikinterface ✅
 
-- [ ] Skapa ett provider-neutralt interface för historisk commit-/filanalys.
-- [ ] Definiera resultatmodell med commit-SHA, filväg, additions och deletions.
-- [ ] Håll Git-processhantering utanför befintlig GitHub REST-adapter.
-- [ ] Lägg unit tests för modell och kontrakt.
+- [x] Skapa ett provider-neutralt interface för historisk commit-/filanalys.
+- [x] Definiera resultatmodell med commit-SHA, filväg, additions och deletions.
+- [x] Håll Git-processhantering utanför befintlig GitHub REST-adapter.
+- [x] Lägg unit tests för modell och kontrakt.
 
-**Klart när:** backfill-koden kan konsumera historiska filförändringar utan att känna till om de kommer från REST eller lokal Git.
+**Klart:** `ContributionHistoryProvider` abstraherar transporten och returnerar `HistoricalCommitFileChanges` med befintliga provider-neutrala per-fil-statistikobjekt. Ingen Git-processhantering har lagts i GitHub REST-adaptern.
 
 ## Steg 2 – Säker temporär blobless clone/fetch
 
