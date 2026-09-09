@@ -4,6 +4,7 @@ import io.github.developeranalytics.domain.model.AppUser;
 import io.github.developeranalytics.domain.model.Contribution;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.persistence.repository.ContributionRepository;
+import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
 import io.github.developeranalytics.provider.ProviderAccessToken;
 import io.github.developeranalytics.provider.ProviderContribution;
 import io.github.developeranalytics.provider.ProviderException;
@@ -14,6 +15,7 @@ import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,13 +24,13 @@ class GitHubContributionIngestionServiceTest {
 
     @Test
     void createsAndEnrichesNewCommit() throws Exception {
+        AppUser user = AppUser.create();
+        SourceRepository repository = sourceRepository(user);
         FakeContributionRepository repositoryStore = new FakeContributionRepository();
         FakeCommitFileChangeService fileChanges = new FakeCommitFileChangeService(false,
                 new GitHubCommitFileChangeService.CommitDetails(10, 4, 2));
-        GitHubContributionIngestionService service = service(repositoryStore, fileChanges);
+        GitHubContributionIngestionService service = service(repositoryStore, fileChanges, repository);
 
-        AppUser user = AppUser.create();
-        SourceRepository repository = sourceRepository(user);
         ProviderContribution providerContribution = contribution(
                 "abc", ProviderContribution.Type.COMMIT, ProviderContribution.State.UNKNOWN,
                 1, 1, 1, null);
@@ -61,7 +63,7 @@ class GitHubContributionIngestionServiceTest {
         repositoryStore.values.put(key("cached", Contribution.Type.COMMIT), existing);
         FakeCommitFileChangeService fileChanges = new FakeCommitFileChangeService(true,
                 new GitHubCommitFileChangeService.CommitDetails(99, 99, 99));
-        GitHubContributionIngestionService service = service(repositoryStore, fileChanges);
+        GitHubContributionIngestionService service = service(repositoryStore, fileChanges, repository);
 
         var result = service.ingest(user, repository,
                 contribution("cached", ProviderContribution.Type.COMMIT, ProviderContribution.State.UNKNOWN,
@@ -79,12 +81,12 @@ class GitHubContributionIngestionServiceTest {
 
     @Test
     void mapsNonCommitContributionTypesWithoutCommitEnrichment() throws Exception {
+        AppUser user = AppUser.create();
+        SourceRepository repository = sourceRepository(user);
         FakeContributionRepository repositoryStore = new FakeContributionRepository();
         FakeCommitFileChangeService fileChanges = new FakeCommitFileChangeService(false,
                 new GitHubCommitFileChangeService.CommitDetails(1, 1, 1));
-        GitHubContributionIngestionService service = service(repositoryStore, fileChanges);
-        AppUser user = AppUser.create();
-        SourceRepository repository = sourceRepository(user);
+        GitHubContributionIngestionService service = service(repositoryStore, fileChanges, repository);
 
         service.ingest(user, repository,
                 contribution("pr", ProviderContribution.Type.PULL_REQUEST, ProviderContribution.State.MERGED,
@@ -108,10 +110,12 @@ class GitHubContributionIngestionServiceTest {
 
     private static GitHubContributionIngestionService service(
             ContributionRepository contributions,
-            GitHubCommitFileChangeService fileChanges
+            GitHubCommitFileChangeService fileChanges,
+            SourceRepository repository
     ) {
         GitHubContributionIngestionService service = new GitHubContributionIngestionService();
         service.contributions = contributions;
+        service.repositories = new FakeSourceRepositoryRepository(repository);
         service.commitFileChanges = fileChanges;
         return service;
     }
@@ -138,13 +142,26 @@ class GitHubContributionIngestionServiceTest {
         return id + ":" + type;
     }
 
+    static final class FakeSourceRepositoryRepository extends SourceRepositoryRepository {
+        private final SourceRepository repository;
+
+        FakeSourceRepositoryRepository(SourceRepository repository) {
+            this.repository = repository;
+        }
+
+        @Override
+        public Optional<SourceRepository> findByIdForUser(UUID repositoryId, UUID userId) {
+            return Optional.of(repository);
+        }
+    }
+
     static final class FakeContributionRepository extends ContributionRepository {
         final Map<String, Contribution> values = new HashMap<>();
         int persistCount;
 
         @Override
         public Optional<Contribution> findByProviderIdentity(
-                java.util.UUID userId,
+                UUID userId,
                 String provider,
                 String externalContributionId,
                 Contribution.Type type
