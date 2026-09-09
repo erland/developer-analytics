@@ -2,7 +2,7 @@
 
 **Repository:** `erland/developer-analytics`  
 **Branch:** `feature/git-history-backfill`  
-**Status:** Steg 4 klart; steg 5 nästa  
+**Status:** Steg 5B implementerat; CI-verifiering pågår  
 **Mål:** Ersätta REST-anrop per historisk commit med Git-baserad lokal historikanalys för change-kind-backfill, utan att ändra den ordinarie inkrementella GitHub-synken.
 
 ## Målbild
@@ -61,19 +61,31 @@ Ordinarie löpande synk för metadata, languages, pull requests, issues, reviews
 - [x] Behåll REST commit-detail som fallback för commits/repositories som inte kan analyseras via Git.
 - [x] Markera scope/backfill färdig först när alla relevanta commits är klassificerade.
 
-**Klart:** `GitHubChangeKindBackfillJobHandler` hämtar upp till 100 saknade commits per batch och anropar Git-historikprovidern en gång för batchen. Användbara Git-resultat persistieras och klassificeras lokalt; commits som saknas eller har ogiltigt resultat faller tillbaka till befintlig REST commit-detail. Om Git-hämtningen för hela batchen misslyckas används REST för batchen. Befintlig continuation-, deduplicerings- och scope-logik är oförändrad, och den ordinarie inkrementella contribution-synken har inte ändrats. Fokuserade worker-tester täcker primär Git-väg, partiell fallback och full REST-fallback. Full CI är grön.
+**Klart:** `GitHubChangeKindBackfillJobHandler` använder Git-historikprovidern som primär källa. Användbara Git-resultat persistieras och klassificeras lokalt; commits som saknas eller har ogiltigt resultat faller tillbaka till befintlig REST commit-detail. Om Git-hämtningen misslyckas används REST. Befintlig continuation-, deduplicerings- och scope-logik är oförändrad, och den ordinarie inkrementella contribution-synken har inte ändrats. Fokuserade worker-tester täcker primär Git-väg, partiell fallback och full REST-fallback.
 
 ## Steg 5 – Resurs- och säkerhetsskydd
 
-- [ ] Begränsa Git-backfill till högst 1 samtidig clone per worker initialt.
-- [ ] Kontrollera ledigt diskutrymme före clone.
-- [ ] Inför konfigurerbar maxgräns för temporär Git-data.
-- [ ] Avbryt säkert vid timeout eller resursgräns.
-- [ ] Fall tillbaka till nuvarande REST-backfill när Git-strategin inte är lämplig.
-- [ ] Säkerställ att cleanup körs efter success, fallback och fel.
-- [ ] Logga inga access tokens eller credential-URL:er.
+- [x] Begränsa Git-backfill till högst 1 samtidig clone per worker initialt.
+- [x] Kontrollera ledigt diskutrymme före clone.
+- [x] Inför konfigurerbar maxgräns för temporär Git-data.
+- [x] Avbryt säkert vid timeout eller resursgräns.
+- [x] Fall tillbaka till nuvarande REST-backfill när Git-strategin inte är lämplig.
+- [x] Säkerställ att cleanup körs efter success, fallback och fel.
+- [x] Logga inga access tokens eller credential-URL:er.
 
-**Klart när:** ett mycket stort eller problematiskt repo inte kan fylla disken eller blockera workern obegränsat.
+**Implementerat:** clone har konfigurerbar timeout, maxstorlek och minsta diskreserv. Ett worker-lokalt lås tillåter högst en Git-klon samtidigt; konkurrerande backfill använder REST-fallback i stället för att blockera. Clone övervakas medan den körs och stoppas om resursgränser överskrids. Cleanup sker även vid timeout/fel och Git-feltext token-redigeras.
+
+### Steg 5B – Återanvänd clone över flera backfill-batchar ✅
+
+- [x] Höj det bundna arbetsurvalet per backfill-jobb från 100 till högst 1 000 saknade commits.
+- [x] Anropa Git-historikprovidern en gång för hela jobbets commitmängd, vilket ger en temporär clone per högst 1 000 commits i stället för per 100 commits.
+- [x] Behandla resultatet vidare i logiska delgrupper om 100 commits för att behålla tydlig och bounded bearbetning.
+- [x] Behåll REST-fallback per commit och continuation när mer historik återstår.
+- [x] Lägg test med fler än 100 commits som verifierar ett enda Git-history-anrop.
+
+**Effekt:** ett repository med 2 000 commits kräver normalt omkring 2 temporära clones i stället för omkring 20, utan permanent Git-cache. Jobbet är fortfarande begränsat till högst 1 000 historiska commits och continuation tar nästa segment vid behov.
+
+**Klart när:** ett mycket stort eller problematiskt repo inte kan fylla disken eller blockera workern obegränsat, och samma temporära clone återanvänds effektivt inom ett bounded backfill-jobb.
 
 ## Steg 6 – Automatisk uppgraderings-/backfill-trigger
 
@@ -103,7 +115,7 @@ Ordinarie löpande synk för metadata, languages, pull requests, issues, reviews
 
 ## Förväntad effekt
 
-För repositories med lång historik bör Git-baserad backfill minska GitHub REST-belastningen från ungefär ett commit-detail-anrop per historisk commit till huvudsakligen en Git-transfer per repository. Temporär disk begränsas genom att endast ett repo hanteras åt gången och arbetsytan raderas direkt efter analys.
+För repositories med lång historik bör Git-baserad backfill minska GitHub REST-belastningen från ungefär ett commit-detail-anrop per historisk commit till huvudsakligen en Git-transfer per bounded jobbsegment. Med 5B omfattar ett sådant segment upp till 1 000 commits. Temporär disk begränsas genom att endast ett repo hanteras åt gången och arbetsytan raderas direkt efter analys.
 
 ## Beslutspunkt efter implementation
 
