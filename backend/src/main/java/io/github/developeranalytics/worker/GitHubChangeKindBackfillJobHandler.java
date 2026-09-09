@@ -4,6 +4,7 @@ import io.github.developeranalytics.domain.change.ContributionFileChange;
 import io.github.developeranalytics.domain.job.BackgroundJob;
 import io.github.developeranalytics.domain.model.Contribution;
 import io.github.developeranalytics.domain.model.SourceRepository;
+import io.github.developeranalytics.observability.StructuredLog;
 import io.github.developeranalytics.persistence.repository.ContributionFileChangeRepository;
 import io.github.developeranalytics.persistence.repository.ContributionRepository;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
@@ -20,6 +21,7 @@ import io.github.developeranalytics.service.job.RepositoryDiscoveryJobService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.jboss.logging.Logger;
 
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +30,8 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler {
+
+    private static final Logger LOG = Logger.getLogger(GitHubChangeKindBackfillJobHandler.class);
 
     public static final String JOB_TYPE = "GITHUB_CHANGE_KIND_BACKFILL";
     static final int PROCESSING_BATCH_SIZE = 100;
@@ -72,9 +76,10 @@ public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler 
                 job.getUser().getId(), repositoryId, ChangeKindClassifier.CLASSIFIER_VERSION, MAX_COMMITS_PER_JOB);
 
         Map<String, HistoricalCommitFileChanges> gitChanges = fetchGitChanges(repository, work, token);
+        int restFallbacks = 0;
         for (int start = 0; start < work.size(); start += PROCESSING_BATCH_SIZE) {
             int end = Math.min(start + PROCESSING_BATCH_SIZE, work.size());
-            processBatch(job, repository, work.subList(start, end), gitChanges, token);
+            restFallbacks += processBatch(job, repository, work.subList(start, end), gitChanges, token);
         }
 
         boolean remaining = fileChanges.hasMissingCurrentClassification(
@@ -84,15 +89,28 @@ public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler 
         } else {
             repository.markContributionScopeCurrent();
         }
+
+        StructuredLog.info(
+                LOG,
+                "git_history_backfill_job",
+                StructuredLog.fields(
+                        "repositoryId", repositoryId,
+                        "processedCommits", work.size(),
+                        "gitCommits", Math.max(0, work.size() - restFallbacks),
+                        "restFallbacks", restFallbacks,
+                        "continuationQueued", remaining
+                )
+        );
     }
 
-    private void processBatch(
+    private int processBatch(
             BackgroundJob job,
             SourceRepository repository,
             List<Contribution> batch,
             Map<String, HistoricalCommitFileChanges> gitChanges,
             ProviderAccessToken token
     ) throws Exception {
+        int restFallbacks = 0;
         for (Contribution contribution : batch) {
             HistoricalCommitFileChanges gitDetails = gitChanges.get(contribution.getProviderContributionId());
             if (isUsable(gitDetails)) {
@@ -101,8 +119,10 @@ public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler 
                 GitHubCommitFileChangeService.CommitDetails details =
                         commitFileChanges.refresh(job.getUser(), repository, contribution, token);
                 contribution.updateFileStatistics(details.additions(), details.deletions(), details.changedFiles());
+                restFallbacks++;
             }
         }
+        return restFallbacks;
     }
 
     private Map<String, HistoricalCommitFileChanges> fetchGitChanges(
