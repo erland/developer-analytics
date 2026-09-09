@@ -78,6 +78,19 @@ public class BackgroundJob {
         }
     }
 
+    public void deferWithoutAttempt(OffsetDateTime nextExecution) {
+        if (nextExecution == null) throw new IllegalArgumentException("nextExecution is required");
+        if (status != BackgroundJobStatus.RUNNING) {
+            throw new IllegalStateException("Only a running job can be deferred");
+        }
+        status = BackgroundJobStatus.WAITING;
+        lockedAt = null;
+        lockedBy = null;
+        lastError = null;
+        nextExecutionAt = nextExecution;
+        if (attemptCount > 0) attemptCount--;
+    }
+
     public void failPermanently(String error){
         lastError=error;
         lockedAt=null;
