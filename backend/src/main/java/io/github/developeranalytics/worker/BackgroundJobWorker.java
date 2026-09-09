@@ -9,6 +9,7 @@ import io.github.developeranalytics.provider.github.GitHubApiUsageTracker;
 import io.github.developeranalytics.provider.github.GitHubRateLimitService;
 import io.github.developeranalytics.service.job.JobFailureClassifier;
 import io.github.developeranalytics.service.sync.ContributionScopeUpgradeService;
+import io.github.developeranalytics.service.sync.ProviderSyncRunService;
 import io.github.developeranalytics.service.sync.SynchronisationRecoveryService;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -21,6 +22,7 @@ import org.jboss.logging.MDC;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Optional;
+import java.util.UUID;
 
 @ApplicationScoped
 public class BackgroundJobWorker {
@@ -33,6 +35,7 @@ public class BackgroundJobWorker {
     @Inject GitHubRateLimitJobGate githubRateLimitGate;
     @Inject GitHubApiConcurrencyGate githubApiConcurrencyGate;
     @Inject GitHubApiUsageTracker githubApiUsage;
+    @Inject ProviderSyncRunService providerSyncRuns;
     @ConfigProperty(name="developer-analytics.runtime-role", defaultValue="api") String runtimeRole;
     @ConfigProperty(name="developer-analytics.worker.id", defaultValue="worker-1") String workerId;
 
@@ -44,180 +47,99 @@ public class BackgroundJobWorker {
     }
 
     @Scheduled(every="60s", concurrentExecution=Scheduled.ConcurrentExecution.SKIP)
-    void recoverInterruptedJobs() {
-        if(!"worker".equalsIgnoreCase(runtimeRole)) return;
-        recovery.recoverInterruptedJobs();
-    }
+    void recoverInterruptedJobs() { if("worker".equalsIgnoreCase(runtimeRole)) recovery.recoverInterruptedJobs(); }
 
     @Scheduled(every="60s", delayed="10s", concurrentExecution=Scheduled.ConcurrentExecution.SKIP)
-    void enqueueContributionScopeUpgrades() {
-        if(!"worker".equalsIgnoreCase(runtimeRole)) return;
-        contributionScopeUpgrades.enqueueMissingBackfills();
-    }
+    void enqueueContributionScopeUpgrades() { if("worker".equalsIgnoreCase(runtimeRole)) contributionScopeUpgrades.enqueueMissingBackfills(); }
 
     void execute(BackgroundJob job) {
         MDC.put("backgroundJobId", job.getId().toString());
+        UUID providerSyncRunId = providerSyncRuns.payloadRunId(job);
         try {
-            Optional<GitHubRateLimitService.GitHubRateLimitDecision> blocked =
-                    githubRateLimitGate.blockingDecision(job);
+            Optional<GitHubRateLimitService.GitHubRateLimitDecision> blocked = githubRateLimitGate.blockingDecision(job);
             if (blocked.isPresent()) {
                 GitHubRateLimitService.GitHubRateLimitDecision decision = blocked.get();
+                providerSyncRuns.pause(providerSyncRunId, OffsetDateTime.now(ZoneOffset.UTC));
                 job.deferForRateLimit(decision.resumeAt());
-                StructuredLog.info(
-                        LOG,
-                        "background_job_deferred_github_rate_limit",
-                        StructuredLog.fields(
-                                "backgroundJobId", job.getId(),
-                                "jobType", job.getJobType(),
-                                "status", job.getStatus(),
-                                "resumeAt", decision.resumeAt(),
-                                "remaining", decision.remaining(),
-                                "reserve", decision.reserve(),
-                                "secondaryLimited", decision.secondaryLimited()
-                        )
-                );
+                StructuredLog.info(LOG, "background_job_deferred_github_rate_limit",
+                        StructuredLog.fields("backgroundJobId", job.getId(), "jobType", job.getJobType(), "status", job.getStatus(),
+                                "resumeAt", decision.resumeAt(), "remaining", decision.remaining(), "reserve", decision.reserve(),
+                                "secondaryLimited", decision.secondaryLimited(), "providerSyncRunId", providerSyncRunId));
                 return;
             }
 
-            GitHubApiConcurrencyGate.Decision concurrencyDecision =
-                    githubApiConcurrencyGate.decision(job, OffsetDateTime.now(ZoneOffset.UTC));
+            GitHubApiConcurrencyGate.Decision concurrencyDecision = githubApiConcurrencyGate.decision(job, OffsetDateTime.now(ZoneOffset.UTC));
             if (!concurrencyDecision.allowed()) {
                 job.deferForScheduling(concurrencyDecision.retryAt());
-                StructuredLog.info(
-                        LOG,
-                        "background_job_deferred_github_concurrency",
-                        StructuredLog.fields(
-                                "backgroundJobId", job.getId(),
-                                "jobType", job.getJobType(),
-                                "retryAt", concurrencyDecision.retryAt(),
-                                "running", concurrencyDecision.running(),
-                                "limit", concurrencyDecision.limit()
-                        )
-                );
+                StructuredLog.info(LOG, "background_job_deferred_github_concurrency",
+                        StructuredLog.fields("backgroundJobId", job.getId(), "jobType", job.getJobType(),
+                                "retryAt", concurrencyDecision.retryAt(), "running", concurrencyDecision.running(), "limit", concurrencyDecision.limit()));
                 return;
             }
 
-            try (GitHubApiUsageTracker.Scope usageScope = githubApiUsage.begin()) {
-                executeMeasured(job, usageScope);
-            }
-        } finally {
-            MDC.remove("backgroundJobId");
-        }
+            providerSyncRuns.resume(providerSyncRunId, OffsetDateTime.now(ZoneOffset.UTC));
+            try (GitHubApiUsageTracker.Scope usageScope = githubApiUsage.begin()) { executeMeasured(job, usageScope, providerSyncRunId); }
+        } finally { MDC.remove("backgroundJobId"); }
     }
 
-    private void executeMeasured(BackgroundJob job, GitHubApiUsageTracker.Scope usageScope) {
+    private void executeMeasured(BackgroundJob job, GitHubApiUsageTracker.Scope usageScope, UUID providerSyncRunId) {
         try {
-            StructuredLog.info(
-                    LOG,
-                    "background_job_started",
-                    StructuredLog.fields(
-                            "backgroundJobId", job.getId(),
-                            "jobType", job.getJobType(),
-                            "attempt", job.getAttemptCount(),
-                            "syncMode", payloadValue(job, "syncMode")
-                    )
-            );
-
+            StructuredLog.info(LOG, "background_job_started",
+                    StructuredLog.fields("backgroundJobId", job.getId(), "jobType", job.getJobType(), "attempt", job.getAttemptCount(),
+                            "syncMode", payloadValue(job, "syncMode"), "providerSyncRunId", providerSyncRunId));
             dispatcher.dispatch(job);
             if (job.getStatus() != BackgroundJobStatus.RUNNING) {
-                StructuredLog.info(
-                        LOG,
-                        "background_job_deferred_by_handler",
-                        StructuredLog.fields(
-                                "backgroundJobId", job.getId(),
-                                "jobType", job.getJobType(),
-                                "status", job.getStatus(),
-                                "nextExecutionAt", job.getNextExecutionAt()
-                        )
-                );
+                if (job.getStatus() == BackgroundJobStatus.PAUSED_RATE_LIMIT) {
+                    providerSyncRuns.pause(providerSyncRunId, OffsetDateTime.now(ZoneOffset.UTC));
+                }
+                StructuredLog.info(LOG, "background_job_deferred_by_handler",
+                        StructuredLog.fields("backgroundJobId", job.getId(), "jobType", job.getJobType(), "status", job.getStatus(),
+                                "nextExecutionAt", job.getNextExecutionAt()));
                 return;
             }
             job.complete();
-
-            StructuredLog.info(
-                    LOG,
-                    "background_job_completed",
-                    StructuredLog.fields(
-                            "backgroundJobId", job.getId(),
-                            "jobType", job.getJobType()
-                    )
-            );
+            providerSyncRuns.refreshCompletion(providerSyncRunId, OffsetDateTime.now(ZoneOffset.UTC));
+            StructuredLog.info(LOG, "background_job_completed", StructuredLog.fields("backgroundJobId", job.getId(), "jobType", job.getJobType()));
         } catch(Exception e) {
             JobFailureClassifier.Classification classification = failureClassifier.classify(e);
-
-            StructuredLog.warn(
-                    LOG,
-                    "background_job_failed",
-                    e,
-                    StructuredLog.fields(
-                            "backgroundJobId", job.getId(),
-                            "jobType", job.getJobType(),
-                            "attempt", job.getAttemptCount(),
-                            "retriable", classification.retriable(),
-                            "providerAccessLost", classification.providerAccessLost()
-                    )
-            );
-
+            StructuredLog.warn(LOG, "background_job_failed", e,
+                    StructuredLog.fields("backgroundJobId", job.getId(), "jobType", job.getJobType(), "attempt", job.getAttemptCount(),
+                            "retriable", classification.retriable(), "providerAccessLost", classification.providerAccessLost()));
             if (classification.providerAccessLost()) {
                 recovery.markProviderAccessLost(job, e);
                 job.failPermanently(classification.reason() + ": " + safeMessage(e));
+                providerSyncRuns.refreshCompletion(providerSyncRunId, OffsetDateTime.now(ZoneOffset.UTC));
                 return;
             }
-
             if (!classification.retriable()) {
                 job.failPermanently(classification.reason() + ": " + safeMessage(e));
+                providerSyncRuns.refreshCompletion(providerSyncRunId, OffsetDateTime.now(ZoneOffset.UTC));
                 return;
             }
-
-            long backoffSeconds = Math.min(
-                    900,
-                    5L * (1L << Math.min(7, Math.max(0, job.getAttemptCount() - 1)))
-            );
+            long backoffSeconds = Math.min(900, 5L * (1L << Math.min(7, Math.max(0, job.getAttemptCount() - 1))));
             OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
             OffsetDateTime nextExecution = now.plusSeconds(backoffSeconds);
             OffsetDateTime providerRetryAt = providerRetryAt(e);
-            if (providerRetryAt != null && providerRetryAt.isAfter(nextExecution)) {
-                nextExecution = providerRetryAt;
-            }
-
-            job.retryOrFail(
-                    classification.reason() + ": " + safeMessage(e),
-                    nextExecution
-            );
+            if (providerRetryAt != null && providerRetryAt.isAfter(nextExecution)) nextExecution = providerRetryAt;
+            job.retryOrFail(classification.reason() + ": " + safeMessage(e), nextExecution);
+            if (job.getStatus() == BackgroundJobStatus.FAILED) providerSyncRuns.refreshCompletion(providerSyncRunId, now);
         } finally {
             GitHubApiUsageTracker.UsageSnapshot usage = usageScope.snapshot();
-            StructuredLog.info(
-                    LOG,
-                    "github_api_job_usage",
-                    StructuredLog.fields(
-                            "backgroundJobId", job.getId(),
-                            "jobType", job.getJobType(),
-                            "repositoryId", payloadValue(job, "repositoryId"),
-                            "syncMode", payloadValue(job, "syncMode"),
-                            "requests", usage.totalRequests(),
-                            "requestsByEndpoint", usage.requestsByEndpoint(),
-                            "status", job.getStatus()
-                    )
-            );
+            StructuredLog.info(LOG, "github_api_job_usage",
+                    StructuredLog.fields("backgroundJobId", job.getId(), "jobType", job.getJobType(), "repositoryId", payloadValue(job, "repositoryId"),
+                            "syncMode", payloadValue(job, "syncMode"), "providerSyncRunId", providerSyncRunId,
+                            "requests", usage.totalRequests(), "requestsByEndpoint", usage.requestsByEndpoint(), "status", job.getStatus()));
         }
     }
 
-    private Object payloadValue(BackgroundJob job, String key) {
-        return job.getPayload() == null ? null : job.getPayload().get(key);
-    }
-
+    private Object payloadValue(BackgroundJob job, String key) { return job.getPayload() == null ? null : job.getPayload().get(key); }
     private OffsetDateTime providerRetryAt(Throwable failure) {
         Throwable current = failure;
         while (current != null) {
-            if (current instanceof ProviderException providerException && providerException.getRetryAt() != null) {
-                return providerException.getRetryAt();
-            }
+            if (current instanceof ProviderException providerException && providerException.getRetryAt() != null) return providerException.getRetryAt();
             current = current.getCause();
         }
         return null;
     }
-
-    private String safeMessage(Throwable failure) {
-        return failure.getMessage() == null ? failure.getClass().getSimpleName() : failure.getMessage();
-    }
+    private String safeMessage(Throwable failure) { return failure.getMessage() == null ? failure.getClass().getSimpleName() : failure.getMessage(); }
 }
