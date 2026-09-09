@@ -4,5 +4,6 @@ public enum ContributionSyncMode {
     UNKNOWN,
     INITIAL_FULL,
     INCREMENTAL,
-    SCOPE_BACKFILL
+    SCOPE_BACKFILL,
+    MIXED
 }
