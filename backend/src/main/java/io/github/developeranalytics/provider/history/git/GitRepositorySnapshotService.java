@@ -35,29 +35,7 @@ public class GitRepositorySnapshotService {
 
         try (TemporaryGitRepository workspace = workspaces.cloneBareBlobless(
                 GitContributionHistoryProvider.cloneUri(repository), accessToken)) {
-            List<String> paths = relevantPaths(run(
-                    workspace.repositoryPath(),
-                    accessToken,
-                    List.of("ls-tree", "-r", "--name-only", "HEAD")
-            ));
-
-            List<ProviderRepositoryFile> files = new ArrayList<>();
-            for (String path : paths) {
-                long size = parseSize(run(
-                        workspace.repositoryPath(),
-                        accessToken,
-                        List.of("cat-file", "-s", "HEAD:" + path)
-                ));
-                if (size < 0 || size > MAX_FILE_BYTES) continue;
-
-                String content = run(
-                        workspace.repositoryPath(),
-                        accessToken,
-                        List.of("show", "HEAD:" + path)
-                );
-                files.add(new ProviderRepositoryFile(path, content));
-            }
-            return new ProviderRepositorySnapshot(files, null);
+            return readSnapshot(workspace.repositoryPath(), accessToken);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new ProviderException("Interrupted while reading repository snapshot from Git for "
@@ -66,6 +44,35 @@ public class GitRepositorySnapshotService {
             throw new ProviderException("Could not read repository snapshot from Git for "
                     + repository.fullName(), 0, e);
         }
+    }
+
+    ProviderRepositorySnapshot readSnapshot(
+            Path repositoryPath,
+            ProviderAccessToken accessToken
+    ) throws IOException, InterruptedException {
+        List<String> paths = relevantPaths(run(
+                repositoryPath,
+                accessToken,
+                List.of("ls-tree", "-r", "--name-only", "HEAD")
+        ));
+
+        List<ProviderRepositoryFile> files = new ArrayList<>();
+        for (String path : paths) {
+            long size = parseSize(run(
+                    repositoryPath,
+                    accessToken,
+                    List.of("cat-file", "-s", "HEAD:" + path)
+            ));
+            if (size < 0 || size > MAX_FILE_BYTES) continue;
+
+            String content = run(
+                    repositoryPath,
+                    accessToken,
+                    List.of("show", "HEAD:" + path)
+            );
+            files.add(new ProviderRepositoryFile(path, content));
+        }
+        return new ProviderRepositorySnapshot(files, null);
     }
 
     static List<String> relevantPaths(String output) {
