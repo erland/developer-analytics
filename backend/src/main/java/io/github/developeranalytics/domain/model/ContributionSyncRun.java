@@ -25,6 +25,10 @@ public class ContributionSyncRun {
     private String provider;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "sync_mode", nullable = false, length = 32)
+    private ContributionSyncMode syncMode;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private Status status;
 
@@ -61,9 +65,19 @@ public class ContributionSyncRun {
     protected ContributionSyncRun() {}
 
     public ContributionSyncRun(AppUser user, SourceRepository repository, String provider) {
+        this(user, repository, provider, ContributionSyncMode.UNKNOWN);
+    }
+
+    public ContributionSyncRun(
+            AppUser user,
+            SourceRepository repository,
+            String provider,
+            ContributionSyncMode syncMode
+    ) {
         this.user = user;
         this.repository = repository;
         this.provider = provider;
+        this.syncMode = syncMode == null ? ContributionSyncMode.UNKNOWN : syncMode;
         this.status = Status.QUEUED;
     }
 
@@ -111,6 +125,7 @@ public class ContributionSyncRun {
     public AppUser getUser() { return user; }
     public SourceRepository getRepository() { return repository; }
     public String getProvider() { return provider; }
+    public ContributionSyncMode getSyncMode() { return syncMode; }
     public Status getStatus() { return status; }
     public int getContributionsSeen() { return contributionsSeen; }
     public int getContributionsCreated() { return contributionsCreated; }
