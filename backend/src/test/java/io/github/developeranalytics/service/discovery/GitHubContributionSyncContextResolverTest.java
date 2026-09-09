@@ -7,10 +7,12 @@ import io.github.developeranalytics.domain.model.RepositoryVisibility;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.provider.ProviderAccessToken;
 import io.github.developeranalytics.provider.ProviderException;
+import io.github.developeranalytics.provider.ProviderRepository;
 import io.github.developeranalytics.provider.ProviderUser;
 import io.github.developeranalytics.provider.github.GitHubProviderAdapter;
 import io.github.developeranalytics.service.connection.ProviderCredentialService;
 import io.github.developeranalytics.service.connection.ProviderSession;
+import io.github.developeranalytics.service.sync.ProviderRepositoryMapper;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -40,8 +42,8 @@ class GitHubContributionSyncContextResolverTest {
         assertEquals("token", context.accessToken().value());
         assertFalse(github.currentUserRequested);
         assertEquals("alice/repo", context.providerRepository().fullName());
-        assertEquals(io.github.developeranalytics.provider.ProviderRepository.Visibility.PRIVATE,
-                context.providerRepository().visibility());
+        assertEquals(ProviderRepository.Visibility.PRIVATE, context.providerRepository().visibility());
+        assertEquals(ProviderRepository.OwnerType.USER, context.providerRepository().ownerType());
     }
 
     @Test
@@ -56,8 +58,7 @@ class GitHubContributionSyncContextResolverTest {
 
         assertEquals("remote-login", context.userLogin());
         assertTrue(github.currentUserRequested);
-        assertEquals(io.github.developeranalytics.provider.ProviderRepository.OwnerType.OTHER,
-                context.providerRepository().ownerType());
+        assertEquals(ProviderRepository.OwnerType.ORGANIZATION, context.providerRepository().ownerType());
     }
 
     private GitHubContributionSyncContextResolver resolver(
@@ -67,6 +68,7 @@ class GitHubContributionSyncContextResolverTest {
         GitHubContributionSyncContextResolver resolver = new GitHubContributionSyncContextResolver();
         resolver.credentials = credentials;
         resolver.github = github;
+        resolver.repositories = new ProviderRepositoryMapper();
         return resolver;
     }
 
