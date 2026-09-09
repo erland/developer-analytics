@@ -16,6 +16,7 @@ import java.util.UUID;
 public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandler {
 
     public static final String JOB_TYPE = "GITHUB_CONTRIBUTION_DISCOVERY";
+    public static final String CONTINUATION_CURSOR = "contributionCursor";
     private static final int INCREMENTAL_OVERLAP_DAYS = 3;
 
     @Inject SourceRepositoryRepository repositories;
@@ -43,19 +44,37 @@ public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandl
                 UUID.fromString(repositoryId.toString()), job.getUser().getId())
                 .orElseThrow(() -> new IllegalStateException("Repository not found for job user"));
 
-        // Version 2 and later already contain the historical contribution rows we need. Do not
-        // force a complete GitHub rescan just to populate change-kind metadata; that backfill is
-        // handled in bounded batches from the local contribution table instead.
         OffsetDateTime since = repository.getContributionScopeVersion() < 2
                 ? null
                 : contributions.latestCommitAt(job.getUser().getId(), repository.getId())
                         .map(latest -> latest.minusDays(INCREMENTAL_OVERLAP_DAYS))
                         .orElse(null);
 
-        discovery.discover(job.getUser(), repository, since);
+        String initialCursor = payloadString(job, CONTINUATION_CURSOR);
+        GitHubContributionDiscoveryService.DiscoveryResult result = discovery.discover(
+                job.getUser(),
+                repository,
+                since,
+                initialCursor,
+                cursor -> job.putPayloadValue(CONTINUATION_CURSOR, cursor)
+        );
 
+        if (!result.complete()) {
+            job.putPayloadValue(CONTINUATION_CURSOR, result.nextCursor());
+            job.deferForRateLimit(result.resumeAt());
+            return;
+        }
+
+        job.putPayloadValue(CONTINUATION_CURSOR, null);
         if (repository.getContributionScopeVersion() < SourceRepository.CURRENT_CONTRIBUTION_SCOPE_VERSION) {
             jobs.enqueueChangeKindBackfill(job.getUser(), repository.getId());
         }
+    }
+
+    private String payloadString(BackgroundJob job, String key) {
+        Object value = job.getPayload() == null ? null : job.getPayload().get(key);
+        if (value == null) return null;
+        String text = value.toString();
+        return text.isBlank() ? null : text;
     }
 }
