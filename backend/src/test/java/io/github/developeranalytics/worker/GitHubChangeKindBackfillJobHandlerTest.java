@@ -61,6 +61,37 @@ class GitHubChangeKindBackfillJobHandlerTest {
     }
 
     @Test
+    void reusesSingleGitHistoryFetchAcrossSeveralHundredCommits() throws Exception {
+        Fixture fixture = new Fixture(false);
+        List<Contribution> commits = new ArrayList<>();
+        for (int i = 0; i < 250; i++) {
+            commits.add(fixture.commit("sha-" + i));
+        }
+        fixture.contributions.batch = commits;
+        int[] historyCalls = {0};
+        int[] requestedShas = {0};
+        fixture.history = (token, repository, shas) -> {
+            historyCalls[0]++;
+            requestedShas[0] = shas.size();
+            return shas.stream()
+                    .map(sha -> new HistoricalCommitFileChanges(
+                            sha, List.of(new ProviderContributionFileChange("src/Main.java", 1, 0))))
+                    .toList();
+        };
+
+        fixture.handler().handle(fixture.job());
+
+        assertEquals(1, historyCalls[0]);
+        assertEquals(250, requestedShas[0]);
+        assertEquals(GitHubChangeKindBackfillJobHandler.MAX_COMMITS_PER_JOB,
+                fixture.contributions.requestedLimit);
+        assertEquals(0, fixture.rest.refreshCount);
+        assertEquals(250, fixture.fileChanges.persisted.size());
+        assertEquals(SourceRepository.CURRENT_CONTRIBUTION_SCOPE_VERSION,
+                fixture.repository.getContributionScopeVersion());
+    }
+
+    @Test
     void fallsBackToRestOnlyForCommitMissingFromGitResultAndQueuesContinuation() throws Exception {
         Fixture fixture = new Fixture(true);
         Contribution gitCommit = fixture.commit("git-sha");
@@ -180,10 +211,12 @@ class GitHubChangeKindBackfillJobHandlerTest {
 
     private static final class StubContributionRepository extends ContributionRepository {
         private List<Contribution> batch = List.of();
+        private int requestedLimit;
 
         @Override
         public List<Contribution> findCommitsMissingFileClassification(
                 UUID userId, UUID repositoryId, String classifierVersion, int limit) {
+            requestedLimit = limit;
             return batch;
         }
     }
