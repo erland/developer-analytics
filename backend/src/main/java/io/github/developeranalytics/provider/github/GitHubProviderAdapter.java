@@ -27,6 +27,7 @@ public class GitHubProviderAdapter implements SourceControlProvider {
     @Inject ObjectMapper mapper;
     @Inject GitHubRateLimitService rateLimits;
     @Inject GitHubApiUsageTracker apiUsage;
+    @Inject GitHubReviewContributionService reviewContributions;
 
     private final HttpClient http = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)
@@ -158,11 +159,10 @@ public class GitHubProviderAdapter implements SourceControlProvider {
                 ProviderContribution.State state = merged ? ProviderContribution.State.MERGED :
                         ("open".equals(node.path("state").asText()) ? ProviderContribution.State.OPEN : ProviderContribution.State.CLOSED);
                 String pullId = node.path("id").asText();
-                int pullNumber = node.path("number").asInt();
                 contributions.add(new ProviderContribution("pr-" + pullId, ProviderContribution.Type.PULL_REQUEST,
                         node.path("title").asText(null), updatedAt, state, null, null, null, merged));
-                contributions.addAll(optionalReviews(fullName, pullNumber, accessToken, since, userLogin));
             }
+            contributions.addAll(optionalReviewContributions(accessToken, repository, since, userLogin));
             contributions.addAll(optionalIssues(fullName, accessToken, since, userLogin));
         }
 
@@ -179,12 +179,16 @@ public class GitHubProviderAdapter implements SourceControlProvider {
         }
     }
 
-    private List<ProviderContribution> optionalReviews(String fullName, int pullNumber, ProviderAccessToken token,
-                                                        OffsetDateTime since, String userLogin) throws ProviderException {
-        try { return fetchReviews(fullName, pullNumber, token, since, userLogin); }
+    private List<ProviderContribution> optionalReviewContributions(
+            ProviderAccessToken token,
+            ProviderRepository repository,
+            OffsetDateTime since,
+            String userLogin
+    ) throws ProviderException {
+        try { return reviewContributions.fetch(token, repository, since, userLogin); }
         catch (ProviderException e) {
             if (!isOptionalPermissionFailure(e)) throw e;
-            logOptionalContributionFailure("reviews", e);
+            logOptionalContributionFailure("reviews-graphql", e);
             return List.of();
         }
     }
@@ -216,27 +220,6 @@ public class GitHubProviderAdapter implements SourceControlProvider {
         JsonNode array = parse(response.body());
         if (!array.isArray()) throw new ProviderException("GitHub pull request response was not an array", response.statusCode());
         return array;
-    }
-
-    private List<ProviderContribution> fetchReviews(String fullName, int pullNumber, ProviderAccessToken accessToken,
-                                                     OffsetDateTime since, String userLogin) throws ProviderException {
-        HttpResponse<String> response = sendGet(URI.create(API_BASE + "/repos/" + fullName + "/pulls/" + pullNumber +
-                "/reviews?per_page=" + PAGE_SIZE), accessToken);
-        JsonNode array = parse(response.body());
-        if (!array.isArray()) throw new ProviderException("GitHub review response was not an array", response.statusCode());
-        List<ProviderContribution> result = new ArrayList<>();
-        for (JsonNode node : array) {
-            if (userLogin != null && !userLogin.isBlank() && !userLogin.equalsIgnoreCase(node.path("user").path("login").asText(""))) continue;
-            OffsetDateTime submittedAt = parseNullableDate(node, "submitted_at");
-            if (since != null && submittedAt != null && submittedAt.isBefore(since)) continue;
-            ProviderContribution.State state = "DISMISSED".equalsIgnoreCase(node.path("state").asText(""))
-                    ? ProviderContribution.State.CLOSED : ProviderContribution.State.UNKNOWN;
-            String body = node.hasNonNull("body") ? node.get("body").asText() : null;
-            String title = body == null || body.isBlank() ? "Pull request review" : body;
-            result.add(new ProviderContribution("review-" + node.path("id").asText(), ProviderContribution.Type.REVIEW,
-                    title, submittedAt, state, null, null, null, null));
-        }
-        return result;
     }
 
     private List<ProviderContribution> fetchIssues(String fullName, ProviderAccessToken accessToken,
