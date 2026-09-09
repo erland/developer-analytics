@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { type AnalysisScope } from '../analysis/AnalysisScope'
 import { projectFacetOptions } from '../analysis/ProjectFacetOptions'
 import { useAnalysisScope } from '../hooks/useAnalysisScope'
+import type { GitHubSyncStatusState, SyncJobSummary } from '../hooks/useGitHubSyncStatus'
 import { useProjectInventory } from '../hooks/useProjectInventory'
 import { useProjectDetailNavigation } from '../hooks/useProjectDetailNavigation'
 import { AnalysisFilters } from './AnalysisFilters'
@@ -11,9 +12,10 @@ import { ProjectDetailView } from './ProjectDetailView'
 type Props = {
   onOpenTechnology?: (technologyKey: string) => void
   onOpenProjectType?: (categoryKey: string) => void
+  syncStatus?: GitHubSyncStatusState
 }
 
-export function ProjectInventoryView({ onOpenTechnology, onOpenProjectType }: Props) {
+export function ProjectInventoryView({ onOpenTechnology, onOpenProjectType, syncStatus }: Props) {
   const { scope, pushScope, replaceScope } = useAnalysisScope()
   const [page, setPage] = useState(0)
   const [activity, setActivity] = useState('')
@@ -33,6 +35,7 @@ export function ProjectInventoryView({ onOpenTechnology, onOpenProjectType }: Pr
 
   const technologyOptions = inventory.status === 'ready' ? projectFacetOptions(inventory.data.facets.technologies) : []
   const projectTypeOptions = inventory.status === 'ready' ? projectFacetOptions(inventory.data.facets.projectTypes) : []
+  const activeJobs = syncStatus?.overview?.activeJobs ?? []
 
   if (selectedProjectId) {
     return <ProjectDetailView repositoryId={selectedProjectId} onBack={closeProject} onOpenTechnology={onOpenTechnology} onOpenProjectType={onOpenProjectType} />
@@ -61,20 +64,51 @@ export function ProjectInventoryView({ onOpenTechnology, onOpenProjectType }: Pr
 
     {inventory.status === 'ready' ? <>
       <div className="project-inventory-grid">
-        {inventory.data.items.length ? inventory.data.items.map((project) => (
+        {inventory.data.items.length ? inventory.data.items.map((project) => {
+          const repositorySync = repositorySyncIndicator(project.id, activeJobs)
+          return (
           <article className="inventory-card" key={project.id}>
-            <div className="inventory-card-heading"><div><h3><button className="project-detail-link" type="button" onClick={() => openProject(project.id)}>{project.name}</button></h3><p>{project.description || 'No repository description.'}</p></div><div className="inventory-badges"><span>{ownershipLabel(project.ownershipRelation)}</span><span>{project.visibility.toLowerCase()}</span><span>{activityLabel(project.lastActivityAt)}</span></div></div>
+            <div className="inventory-card-heading"><div><h3><button className="project-detail-link" type="button" onClick={() => openProject(project.id)}>{project.name}</button></h3><p>{project.description || 'No repository description.'}</p></div><div className="inventory-badges"><span>{ownershipLabel(project.ownershipRelation)}</span><span>{project.visibility.toLowerCase()}</span><span>{activityLabel(project.lastActivityAt)}</span>{repositorySync ? <span className={`repository-sync-badge repository-sync-${repositorySync.kind}`} title={repositorySync.detail}>{repositorySync.label}</span> : null}</div></div>
 
             <InventoryTags label="Categories" values={project.categories} onOpen={onOpenProjectType ? (key) => onOpenProjectType(key) : undefined} />
             <InventoryTags label="Technologies" values={project.technologies} onOpen={onOpenTechnology ? (key) => onOpenTechnology(key) : undefined} />
 
             <div className="inventory-meta">Code size: {formatBytes(project.codeSizeBytes)} · Repository size: {formatBytes(project.repositorySizeBytes)} · Last activity: {formatDate(project.lastActivityAt)}</div>
+            {repositorySync?.kind === 'paused' ? <div className="repository-sync-note" role="status">{repositorySync.detail}</div> : null}
           </article>
-        )) : <AnalysisEmptyState className="empty-inventory" title="No projects match the current selection." description="Broaden the analysis selection or project-list options to see projects again." scope={scope} onScopeChange={updateScope} extraAction={activity ? { label: 'Clear activity option', onClick: () => { setActivity(''); setPage(0) } } : undefined} />}
+        )}) : <AnalysisEmptyState className="empty-inventory" title="No projects match the current selection." description="Broaden the analysis selection or project-list options to see projects again." scope={scope} onScopeChange={updateScope} extraAction={activity ? { label: 'Clear activity option', onClick: () => { setActivity(''); setPage(0) } } : undefined} />}
       </div>
       <Pagination page={inventory.data.page} totalPages={inventory.data.totalPages} onChange={setPage} />
     </> : null}
   </>
+}
+
+export function repositorySyncIndicator(repositoryId: string, jobs: SyncJobSummary[]) {
+  const repositoryJobs = jobs.filter((job) => job.repositoryId === repositoryId)
+  if (!repositoryJobs.length) return null
+
+  const paused = repositoryJobs.find((job) => job.status === 'PAUSED_RATE_LIMIT')
+  if (paused) {
+    const resume = paused.nextExecutionAt ? formatResumeAt(paused.nextExecutionAt) : null
+    return {
+      kind: 'paused' as const,
+      label: 'Paused · GitHub rate limit',
+      detail: resume
+        ? `GitHub API capacity is temporarily limited. This repository will continue automatically ${resume}.`
+        : 'GitHub API capacity is temporarily limited. This repository will continue automatically when capacity is available.',
+    }
+  }
+
+  if (repositoryJobs.some((job) => job.status === 'RUNNING')) {
+    return { kind: 'running' as const, label: 'Syncing', detail: 'Synchronization is currently running for this repository.' }
+  }
+  if (repositoryJobs.some((job) => job.status === 'WAITING')) {
+    return { kind: 'waiting' as const, label: 'Waiting', detail: 'Synchronization is waiting to continue.' }
+  }
+  if (repositoryJobs.some((job) => job.status === 'QUEUED')) {
+    return { kind: 'queued' as const, label: 'Queued', detail: 'Synchronization is queued for this repository.' }
+  }
+  return null
 }
 
 function FilterSelect({ label, value, options, onChange }: { label: string; value: string; options: string[][]; onChange: (value: string) => void }) {
@@ -94,4 +128,5 @@ function Pagination({ page, totalPages, onChange }: { page: number; totalPages: 
 function ownershipLabel(value: string) { return value === 'OWNED_BY_USER' ? 'own' : 'external' }
 function activityLabel(lastActivityAt: string | null) { if (!lastActivityAt) return 'inactive'; const date = new Date(lastActivityAt); return Date.now() - date.getTime() <= 365 * 24 * 60 * 60 * 1000 ? 'active' : 'inactive' }
 function formatDate(value: string | null) { if (!value) return 'Unknown'; return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(value)) }
+function formatResumeAt(value: string) { const date = new Date(value); if (Number.isNaN(date.getTime())) return 'when GitHub capacity is available'; return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date) }
 function formatBytes(value: number | null) { if (value == null) return 'Unknown'; if (value < 1024) return `${value} B`; const units = ['KB', 'MB', 'GB', 'TB']; let size = value / 1024; let unitIndex = 0; while (size >= 1024 && unitIndex < units.length - 1) { size /= 1024; unitIndex += 1 } return `${size >= 10 ? size.toFixed(0) : size.toFixed(1)} ${units[unitIndex]}` }
