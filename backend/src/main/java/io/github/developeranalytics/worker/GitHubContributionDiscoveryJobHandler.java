@@ -2,11 +2,14 @@ package io.github.developeranalytics.worker;
 
 import io.github.developeranalytics.domain.job.BackgroundJob;
 import io.github.developeranalytics.domain.model.ContributionSyncMode;
+import io.github.developeranalytics.domain.model.ProviderSyncRun;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.persistence.repository.ContributionRepository;
+import io.github.developeranalytics.persistence.repository.ProviderSyncRunRepository;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
 import io.github.developeranalytics.service.discovery.GitHubContributionDiscoveryService;
 import io.github.developeranalytics.service.job.RepositoryDiscoveryJobService;
+import io.github.developeranalytics.service.sync.ProviderSyncRunService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -25,45 +28,33 @@ public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandl
     @Inject ContributionRepository contributions;
     @Inject GitHubContributionDiscoveryService discovery;
     @Inject RepositoryDiscoveryJobService jobs;
+    @Inject ProviderSyncRunRepository providerSyncRunRepository;
+    @Inject ProviderSyncRunService providerSyncRuns;
 
-    @Override
-    public String jobType() {
-        return JOB_TYPE;
-    }
+    @Override public String jobType() { return JOB_TYPE; }
 
     @Override
     public void handle(BackgroundJob job) throws Exception {
-        if (job.getUser() == null) {
-            throw new IllegalStateException("Contribution discovery job requires a user");
-        }
-
+        if (job.getUser() == null) throw new IllegalStateException("Contribution discovery job requires a user");
         Object repositoryId = job.getPayload().get("repositoryId");
-        if (repositoryId == null) {
-            throw new IllegalStateException("Contribution discovery job requires repositoryId");
-        }
+        if (repositoryId == null) throw new IllegalStateException("Contribution discovery job requires repositoryId");
 
-        SourceRepository repository = repositories.findByIdForUser(
-                UUID.fromString(repositoryId.toString()), job.getUser().getId())
+        SourceRepository repository = repositories.findByIdForUser(UUID.fromString(repositoryId.toString()), job.getUser().getId())
                 .orElseThrow(() -> new IllegalStateException("Repository not found for job user"));
-
-        OffsetDateTime since = repository.getContributionScopeVersion() < 2
-                ? null
-                : contributions.latestCommitAt(job.getUser().getId(), repository.getId())
-                        .map(latest -> latest.minusDays(INCREMENTAL_OVERLAP_DAYS))
-                        .orElse(null);
+        OffsetDateTime since = repository.getContributionScopeVersion() < 2 ? null :
+                contributions.latestCommitAt(job.getUser().getId(), repository.getId())
+                        .map(latest -> latest.minusDays(INCREMENTAL_OVERLAP_DAYS)).orElse(null);
 
         ContributionSyncMode syncMode = determineSyncMode(since);
         job.putPayloadValue(SYNC_MODE, syncMode.name());
+        UUID providerSyncRunId = providerSyncRuns.payloadRunId(job);
+        ProviderSyncRun providerSyncRun = providerSyncRunId == null ? null : providerSyncRunRepository.findById(providerSyncRunId).orElse(null);
+        providerSyncRuns.observeMode(providerSyncRunId, syncMode);
 
         String initialCursor = payloadString(job, CONTINUATION_CURSOR);
         GitHubContributionDiscoveryService.DiscoveryResult result = discovery.discover(
-                job.getUser(),
-                repository,
-                since,
-                initialCursor,
-                cursor -> job.putPayloadValue(CONTINUATION_CURSOR, cursor),
-                syncMode
-        );
+                job.getUser(), repository, since, initialCursor,
+                cursor -> job.putPayloadValue(CONTINUATION_CURSOR, cursor), syncMode, providerSyncRun);
 
         if (!result.complete()) {
             job.putPayloadValue(CONTINUATION_CURSOR, result.nextCursor());
