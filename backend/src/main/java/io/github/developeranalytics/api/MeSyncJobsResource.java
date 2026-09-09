@@ -4,6 +4,7 @@ import io.github.developeranalytics.auth.AuthenticationService;
 import io.github.developeranalytics.auth.CurrentUser;
 import io.github.developeranalytics.auth.CurrentUserService;
 import io.github.developeranalytics.domain.job.BackgroundJob;
+import io.github.developeranalytics.domain.job.BackgroundJobStatus;
 import io.github.developeranalytics.domain.model.RepositorySyncStatus;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.persistence.repository.BackgroundJobRepository;
@@ -67,6 +68,7 @@ public class MeSyncJobsResource {
 
         long queued = 0;
         long waiting = 0;
+        long pausedRateLimit = 0;
         long running = 0;
         long completed = 0;
         long failed = 0;
@@ -84,11 +86,13 @@ public class MeSyncJobsResource {
                 analysisStepsCompleted += ANALYSIS_STEPS_PER_REPOSITORY;
             }
 
-            if (repositoryJobs.stream().anyMatch(job -> job.getStatus().name().equals("RUNNING"))) {
+            if (repositoryJobs.stream().anyMatch(job -> job.getStatus() == BackgroundJobStatus.RUNNING)) {
                 running++;
-            } else if (repositoryJobs.stream().anyMatch(job -> job.getStatus().name().equals("WAITING"))) {
+            } else if (repositoryJobs.stream().anyMatch(job -> job.getStatus() == BackgroundJobStatus.PAUSED_RATE_LIMIT)) {
+                pausedRateLimit++;
+            } else if (repositoryJobs.stream().anyMatch(job -> job.getStatus() == BackgroundJobStatus.WAITING)) {
                 waiting++;
-            } else if (repositoryJobs.stream().anyMatch(job -> job.getStatus().name().equals("QUEUED"))) {
+            } else if (repositoryJobs.stream().anyMatch(job -> job.getStatus() == BackgroundJobStatus.QUEUED)) {
                 queued++;
             } else if (repository.getSyncStatus() == RepositorySyncStatus.FAILED
                     || repository.getSyncStatus() == RepositorySyncStatus.ACCESS_REVOKED) {
@@ -108,14 +112,14 @@ public class MeSyncJobsResource {
         int displayLimit = Math.max(1, Math.min(requestedLimit, 25));
         List<JobSummary> active = activeJobs.stream()
                 .sorted(Comparator
-                        .comparing((BackgroundJob job) -> !job.getStatus().name().equals("RUNNING"))
+                        .comparing((BackgroundJob job) -> job.getStatus() != BackgroundJobStatus.RUNNING)
                         .thenComparing(BackgroundJob::getCreatedAt))
                 .limit(displayLimit)
                 .map(job -> summary(userId, job))
                 .toList();
 
         long analysisStepsTotal = (long) repositoriesForAnalysis.size() * ANALYSIS_STEPS_PER_REPOSITORY;
-        return new JobOverview(queued, waiting, running, completed, failed,
+        return new JobOverview(queued, waiting, pausedRateLimit, running, completed, failed,
                 repositoriesForAnalysis.size(), analysisStepsCompleted, analysisStepsTotal, active);
     }
 
@@ -127,7 +131,7 @@ public class MeSyncJobsResource {
                 .orElse(null);
         Integer analysisStep = ANALYSIS_STAGE.get(job.getJobType());
         return new JobSummary(
-                job.getId(), job.getJobType(), job.getStatus().name(), repositoryId,
+                job.getId(), job.getJobType(), payloadString(job, "syncMode"), job.getStatus().name(), repositoryId,
                 repositoryName, job.getAttemptCount(), job.getMaxAttempts(),
                 analysisStep, analysisStep == null ? null : ANALYSIS_STEPS_PER_REPOSITORY,
                 job.getProgressPercent(), job.getLastError(), job.getCreatedAt(),
@@ -141,14 +145,19 @@ public class MeSyncJobsResource {
         catch (IllegalArgumentException ignored) { return null; }
     }
 
+    private String payloadString(BackgroundJob job, String key) {
+        Object value = job.getPayload() == null ? null : job.getPayload().get(key);
+        return value == null ? null : String.valueOf(value);
+    }
+
     public record JobOverview(
-            long queued, long waiting, long running, long completed, long failed,
+            long queued, long waiting, long pausedRateLimit, long running, long completed, long failed,
             int totalRepositories, long analysisStepsCompleted, long analysisStepsTotal,
             List<JobSummary> activeJobs
     ) {}
 
     public record JobSummary(
-            UUID id, String jobType, String status, UUID repositoryId,
+            UUID id, String jobType, String syncMode, String status, UUID repositoryId,
             String repositoryName, int attemptCount, int maxAttempts,
             Integer analysisStep, Integer analysisStepsTotal,
             Integer progressPercent, String lastError, OffsetDateTime createdAt,

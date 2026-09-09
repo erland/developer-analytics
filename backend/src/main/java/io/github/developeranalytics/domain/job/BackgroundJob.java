@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -76,6 +77,39 @@ public class BackgroundJob {
             status=BackgroundJobStatus.WAITING;
             nextExecutionAt=next;
         }
+    }
+
+    public void putPayloadValue(String key, Object value) {
+        if (key == null || key.isBlank()) throw new IllegalArgumentException("payload key is required");
+        Map<String,Object> updated = new LinkedHashMap<>();
+        if (payload != null) updated.putAll(payload);
+        if (value == null) updated.remove(key); else updated.put(key, value);
+        payload = updated;
+    }
+
+    public void deferForRateLimit(OffsetDateTime nextExecution) {
+        deferWithoutAttempt(nextExecution, BackgroundJobStatus.PAUSED_RATE_LIMIT, "Only a running job can be paused for rate limit");
+    }
+
+    public void deferForScheduling(OffsetDateTime nextExecution) {
+        deferWithoutAttempt(nextExecution, BackgroundJobStatus.WAITING, "Only a running job can be deferred for scheduling");
+    }
+
+    private void deferWithoutAttempt(
+            OffsetDateTime nextExecution,
+            BackgroundJobStatus deferredStatus,
+            String invalidStateMessage
+    ) {
+        if (nextExecution == null) throw new IllegalArgumentException("nextExecution is required");
+        if (status != BackgroundJobStatus.RUNNING) {
+            throw new IllegalStateException(invalidStateMessage);
+        }
+        status = deferredStatus;
+        lockedAt = null;
+        lockedBy = null;
+        lastError = null;
+        nextExecutionAt = nextExecution;
+        if (attemptCount > 0) attemptCount--;
     }
 
     public void failPermanently(String error){

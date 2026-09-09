@@ -18,7 +18,8 @@ class RepositoryAnalysisOrchestrationContractTest {
         String orchestrator = Files.readString(Path.of(
                 "src/main/java/io/github/developeranalytics/service/sync/RepositoryAnalysisOrchestrator.java"));
 
-        assertTrue(handler.contains("analysis.enqueueAll(job.getUser())"));
+        assertTrue(handler.contains("analysis.enqueueAll(job.getUser(), runId)"));
+        assertTrue(handler.contains("ProviderSyncRunService.PAYLOAD_KEY"));
         assertFalse(handler.contains("DEFAULT_BATCH_SIZE"));
         assertTrue(orchestrator.contains("enqueueContributionDiscovery"));
         assertTrue(orchestrator.contains("enqueueLanguageEvidence"));

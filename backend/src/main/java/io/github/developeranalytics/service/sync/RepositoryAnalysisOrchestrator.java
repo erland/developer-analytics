@@ -12,86 +12,53 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Queues the deterministic analysis pipeline for repositories that need it.
- * Normal discovery refreshes are incremental: a repository is re-analysed only
- * when it has never completed the current analysis version or GitHub reports
- * activity newer than the repository's analysis watermark. Explicit per-repo
- * refreshes still force the complete pipeline.
- */
 @ApplicationScoped
 public class RepositoryAnalysisOrchestrator {
 
     @Inject SourceRepositoryRepository repositories;
     @Inject RepositoryDiscoveryJobService jobs;
 
+    @Transactional public QueueResult enqueueAll(AppUser user) { return enqueueAll(user, null); }
+
     @Transactional
-    public QueueResult enqueueAll(AppUser user) {
-        List<SourceRepository> selected = repositories.findAnalysisCandidates(user.getId());
-        List<SourceRepository> candidates = selected.stream()
-                .filter(SourceRepository::needsAnalysisRefresh)
-                .toList();
-
-        int repositoryJobsQueued = 0;
-        int alreadyQueued = 0;
+    public QueueResult enqueueAll(AppUser user, UUID providerSyncRunId) {
+        List<SourceRepository> candidates = repositories.findAnalysisCandidates(user.getId()).stream()
+                .filter(SourceRepository::needsAnalysisRefresh).toList();
+        int repositoryJobsQueued = 0, contributionJobsQueued = 0, alreadyQueued = 0;
         for (SourceRepository repository : candidates) {
-            QueueCounts counts = enqueueRepositoryJobs(user, repository);
-            repositoryJobsQueued += counts.queued();
-            alreadyQueued += counts.alreadyQueued();
+            QueueCounts counts = enqueueRepositoryJobs(user, repository, providerSyncRunId);
+            repositoryJobsQueued += counts.queued(); contributionJobsQueued += counts.contributionQueued(); alreadyQueued += counts.alreadyQueued();
         }
-
-        int aggregateJobsQueued = repositoryJobsQueued > 0
-                ? enqueueAggregateJobs(user)
-                : 0;
-        return new QueueResult(
-                candidates.size(),
-                repositoryJobsQueued,
-                alreadyQueued,
-                aggregateJobsQueued
-        );
+        int aggregateJobsQueued = repositoryJobsQueued > 0 ? enqueueAggregateJobs(user) : 0;
+        return new QueueResult(candidates.size(), repositoryJobsQueued, contributionJobsQueued, alreadyQueued, aggregateJobsQueued);
     }
 
     @Transactional
     public QueueResult enqueueRepository(AppUser user, UUID repositoryId) {
-        SourceRepository repository = repositories.findByIdForUser(
-                repositoryId, user.getId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Repository not found for user"));
-
-        if (!repository.isIncludedInAnalysis()) {
-            throw new IllegalStateException(
-                    "Repository is not included in analysis");
-        }
-
-        QueueCounts counts = enqueueRepositoryJobs(user, repository);
-        int aggregateJobsQueued = counts.queued() > 0
-                ? enqueueAggregateJobs(user)
-                : 0;
-        return new QueueResult(1, counts.queued(), counts.alreadyQueued(), aggregateJobsQueued);
+        SourceRepository repository = repositories.findByIdForUser(repositoryId, user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Repository not found for user"));
+        if (!repository.isIncludedInAnalysis()) throw new IllegalStateException("Repository is not included in analysis");
+        QueueCounts counts = enqueueRepositoryJobs(user, repository, null);
+        int aggregateJobsQueued = counts.queued() > 0 ? enqueueAggregateJobs(user) : 0;
+        return new QueueResult(1, counts.queued(), counts.contributionQueued(), counts.alreadyQueued(), aggregateJobsQueued);
     }
 
-    private QueueCounts enqueueRepositoryJobs(AppUser user, SourceRepository repository) {
+    private QueueCounts enqueueRepositoryJobs(AppUser user, SourceRepository repository, UUID providerSyncRunId) {
         UUID repositoryId = repository.getId();
-        int queued = 0;
-        int alreadyQueued = 0;
-
-        BackgroundJob[] repositoryJobs = new BackgroundJob[] {
-                jobs.enqueueContributionDiscovery(user, repositoryId),
+        int queued = 0, alreadyQueued = 0, contributionQueued = 0;
+        BackgroundJob contribution = jobs.enqueueContributionDiscovery(user, repositoryId, providerSyncRunId);
+        if (contribution == null) alreadyQueued++; else { queued++; contributionQueued++; }
+        BackgroundJob[] otherJobs = new BackgroundJob[] {
                 jobs.enqueueLanguageEvidence(user, repositoryId),
                 jobs.enqueueFileManifestEvidence(user, repositoryId),
-                jobs.enqueueDeterministicClassification(
-                        user,
-                        repositoryId,
-                        repository.getLastActivityAt()
-                )
+                jobs.enqueueDeterministicClassification(user, repositoryId, repository.getLastActivityAt())
         };
-
-        for (BackgroundJob job : repositoryJobs) {
-            if (job == null) alreadyQueued++;
-            else queued++;
+        for (BackgroundJob job : otherJobs) {
+            if (job == null) { alreadyQueued++; continue; }
+            if (providerSyncRunId != null) job.putPayloadValue(ProviderSyncRunService.PAYLOAD_KEY, providerSyncRunId.toString());
+            queued++;
         }
-
-        return new QueueCounts(queued, alreadyQueued);
+        return new QueueCounts(queued, contributionQueued, alreadyQueued);
     }
 
     public int enqueueAggregateJobs(AppUser user) {
@@ -102,12 +69,6 @@ public class RepositoryAnalysisOrchestrator {
         return queued;
     }
 
-    private record QueueCounts(int queued, int alreadyQueued) {}
-
-    public record QueueResult(
-            int repositoriesConsidered,
-            int repositoryJobsQueued,
-            int alreadyQueued,
-            int aggregateJobsQueued
-    ) {}
+    private record QueueCounts(int queued, int contributionQueued, int alreadyQueued) {}
+    public record QueueResult(int repositoriesConsidered, int repositoryJobsQueued, int contributionJobsQueued, int alreadyQueued, int aggregateJobsQueued) {}
 }

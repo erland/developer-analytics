@@ -2,7 +2,11 @@ package io.github.developeranalytics.domain.model;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @Tag("unit")
@@ -46,5 +50,25 @@ class ContributionSyncRunTest {
         assertEquals(ContributionSyncRun.Status.RATE_LIMITED, run.getStatus());
         assertEquals("HTTP 429", run.getLastError());
         assertEquals(reset, run.getRateLimitResetAt());
+    }
+
+    @Test
+    void tracksApiUsageWithDefensiveEndpointSnapshot() {
+        AppUser user = AppUser.create();
+        SourceRepository repository = new SourceRepository(
+                user, "github", "repo-1", "alice", "demo");
+        ContributionSyncRun run = new ContributionSyncRun(
+                user, repository, "github", ContributionSyncMode.INITIAL_FULL);
+
+        Map<String, Integer> endpoints = new LinkedHashMap<>();
+        endpoints.put("commits", 4);
+        endpoints.put("issues", 1);
+        run.apiUsage(5, endpoints);
+        endpoints.put("reviews", 99);
+
+        assertEquals(5, run.getApiRequestCount());
+        assertEquals(Map.of("commits", 4, "issues", 1), run.getApiRequestsByEndpoint());
+        assertThrows(UnsupportedOperationException.class,
+                () -> run.getApiRequestsByEndpoint().put("languages", 1));
     }
 }
