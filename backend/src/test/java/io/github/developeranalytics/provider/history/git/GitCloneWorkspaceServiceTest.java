@@ -41,6 +41,28 @@ class GitCloneWorkspaceServiceTest {
     }
 
     @Test
+    void sanitizesCredentialFromGitOutput() {
+        String sanitized = GitCloneWorkspaceService.sanitize(
+                "fatal: Authorization: Bearer secret-token failed",
+                new ProviderAccessToken("secret-token"));
+
+        assertFalse(sanitized.contains("secret-token"));
+        assertTrue(sanitized.contains("[REDACTED]"));
+    }
+
+    @Test
+    void diskPrecheckRequiresMaximumCloneSizePlusReserve() {
+        assertTrue(GitCloneWorkspaceService.hasSufficientSpace(1_500, 1_000, 500));
+        assertFalse(GitCloneWorkspaceService.hasSufficientSpace(1_499, 1_000, 500));
+    }
+
+    @Test
+    void temporaryDataLimitIsStrictlyEnforced() {
+        assertFalse(GitCloneWorkspaceService.exceedsLimit(1_000, 1_000));
+        assertTrue(GitCloneWorkspaceService.exceedsLimit(1_001, 1_000));
+    }
+
+    @Test
     void closingWorkspaceRemovesTemporaryRepositoryRecursively() throws Exception {
         Path root = Files.createTempDirectory("git-workspace-test-");
         Path repository = root.resolve("repository.git");
