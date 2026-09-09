@@ -4,6 +4,7 @@ import io.github.developeranalytics.domain.job.BackgroundJob;
 import io.github.developeranalytics.observability.StructuredLog;
 import io.github.developeranalytics.persistence.repository.BackgroundJobRepository;
 import io.github.developeranalytics.provider.ProviderException;
+import io.github.developeranalytics.provider.github.GitHubRateLimitService;
 import io.github.developeranalytics.service.job.JobFailureClassifier;
 import io.github.developeranalytics.service.sync.ContributionScopeUpgradeService;
 import io.github.developeranalytics.service.sync.SynchronisationRecoveryService;
@@ -17,6 +18,7 @@ import org.jboss.logging.MDC;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Optional;
 
 @ApplicationScoped
 public class BackgroundJobWorker {
@@ -26,6 +28,7 @@ public class BackgroundJobWorker {
     @Inject JobFailureClassifier failureClassifier;
     @Inject SynchronisationRecoveryService recovery;
     @Inject ContributionScopeUpgradeService contributionScopeUpgrades;
+    @Inject GitHubRateLimitJobGate githubRateLimitGate;
     @ConfigProperty(name="developer-analytics.runtime-role", defaultValue="api") String runtimeRole;
     @ConfigProperty(name="developer-analytics.worker.id", defaultValue="worker-1") String workerId;
 
@@ -51,6 +54,26 @@ public class BackgroundJobWorker {
     void execute(BackgroundJob job) {
         MDC.put("backgroundJobId", job.getId().toString());
         try {
+            Optional<GitHubRateLimitService.GitHubRateLimitDecision> blocked =
+                    githubRateLimitGate.blockingDecision(job);
+            if (blocked.isPresent()) {
+                GitHubRateLimitService.GitHubRateLimitDecision decision = blocked.get();
+                job.deferWithoutAttempt(decision.resumeAt());
+                StructuredLog.info(
+                        LOG,
+                        "background_job_deferred_github_rate_limit",
+                        StructuredLog.fields(
+                                "backgroundJobId", job.getId(),
+                                "jobType", job.getJobType(),
+                                "resumeAt", decision.resumeAt(),
+                                "remaining", decision.remaining(),
+                                "reserve", decision.reserve(),
+                                "secondaryLimited", decision.secondaryLimited()
+                        )
+                );
+                return;
+            }
+
             StructuredLog.info(
                     LOG,
                     "background_job_started",
