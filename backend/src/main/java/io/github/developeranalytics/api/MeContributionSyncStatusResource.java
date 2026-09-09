@@ -8,8 +8,10 @@ import io.github.developeranalytics.persistence.repository.ContributionSyncRunRe
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Path("/api/me/contribution-sync-runs")
@@ -56,6 +58,8 @@ public class MeContributionSyncStatusResource {
             int contributionsCreated,
             int contributionsUpdated,
             int pagesProcessed,
+            int apiRequestCount,
+            Map<String, Integer> apiRequestsByEndpoint,
             Integer rateLimitRemaining,
             OffsetDateTime rateLimitResetAt,
             OffsetDateTime startedAt,
@@ -74,6 +78,8 @@ public class MeContributionSyncStatusResource {
                     run.getContributionsCreated(),
                     run.getContributionsUpdated(),
                     run.getPagesProcessed(),
+                    run.getApiRequestCount(),
+                    run.getApiRequestsByEndpoint(),
                     run.getRateLimitRemaining(),
                     run.getRateLimitResetAt(),
                     run.getStartedAt(),
