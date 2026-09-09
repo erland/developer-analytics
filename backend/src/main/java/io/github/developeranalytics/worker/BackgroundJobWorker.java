@@ -41,10 +41,7 @@ public class BackgroundJobWorker {
 
     @Scheduled(every="{developer-analytics.worker.poll-interval}", concurrentExecution=Scheduled.ConcurrentExecution.SKIP)
     @Transactional
-    void poll() {
-        if(!"worker".equalsIgnoreCase(runtimeRole)) return;
-        jobs.claimNext(workerId, OffsetDateTime.now()).ifPresent(this::execute);
-    }
+    void poll() { if("worker".equalsIgnoreCase(runtimeRole)) jobs.claimNext(workerId, OffsetDateTime.now()).ifPresent(this::execute); }
 
     @Scheduled(every="60s", concurrentExecution=Scheduled.ConcurrentExecution.SKIP)
     void recoverInterruptedJobs() { if("worker".equalsIgnoreCase(runtimeRole)) recovery.recoverInterruptedJobs(); }
@@ -61,22 +58,19 @@ public class BackgroundJobWorker {
                 GitHubRateLimitService.GitHubRateLimitDecision decision = blocked.get();
                 providerSyncRuns.pause(providerSyncRunId, OffsetDateTime.now(ZoneOffset.UTC));
                 job.deferForRateLimit(decision.resumeAt());
-                StructuredLog.info(LOG, "background_job_deferred_github_rate_limit",
-                        StructuredLog.fields("backgroundJobId", job.getId(), "jobType", job.getJobType(), "status", job.getStatus(),
-                                "resumeAt", decision.resumeAt(), "remaining", decision.remaining(), "reserve", decision.reserve(),
-                                "secondaryLimited", decision.secondaryLimited(), "providerSyncRunId", providerSyncRunId));
+                StructuredLog.info(LOG, "background_job_deferred_github_rate_limit", StructuredLog.fields(
+                        "backgroundJobId", job.getId(), "jobType", job.getJobType(), "status", job.getStatus(), "resumeAt", decision.resumeAt(),
+                        "remaining", decision.remaining(), "reserve", decision.reserve(), "secondaryLimited", decision.secondaryLimited(), "providerSyncRunId", providerSyncRunId));
                 return;
             }
-
             GitHubApiConcurrencyGate.Decision concurrencyDecision = githubApiConcurrencyGate.decision(job, OffsetDateTime.now(ZoneOffset.UTC));
             if (!concurrencyDecision.allowed()) {
                 job.deferForScheduling(concurrencyDecision.retryAt());
-                StructuredLog.info(LOG, "background_job_deferred_github_concurrency",
-                        StructuredLog.fields("backgroundJobId", job.getId(), "jobType", job.getJobType(),
-                                "retryAt", concurrencyDecision.retryAt(), "running", concurrencyDecision.running(), "limit", concurrencyDecision.limit()));
+                StructuredLog.info(LOG, "background_job_deferred_github_concurrency", StructuredLog.fields(
+                        "backgroundJobId", job.getId(), "jobType", job.getJobType(), "retryAt", concurrencyDecision.retryAt(),
+                        "running", concurrencyDecision.running(), "limit", concurrencyDecision.limit()));
                 return;
             }
-
             providerSyncRuns.resume(providerSyncRunId, OffsetDateTime.now(ZoneOffset.UTC));
             try (GitHubApiUsageTracker.Scope usageScope = githubApiUsage.begin()) { executeMeasured(job, usageScope, providerSyncRunId); }
         } finally { MDC.remove("backgroundJobId"); }
@@ -84,17 +78,14 @@ public class BackgroundJobWorker {
 
     private void executeMeasured(BackgroundJob job, GitHubApiUsageTracker.Scope usageScope, UUID providerSyncRunId) {
         try {
-            StructuredLog.info(LOG, "background_job_started",
-                    StructuredLog.fields("backgroundJobId", job.getId(), "jobType", job.getJobType(), "attempt", job.getAttemptCount(),
-                            "syncMode", payloadValue(job, "syncMode"), "providerSyncRunId", providerSyncRunId));
+            StructuredLog.info(LOG, "background_job_started", StructuredLog.fields(
+                    "backgroundJobId", job.getId(), "jobType", job.getJobType(), "attempt", job.getAttemptCount(),
+                    "syncMode", payloadValue(job, "syncMode"), "providerSyncRunId", providerSyncRunId));
             dispatcher.dispatch(job);
             if (job.getStatus() != BackgroundJobStatus.RUNNING) {
-                if (job.getStatus() == BackgroundJobStatus.PAUSED_RATE_LIMIT) {
-                    providerSyncRuns.pause(providerSyncRunId, OffsetDateTime.now(ZoneOffset.UTC));
-                }
-                StructuredLog.info(LOG, "background_job_deferred_by_handler",
-                        StructuredLog.fields("backgroundJobId", job.getId(), "jobType", job.getJobType(), "status", job.getStatus(),
-                                "nextExecutionAt", job.getNextExecutionAt()));
+                if (job.getStatus() == BackgroundJobStatus.PAUSED_RATE_LIMIT) providerSyncRuns.pause(providerSyncRunId, OffsetDateTime.now(ZoneOffset.UTC));
+                StructuredLog.info(LOG, "background_job_deferred_by_handler", StructuredLog.fields(
+                        "backgroundJobId", job.getId(), "jobType", job.getJobType(), "status", job.getStatus(), "nextExecutionAt", job.getNextExecutionAt()));
                 return;
             }
             job.complete();
@@ -102,9 +93,9 @@ public class BackgroundJobWorker {
             StructuredLog.info(LOG, "background_job_completed", StructuredLog.fields("backgroundJobId", job.getId(), "jobType", job.getJobType()));
         } catch(Exception e) {
             JobFailureClassifier.Classification classification = failureClassifier.classify(e);
-            StructuredLog.warn(LOG, "background_job_failed", e,
-                    StructuredLog.fields("backgroundJobId", job.getId(), "jobType", job.getJobType(), "attempt", job.getAttemptCount(),
-                            "retriable", classification.retriable(), "providerAccessLost", classification.providerAccessLost()));
+            StructuredLog.warn(LOG, "background_job_failed", e, StructuredLog.fields(
+                    "backgroundJobId", job.getId(), "jobType", job.getJobType(), "attempt", job.getAttemptCount(),
+                    "retriable", classification.retriable(), "providerAccessLost", classification.providerAccessLost()));
             if (classification.providerAccessLost()) {
                 recovery.markProviderAccessLost(job, e);
                 job.failPermanently(classification.reason() + ": " + safeMessage(e));
@@ -125,10 +116,13 @@ public class BackgroundJobWorker {
             if (job.getStatus() == BackgroundJobStatus.FAILED) providerSyncRuns.refreshCompletion(providerSyncRunId, now);
         } finally {
             GitHubApiUsageTracker.UsageSnapshot usage = usageScope.snapshot();
-            StructuredLog.info(LOG, "github_api_job_usage",
-                    StructuredLog.fields("backgroundJobId", job.getId(), "jobType", job.getJobType(), "repositoryId", payloadValue(job, "repositoryId"),
-                            "syncMode", payloadValue(job, "syncMode"), "providerSyncRunId", providerSyncRunId,
-                            "requests", usage.totalRequests(), "requestsByEndpoint", usage.requestsByEndpoint(), "status", job.getStatus()));
+            UUID measuredRunId = providerSyncRuns.payloadRunId(job);
+            if (measuredRunId == null) measuredRunId = providerSyncRunId;
+            providerSyncRuns.recordApiUsage(measuredRunId, usage.totalRequests(), usage.requestsByEndpoint());
+            StructuredLog.info(LOG, "github_api_job_usage", StructuredLog.fields(
+                    "backgroundJobId", job.getId(), "jobType", job.getJobType(), "repositoryId", payloadValue(job, "repositoryId"),
+                    "syncMode", payloadValue(job, "syncMode"), "providerSyncRunId", measuredRunId,
+                    "requests", usage.totalRequests(), "requestsByEndpoint", usage.requestsByEndpoint(), "status", job.getStatus()));
         }
     }
 
