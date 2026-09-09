@@ -18,6 +18,7 @@ import io.github.developeranalytics.service.change.ChangeKindClassifier;
 import io.github.developeranalytics.service.connection.ProviderCredentialService;
 import io.github.developeranalytics.service.discovery.GitHubCommitFileChangeService;
 import io.github.developeranalytics.service.job.RepositoryDiscoveryJobService;
+import io.github.developeranalytics.service.sync.ProviderRepositoryMapper;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -64,9 +65,7 @@ class GitHubChangeKindBackfillJobHandlerTest {
     void reusesSingleGitHistoryFetchAcrossSeveralHundredCommits() throws Exception {
         Fixture fixture = new Fixture(false);
         List<Contribution> commits = new ArrayList<>();
-        for (int i = 0; i < 250; i++) {
-            commits.add(fixture.commit("sha-" + i));
-        }
+        for (int i = 0; i < 250; i++) commits.add(fixture.commit("sha-" + i));
         fixture.contributions.batch = commits;
         int[] historyCalls = {0};
         int[] requestedShas = {0};
@@ -162,13 +161,8 @@ class GitHubChangeKindBackfillJobHandlerTest {
 
         private Contribution commit(String sha) {
             return new Contribution(
-                    user,
-                    repository,
-                    "github",
-                    sha,
-                    Contribution.Type.COMMIT,
-                    OffsetDateTime.now(ZoneOffset.UTC)
-            );
+                    user, repository, "github", sha,
+                    Contribution.Type.COMMIT, OffsetDateTime.now(ZoneOffset.UTC));
         }
 
         private BackgroundJob job() {
@@ -192,6 +186,7 @@ class GitHubChangeKindBackfillJobHandlerTest {
             handler.commitFileChanges = rest;
             handler.classifier = new ChangeKindClassifier();
             handler.jobs = jobs;
+            handler.providerRepositories = new ProviderRepositoryMapper();
             return handler;
         }
     }
