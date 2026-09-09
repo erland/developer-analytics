@@ -9,6 +9,7 @@ import io.github.developeranalytics.provider.ProviderContribution;
 import io.github.developeranalytics.provider.ProviderException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 /** Persists and enriches one GitHub contribution discovered by the provider adapter. */
 @ApplicationScoped
@@ -17,6 +18,7 @@ public class GitHubContributionIngestionService {
     @Inject ContributionRepository contributions;
     @Inject GitHubCommitFileChangeService commitFileChanges;
 
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public IngestionResult ingest(
             AppUser user,
             SourceRepository repository,
