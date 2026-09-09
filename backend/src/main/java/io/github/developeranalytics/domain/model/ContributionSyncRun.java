@@ -100,6 +100,13 @@ public class ContributionSyncRun {
         completedAt = now;
     }
 
+    public void pauseForRateLimit(OffsetDateTime resetAt, OffsetDateTime now) {
+        status = Status.RATE_LIMITED;
+        lastError = null;
+        rateLimitResetAt = resetAt;
+        completedAt = now;
+    }
+
     public UUID getId() { return id; }
     public AppUser getUser() { return user; }
     public SourceRepository getRepository() { return repository; }
