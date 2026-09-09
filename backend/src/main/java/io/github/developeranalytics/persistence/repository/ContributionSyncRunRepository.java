@@ -10,43 +10,35 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class ContributionSyncRunRepository {
-    @Inject
-    EntityManager entityManager;
+    @Inject EntityManager entityManager;
 
-    public void persist(ContributionSyncRun run) {
-        entityManager.persist(run);
-    }
+    public void persist(ContributionSyncRun run) { entityManager.persist(run); }
 
     public Optional<ContributionSyncRun> findByIdForUser(UUID id, UUID userId) {
         return entityManager.createQuery(
-                "select r from ContributionSyncRun r join fetch r.repository " +
-                "where r.id=:id and r.user.id=:userId",
+                "select r from ContributionSyncRun r join fetch r.repository where r.id=:id and r.user.id=:userId",
                 ContributionSyncRun.class)
-            .setParameter("id", id)
-            .setParameter("userId", userId)
-            .getResultStream()
-            .findFirst();
+            .setParameter("id", id).setParameter("userId", userId).getResultStream().findFirst();
     }
 
     public List<ContributionSyncRun> findRecentForUser(UUID userId) {
         return entityManager.createQuery(
-                "select r from ContributionSyncRun r join fetch r.repository " +
-                "where r.user.id=:userId order by r.createdAt desc",
+                "select r from ContributionSyncRun r join fetch r.repository where r.user.id=:userId order by r.createdAt desc",
                 ContributionSyncRun.class)
-            .setParameter("userId", userId)
-            .setMaxResults(50)
-            .getResultList();
+            .setParameter("userId", userId).setMaxResults(50).getResultList();
     }
 
     public List<ContributionSyncRun> findRecentForRepository(UUID userId, UUID repositoryId) {
         return entityManager.createQuery(
-                "select r from ContributionSyncRun r join fetch r.repository " +
-                "where r.user.id=:userId and r.repository.id=:repositoryId " +
-                "order by r.createdAt desc",
+                "select r from ContributionSyncRun r join fetch r.repository where r.user.id=:userId and r.repository.id=:repositoryId order by r.createdAt desc",
                 ContributionSyncRun.class)
-            .setParameter("userId", userId)
-            .setParameter("repositoryId", repositoryId)
-            .setMaxResults(20)
-            .getResultList();
+            .setParameter("userId", userId).setParameter("repositoryId", repositoryId).setMaxResults(20).getResultList();
+    }
+
+    public List<ContributionSyncRun> findForProviderSyncRun(UUID providerSyncRunId) {
+        return entityManager.createQuery(
+                "select r from ContributionSyncRun r join fetch r.repository where r.providerSyncRun.id=:runId order by r.createdAt asc",
+                ContributionSyncRun.class)
+            .setParameter("runId", providerSyncRunId).getResultList();
     }
 }
