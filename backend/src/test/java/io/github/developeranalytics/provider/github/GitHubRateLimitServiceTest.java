@@ -1,11 +1,11 @@
 package io.github.developeranalytics.provider.github;
 
+import io.github.developeranalytics.provider.ProviderAccessToken;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -15,27 +15,27 @@ class GitHubRateLimitServiceTest {
     private final GitHubRateLimitService service = new GitHubRateLimitService();
 
     @Test
-    void storesLatestObservationPerUser() {
-        UUID userId = UUID.randomUUID();
+    void storesLatestObservationPerCredential() {
+        ProviderAccessToken token = token("first-token");
         OffsetDateTime firstAt = OffsetDateTime.of(2026, 9, 9, 8, 0, 0, 0, ZoneOffset.UTC);
         OffsetDateTime laterAt = firstAt.plusMinutes(1);
 
-        service.update(userId, state(5000, 4000, firstAt.plusHours(1), firstAt));
-        service.update(userId, state(5000, 3900, laterAt.plusHours(1), laterAt));
+        service.update(token, state(5000, 4000, firstAt.plusHours(1), firstAt));
+        service.update(token, state(5000, 3900, laterAt.plusHours(1), laterAt));
 
-        GitHubRateLimitState current = service.current(userId).orElseThrow();
+        GitHubRateLimitState current = service.current(token).orElseThrow();
         assertEquals(3900, current.remaining());
         assertEquals(laterAt, current.observedAt());
     }
 
     @Test
     void ignoresOlderObservation() {
-        UUID userId = UUID.randomUUID();
+        ProviderAccessToken token = token("first-token");
         OffsetDateTime latestAt = OffsetDateTime.of(2026, 9, 9, 8, 10, 0, 0, ZoneOffset.UTC);
 
-        service.update(userId, state(5000, 3000, latestAt.plusHours(1), latestAt));
+        service.update(token, state(5000, 3000, latestAt.plusHours(1), latestAt));
         GitHubRateLimitState result = service.update(
-                userId,
+                token,
                 state(5000, 4500, latestAt.plusHours(1), latestAt.minusMinutes(5))
         );
 
@@ -44,27 +44,38 @@ class GitHubRateLimitServiceTest {
     }
 
     @Test
-    void keepsUsersIndependent() {
-        UUID firstUser = UUID.randomUUID();
-        UUID secondUser = UUID.randomUUID();
+    void keepsCredentialsIndependent() {
+        ProviderAccessToken first = token("first-token");
+        ProviderAccessToken second = token("second-token");
         OffsetDateTime observedAt = OffsetDateTime.now(ZoneOffset.UTC);
 
-        service.update(firstUser, state(5000, 0, observedAt.plusHours(1), observedAt));
-        service.update(secondUser, state(5000, 4200, observedAt.plusHours(1), observedAt));
+        service.update(first, state(5000, 0, observedAt.plusHours(1), observedAt));
+        service.update(second, state(5000, 4200, observedAt.plusHours(1), observedAt));
 
-        assertTrue(service.current(firstUser).orElseThrow().exhausted());
-        assertFalse(service.current(secondUser).orElseThrow().exhausted());
+        assertTrue(service.current(first).orElseThrow().exhausted());
+        assertFalse(service.current(second).orElseThrow().exhausted());
+    }
+
+    @Test
+    void equivalentTokenValueUsesSameCredentialState() {
+        ProviderAccessToken firstInstance = token("shared-token");
+        ProviderAccessToken secondInstance = token("shared-token");
+        OffsetDateTime observedAt = OffsetDateTime.now(ZoneOffset.UTC);
+
+        service.update(firstInstance, state(5000, 1234, observedAt.plusHours(1), observedAt));
+
+        assertEquals(1234, service.current(secondInstance).orElseThrow().remaining());
     }
 
     @Test
     void clearRemovesState() {
-        UUID userId = UUID.randomUUID();
+        ProviderAccessToken token = token("first-token");
         OffsetDateTime observedAt = OffsetDateTime.now(ZoneOffset.UTC);
-        service.update(userId, state(5000, 2500, observedAt.plusHours(1), observedAt));
+        service.update(token, state(5000, 2500, observedAt.plusHours(1), observedAt));
 
-        service.clear(userId);
+        service.clear(token);
 
-        assertTrue(service.current(userId).isEmpty());
+        assertTrue(service.current(token).isEmpty());
     }
 
     @Test
@@ -82,6 +93,10 @@ class GitHubRateLimitServiceTest {
 
         assertNull(state.resource());
         assertTrue(state.exhausted());
+    }
+
+    private ProviderAccessToken token(String value) {
+        return new ProviderAccessToken(value);
     }
 
     private GitHubRateLimitState state(
