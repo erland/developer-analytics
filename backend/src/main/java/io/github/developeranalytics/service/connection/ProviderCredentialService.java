@@ -36,37 +36,22 @@ public class ProviderCredentialService {
         connection.markValidated();
     }
 
+    public ProviderSession requireSession(UUID userId, String provider) {
+        ProviderConnection connection = requireConnectedConnection(userId, provider);
+        ProviderAccessToken accessToken = decryptAccessToken(connection, provider);
+        String login = providerLogin(connection);
+        return new ProviderSession(accessToken, login);
+    }
+
     public ProviderAccessToken requireAccessToken(UUID userId, String provider) {
-        ProviderConnection connection = connections
-                .findForUserAndProvider(userId, normalize(provider))
-                .orElseThrow(NotFoundException::new);
-
-        if (!ProviderConnection.Status.CONNECTED.name()
-                .equals(connection.getStatus())) {
-            throw new IllegalStateException(
-                    "Provider connection is disconnected: " + provider);
-        }
-
-        if (connection.getCredentialCiphertext() == null ||
-                connection.getCredentialKeyVersion() == null) {
-            throw new IllegalStateException(
-                    "No stored credential is available for provider " + provider);
-        }
-
-        return new ProviderAccessToken(
-                cipher.decrypt(
-                        connection.getCredentialCiphertext(),
-                        connection.getCredentialKeyVersion()
-                )
-        );
+        ProviderConnection connection = requireConnectedConnection(userId, provider);
+        return decryptAccessToken(connection, provider);
     }
 
     /** Returns the already persisted provider login when available, without a remote API call. */
     public String providerLogin(UUID userId, String provider) {
         return connections.findForUserAndProvider(userId, normalize(provider))
-                .map(ProviderConnection::getProviderIdentity)
-                .map(ProviderIdentity::getLogin)
-                .filter(login -> !login.isBlank())
+                .map(this::providerLogin)
                 .orElse(null);
     }
 
@@ -76,6 +61,33 @@ public class ProviderCredentialService {
                 .findForUserAndProvider(userId, normalize(provider))
                 .orElseThrow(NotFoundException::new);
         connection.clearCredential();
+    }
+
+    private ProviderConnection requireConnectedConnection(UUID userId, String provider) {
+        ProviderConnection connection = connections
+                .findForUserAndProvider(userId, normalize(provider))
+                .orElseThrow(NotFoundException::new);
+
+        if (!ProviderConnection.Status.CONNECTED.name().equals(connection.getStatus())) {
+            throw new IllegalStateException("Provider connection is disconnected: " + provider);
+        }
+        return connection;
+    }
+
+    private ProviderAccessToken decryptAccessToken(ProviderConnection connection, String provider) {
+        if (connection.getCredentialCiphertext() == null || connection.getCredentialKeyVersion() == null) {
+            throw new IllegalStateException("No stored credential is available for provider " + provider);
+        }
+
+        return new ProviderAccessToken(cipher.decrypt(
+                connection.getCredentialCiphertext(),
+                connection.getCredentialKeyVersion()));
+    }
+
+    private String providerLogin(ProviderConnection connection) {
+        ProviderIdentity identity = connection.getProviderIdentity();
+        if (identity == null || identity.getLogin() == null || identity.getLogin().isBlank()) return null;
+        return identity.getLogin();
     }
 
     private String normalize(String provider) {
