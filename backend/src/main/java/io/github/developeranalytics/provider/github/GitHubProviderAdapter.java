@@ -25,6 +25,7 @@ public class GitHubProviderAdapter implements SourceControlProvider {
     private static final long SECONDARY_RATE_LIMIT_FALLBACK_SECONDS = 60;
 
     @Inject ObjectMapper mapper;
+    @Inject GitHubRateLimitService rateLimits;
 
     private final HttpClient http = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)
@@ -278,8 +279,9 @@ public class GitHubProviderAdapter implements SourceControlProvider {
                 .GET().build();
         try {
             HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+            String providerMessage = response.statusCode() / 100 == 2 ? null : githubErrorMessage(response.body());
+            observeRateLimit(accessToken, response, providerMessage);
             if (response.statusCode() / 100 != 2) {
-                String providerMessage = githubErrorMessage(response.body());
                 String sso = response.headers().firstValue("X-GitHub-SSO").orElse(null);
                 String message = "GitHub API " + endpointLabel(uri) + " failed with HTTP " + response.statusCode();
                 if (providerMessage != null) message += ": " + providerMessage;
@@ -292,6 +294,29 @@ public class GitHubProviderAdapter implements SourceControlProvider {
         } catch (Exception e) {
             throw new ProviderException("GitHub API " + endpointLabel(uri) + " request failed", 0, e);
         }
+    }
+
+    void observeRateLimit(ProviderAccessToken accessToken, HttpResponse<?> response, String providerMessage) {
+        ProviderRateLimit parsed = parseRateLimit(response);
+        OffsetDateTime retryAt = rateLimitRetryAt(response, providerMessage);
+        String resource = response.headers().firstValue("X-RateLimit-Resource").orElse(null);
+        String normalizedMessage = providerMessage == null ? "" : providerMessage.toLowerCase(Locale.ROOT);
+        boolean secondaryLimited = normalizedMessage.contains("secondary rate");
+
+        if (parsed.limit() == null && parsed.remaining() == null && parsed.resetAt() == null
+                && retryAt == null && resource == null) {
+            return;
+        }
+
+        rateLimits.update(accessToken, new GitHubRateLimitState(
+                parsed.limit(),
+                parsed.remaining(),
+                parsed.resetAt(),
+                OffsetDateTime.now(ZoneOffset.UTC),
+                resource,
+                retryAt,
+                secondaryLimited
+        ));
     }
 
     private OffsetDateTime rateLimitRetryAt(HttpResponse<?> response, String providerMessage) {
