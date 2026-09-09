@@ -2,7 +2,7 @@
 
 **Repository:** `erland/developer-analytics`  
 **Branch:** `feature/git-history-backfill`  
-**Status:** Steg 3 klart; steg 4 nästa  
+**Status:** Steg 4 klart; steg 5 nästa  
 **Mål:** Ersätta REST-anrop per historisk commit med Git-baserad lokal historikanalys för change-kind-backfill, utan att ändra den ordinarie inkrementella GitHub-synken.
 
 ## Målbild
@@ -52,16 +52,16 @@ Ordinarie löpande synk för metadata, languages, pull requests, issues, reviews
 
 **Klart:** `GitLocalHistoryReader` läser begärda commit-SHA:n från det bare repositoryt och använder `git diff-tree --root --numstat` för root commits samt `git diff --numstat` mot första föräldern för övriga commits. Merge commits mäts därmed mot första föräldern för att undvika dubbelräkning av sidogrenens historik. Rename detection är avstängd för stabil semantik och binära `-/-`-värden bevaras som filförändringar med 0/0 rader. `GitContributionHistoryProvider` binder ihop den temporära klonen med den provider-neutrala historikmodellen.
 
-## Steg 4 – Byt endast historisk backfill till Git
+## Steg 4 – Byt endast historisk backfill till Git ✅
 
-- [ ] Koppla den befintliga resumable change-kind-backfillen till Git-historikprovidern.
-- [ ] Återanvänd befintliga `Contribution`-poster och skriv till `ContributionFileChange`.
-- [ ] Hoppa över commits som redan har aktuell classifier-version.
-- [ ] Behåll normal inkrementell contribution-sync oförändrad.
-- [ ] Behåll REST commit-detail som fallback för commits/repositories som inte kan analyseras via Git.
-- [ ] Markera scope/backfill färdig först när alla relevanta commits är klassificerade.
+- [x] Koppla den befintliga resumable change-kind-backfillen till Git-historikprovidern.
+- [x] Återanvänd befintliga `Contribution`-poster och skriv till `ContributionFileChange`.
+- [x] Hoppa över commits som redan har aktuell classifier-version via befintligt DB-urval.
+- [x] Behåll normal inkrementell contribution-sync oförändrad.
+- [x] Behåll REST commit-detail som fallback för commits/repositories som inte kan analyseras via Git.
+- [x] Markera scope/backfill färdig först när alla relevanta commits är klassificerade.
 
-**Klart när:** första historiska backfillen inte längre behöver ett REST commit-detail-anrop per commit.
+**Klart:** `GitHubChangeKindBackfillJobHandler` hämtar upp till 100 saknade commits per batch och anropar Git-historikprovidern en gång för batchen. Användbara Git-resultat persistieras och klassificeras lokalt; commits som saknas eller har ogiltigt resultat faller tillbaka till befintlig REST commit-detail. Om Git-hämtningen för hela batchen misslyckas används REST för batchen. Befintlig continuation-, deduplicerings- och scope-logik är oförändrad, och den ordinarie inkrementella contribution-synken har inte ändrats. Fokuserade worker-tester täcker primär Git-väg, partiell fallback och full REST-fallback. Full CI är grön.
 
 ## Steg 5 – Resurs- och säkerhetsskydd
 
