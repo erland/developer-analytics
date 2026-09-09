@@ -9,13 +9,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 
 /** Reads the bounded technology-evidence snapshot from a temporary bare Git clone. */
 @ApplicationScoped
@@ -23,9 +20,9 @@ public class GitRepositorySnapshotService {
 
     static final int MAX_RELEVANT_FILES = 40;
     static final long MAX_FILE_BYTES = 1_048_576L;
-    static final Duration COMMAND_TIMEOUT = Duration.ofMinutes(2);
 
     @Inject GitCloneWorkspaceService workspaces;
+    @Inject GitCommandRunner commands;
 
     public ProviderRepositorySnapshot fetch(
             ProviderAccessToken accessToken,
@@ -50,7 +47,7 @@ public class GitRepositorySnapshotService {
             Path repositoryPath,
             ProviderAccessToken accessToken
     ) throws IOException, InterruptedException {
-        List<String> paths = relevantPaths(run(
+        List<String> paths = relevantPaths(commands.run(
                 repositoryPath,
                 accessToken,
                 List.of("ls-tree", "-r", "--name-only", "HEAD")
@@ -58,14 +55,14 @@ public class GitRepositorySnapshotService {
 
         List<ProviderRepositoryFile> files = new ArrayList<>();
         for (String path : paths) {
-            long size = parseSize(run(
+            long size = parseSize(commands.run(
                     repositoryPath,
                     accessToken,
                     List.of("cat-file", "-s", "HEAD:" + path)
             ));
             if (size < 0 || size > MAX_FILE_BYTES) continue;
 
-            String content = run(
+            String content = commands.run(
                     repositoryPath,
                     accessToken,
                     List.of("show", "HEAD:" + path)
@@ -107,33 +104,5 @@ public class GitRepositorySnapshotService {
         } catch (NumberFormatException ignored) {
             return -1L;
         }
-    }
-
-    private static String run(
-            Path repositoryPath,
-            ProviderAccessToken accessToken,
-            List<String> arguments
-    ) throws IOException, InterruptedException {
-        List<String> command = new ArrayList<>();
-        command.add("git");
-        command.add("--git-dir=" + repositoryPath.toAbsolutePath());
-        command.addAll(arguments);
-
-        ProcessBuilder builder = new ProcessBuilder(command).redirectErrorStream(true);
-        builder.environment().putAll(GitCloneWorkspaceService.authenticationEnvironment(accessToken));
-        Process process = builder.start();
-        boolean finished = process.waitFor(COMMAND_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
-        if (!finished) {
-            process.destroy();
-            if (!process.waitFor(5, TimeUnit.SECONDS)) process.destroyForcibly();
-            throw new IOException("Git repository snapshot command timed out");
-        }
-
-        String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        if (process.exitValue() != 0) {
-            throw new IOException("Git repository snapshot command failed with exit code " + process.exitValue()
-                    + ": " + GitCloneWorkspaceService.sanitize(output, accessToken));
-        }
-        return output;
     }
 }
