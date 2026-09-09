@@ -11,13 +11,13 @@ import io.github.developeranalytics.persistence.repository.SourceRepositoryRepos
 import io.github.developeranalytics.provider.ProviderAccessToken;
 import io.github.developeranalytics.provider.ProviderContributionFileChange;
 import io.github.developeranalytics.provider.ProviderException;
-import io.github.developeranalytics.provider.ProviderRepository;
 import io.github.developeranalytics.provider.history.ContributionHistoryProvider;
 import io.github.developeranalytics.provider.history.HistoricalCommitFileChanges;
 import io.github.developeranalytics.service.change.ChangeKindClassifier;
 import io.github.developeranalytics.service.connection.ProviderCredentialService;
 import io.github.developeranalytics.service.discovery.GitHubCommitFileChangeService;
 import io.github.developeranalytics.service.job.RepositoryDiscoveryJobService;
+import io.github.developeranalytics.service.sync.ProviderRepositoryMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -45,6 +45,7 @@ public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler 
     @Inject GitHubCommitFileChangeService commitFileChanges;
     @Inject ChangeKindClassifier classifier;
     @Inject RepositoryDiscoveryJobService jobs;
+    @Inject ProviderRepositoryMapper providerRepositories;
 
     @Override
     public String jobType() {
@@ -137,7 +138,7 @@ public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler 
                 .toList();
         try {
             List<HistoricalCommitFileChanges> fetched = contributionHistory.fetchFileChanges(
-                    token, toProviderRepository(repository), commitShas);
+                    token, providerRepositories.map(repository), commitShas);
             Map<String, HistoricalCommitFileChanges> bySha = new HashMap<>();
             for (HistoricalCommitFileChanges change : fetched) {
                 if (change != null && !bySha.containsKey(change.commitSha())) {
@@ -198,27 +199,5 @@ public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler 
     private static int saturatingAdd(int current, int value) {
         long sum = (long) current + value;
         return (int) Math.min(Integer.MAX_VALUE, sum);
-    }
-
-    private static ProviderRepository toProviderRepository(SourceRepository repository) {
-        ProviderRepository.Visibility visibility = ProviderRepository.Visibility.valueOf(repository.getVisibility().name());
-        return new ProviderRepository(
-                repository.getExternalRepositoryId(),
-                repository.getOwnerExternalId(),
-                repository.getOwnerLogin(),
-                ProviderRepository.OwnerType.OTHER,
-                repository.getName(),
-                repository.getFullName(),
-                repository.getHtmlUrl(),
-                visibility,
-                repository.isFork(),
-                repository.isArchived(),
-                null,
-                null,
-                repository.getLastActivityAt(),
-                repository.getDescription(),
-                repository.getTopics(),
-                repository.getRepositorySizeBytes()
-        );
     }
 }
