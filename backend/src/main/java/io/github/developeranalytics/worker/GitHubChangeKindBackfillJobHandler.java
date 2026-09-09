@@ -30,7 +30,8 @@ import java.util.UUID;
 public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler {
 
     public static final String JOB_TYPE = "GITHUB_CHANGE_KIND_BACKFILL";
-    static final int BATCH_SIZE = 100;
+    static final int PROCESSING_BATCH_SIZE = 100;
+    static final int MAX_COMMITS_PER_JOB = 1_000;
 
     @Inject SourceRepositoryRepository repositories;
     @Inject ContributionRepository contributions;
@@ -67,19 +68,13 @@ public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler 
         }
 
         ProviderAccessToken token = credentials.requireAccessToken(job.getUser().getId(), "github");
-        List<Contribution> batch = contributions.findCommitsMissingFileClassification(
-                job.getUser().getId(), repositoryId, ChangeKindClassifier.CLASSIFIER_VERSION, BATCH_SIZE);
+        List<Contribution> work = contributions.findCommitsMissingFileClassification(
+                job.getUser().getId(), repositoryId, ChangeKindClassifier.CLASSIFIER_VERSION, MAX_COMMITS_PER_JOB);
 
-        Map<String, HistoricalCommitFileChanges> gitChanges = fetchGitChanges(repository, batch, token);
-        for (Contribution contribution : batch) {
-            HistoricalCommitFileChanges gitDetails = gitChanges.get(contribution.getProviderContributionId());
-            if (isUsable(gitDetails)) {
-                persistGitChanges(job, repository, contribution, gitDetails.fileChanges());
-            } else {
-                GitHubCommitFileChangeService.CommitDetails details =
-                        commitFileChanges.refresh(job.getUser(), repository, contribution, token);
-                contribution.updateFileStatistics(details.additions(), details.deletions(), details.changedFiles());
-            }
+        Map<String, HistoricalCommitFileChanges> gitChanges = fetchGitChanges(repository, work, token);
+        for (int start = 0; start < work.size(); start += PROCESSING_BATCH_SIZE) {
+            int end = Math.min(start + PROCESSING_BATCH_SIZE, work.size());
+            processBatch(job, repository, work.subList(start, end), gitChanges, token);
         }
 
         boolean remaining = fileChanges.hasMissingCurrentClassification(
@@ -91,14 +86,33 @@ public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler 
         }
     }
 
-    private Map<String, HistoricalCommitFileChanges> fetchGitChanges(
+    private void processBatch(
+            BackgroundJob job,
             SourceRepository repository,
             List<Contribution> batch,
+            Map<String, HistoricalCommitFileChanges> gitChanges,
+            ProviderAccessToken token
+    ) throws Exception {
+        for (Contribution contribution : batch) {
+            HistoricalCommitFileChanges gitDetails = gitChanges.get(contribution.getProviderContributionId());
+            if (isUsable(gitDetails)) {
+                persistGitChanges(job, repository, contribution, gitDetails.fileChanges());
+            } else {
+                GitHubCommitFileChangeService.CommitDetails details =
+                        commitFileChanges.refresh(job.getUser(), repository, contribution, token);
+                contribution.updateFileStatistics(details.additions(), details.deletions(), details.changedFiles());
+            }
+        }
+    }
+
+    private Map<String, HistoricalCommitFileChanges> fetchGitChanges(
+            SourceRepository repository,
+            List<Contribution> work,
             ProviderAccessToken token
     ) {
-        if (batch.isEmpty()) return Map.of();
+        if (work.isEmpty()) return Map.of();
 
-        List<String> commitShas = batch.stream()
+        List<String> commitShas = work.stream()
                 .map(Contribution::getProviderContributionId)
                 .toList();
         try {
