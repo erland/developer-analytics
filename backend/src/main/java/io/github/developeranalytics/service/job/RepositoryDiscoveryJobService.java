@@ -2,6 +2,7 @@ package io.github.developeranalytics.service.job;
 
 import io.github.developeranalytics.domain.job.BackgroundJob;
 import io.github.developeranalytics.domain.model.AppUser;
+import io.github.developeranalytics.domain.model.ContributionSyncMode;
 import io.github.developeranalytics.persistence.repository.BackgroundJobRepository;
 import io.github.developeranalytics.worker.*;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -53,7 +54,10 @@ public class RepositoryDiscoveryJobService {
             return null;
         }
         return enqueueDeduplicated(user, repositoryId, GitHubChangeKindBackfillJobHandler.JOB_TYPE,
-                115, "github:change-kind-backfill:");
+                115, "github:change-kind-backfill:", Map.of(
+                        GitHubContributionDiscoveryJobHandler.SYNC_MODE,
+                        ContributionSyncMode.SCOPE_BACKFILL.name()
+                ));
     }
 
     @Transactional
@@ -65,7 +69,11 @@ public class RepositoryDiscoveryJobService {
                 user,
                 GitHubChangeKindBackfillJobHandler.JOB_TYPE,
                 115,
-                Map.of("provider", "github", "repositoryId", repositoryId.toString()),
+                Map.of(
+                        "provider", "github",
+                        "repositoryId", repositoryId.toString(),
+                        GitHubContributionDiscoveryJobHandler.SYNC_MODE, ContributionSyncMode.SCOPE_BACKFILL.name()
+                ),
                 5,
                 OffsetDateTime.now(ZoneOffset.UTC),
                 "github:change-kind-backfill:" + repositoryId
