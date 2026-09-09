@@ -3,14 +3,17 @@ package io.github.developeranalytics.service.technology;
 import io.github.developeranalytics.domain.model.AppUser;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.domain.technology.*;
+import io.github.developeranalytics.observability.StructuredLog;
 import io.github.developeranalytics.persistence.technology.RepositoryTechnologyEvidenceRepository;
 import io.github.developeranalytics.persistence.technology.TechnologyCatalogueRepository;
 import io.github.developeranalytics.provider.*;
 import io.github.developeranalytics.provider.github.GitHubProviderAdapter;
+import io.github.developeranalytics.provider.history.git.GitRepositorySnapshotService;
 import io.github.developeranalytics.service.connection.ProviderCredentialService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.jboss.logging.Logger;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -20,8 +23,13 @@ import java.util.Locale;
 @ApplicationScoped
 public class FileManifestEvidenceService {
 
+    private static final Logger LOG = Logger.getLogger(FileManifestEvidenceService.class);
+
     @Inject
     GitHubProviderAdapter github;
+
+    @Inject
+    GitRepositorySnapshotService gitSnapshots;
 
     @Inject
     ProviderCredentialService credentials;
@@ -63,8 +71,7 @@ public class FileManifestEvidenceService {
                 repository.getLastActivityAt()
         );
 
-        ProviderRepositorySnapshot snapshot =
-                github.fetchRepositorySnapshot(token, providerRepository);
+        ProviderRepositorySnapshot snapshot = fetchSnapshot(token, providerRepository, repository);
 
         List<TechnologyCatalogueEntry> technologies = catalogue.findActive();
         OffsetDateTime observedAt = OffsetDateTime.now(ZoneOffset.UTC);
@@ -118,6 +125,27 @@ public class FileManifestEvidenceService {
                 manifestMatches,
                 snapshot.rateLimit()
         );
+    }
+
+    private ProviderRepositorySnapshot fetchSnapshot(
+            ProviderAccessToken token,
+            ProviderRepository providerRepository,
+            SourceRepository repository
+    ) throws ProviderException {
+        try {
+            ProviderRepositorySnapshot snapshot = gitSnapshots.fetch(token, providerRepository);
+            StructuredLog.info(LOG, "file_manifest_snapshot_git",
+                    StructuredLog.fields("repositoryId", repository.getId(), "files", snapshot.files().size()));
+            return snapshot;
+        } catch (ProviderException | RuntimeException gitError) {
+            if (Thread.currentThread().isInterrupted()) {
+                if (gitError instanceof ProviderException providerException) throw providerException;
+                throw gitError;
+            }
+            StructuredLog.warn(LOG, "file_manifest_snapshot_git_fallback", gitError,
+                    StructuredLog.fields("repositoryId", repository.getId()));
+            return github.fetchRepositorySnapshot(token, providerRepository);
+        }
     }
 
     boolean matchesFilePattern(String normalizedPath, String rawPattern) {
