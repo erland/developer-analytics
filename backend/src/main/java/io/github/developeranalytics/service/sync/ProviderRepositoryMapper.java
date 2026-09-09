@@ -1,6 +1,5 @@
 package io.github.developeranalytics.service.sync;
 
-import io.github.developeranalytics.domain.model.RepositoryOwnerType;
 import io.github.developeranalytics.domain.model.RepositoryVisibility;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.provider.ProviderRepository;
@@ -36,7 +35,10 @@ public class ProviderRepositoryMapper {
                 repository.isArchived(),
                 null,
                 null,
-                repository.getLastActivityAt()
+                repository.getLastActivityAt(),
+                repository.getDescription(),
+                repository.getTopics(),
+                repository.getRepositorySizeBytes()
         );
     }
 }
