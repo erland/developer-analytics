@@ -27,7 +27,9 @@ class GitHubColdStartRateLimitAcceptanceTest {
 
     private static final int REPOSITORY_COUNT = 240;
     private static final int COLD_START_PRIORITY = -1_000;
-    private static final int INITIAL_REMAINING = 250;
+    // Default reserve is max(200, 5% of 5,000) = 250. Start 50 requests above
+    // the reserve so five repositories can complete at 10 simulated requests each.
+    private static final int INITIAL_REMAINING = 300;
     private static final int REQUESTS_PER_REPOSITORY = 10;
     private static final int EXPECTED_COMPLETED_BEFORE_PAUSE = 5;
 
