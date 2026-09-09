@@ -19,6 +19,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /** Fetches a user's pull request review contributions without one REST request per pull request. */
@@ -29,6 +30,7 @@ public class GitHubReviewContributionService {
 
     @Inject ObjectMapper mapper;
     @Inject GitHubApiUsageTracker usage;
+    @Inject GitHubRateLimitService rateLimits;
 
     private final HttpClient http = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)
@@ -111,16 +113,25 @@ public class GitHubReviewContributionService {
 
         try {
             HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+            String responseBody = response.body();
+            String providerMessage = graphqlErrorMessage(responseBody);
+            OffsetDateTime retryAt = rateLimitRetryAt(response, providerMessage);
+            if (retryAt != null) rateLimits.blockUntil(accessToken, retryAt);
+
             if (response.statusCode() / 100 != 2) {
                 throw new ProviderException(
                         "GitHub GraphQL reviews request failed with HTTP " + response.statusCode(),
-                        response.statusCode(), retryAt(response));
+                        response.statusCode(), retryAt);
             }
-            JsonNode json = mapper.readTree(response.body());
+            JsonNode json = mapper.readTree(responseBody);
             JsonNode errors = json.path("errors");
             if (errors.isArray() && !errors.isEmpty()) {
                 String message = errors.get(0).path("message").asText("GitHub GraphQL review query failed");
-                throw new ProviderException("GitHub GraphQL reviews failed: " + message, 0);
+                OffsetDateTime graphqlRetryAt = signalsRateLimit(message)
+                        ? OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(1)
+                        : null;
+                if (graphqlRetryAt != null) rateLimits.blockUntil(accessToken, graphqlRetryAt);
+                throw new ProviderException("GitHub GraphQL reviews failed: " + message, 0, graphqlRetryAt);
             }
             return json.path("data");
         } catch (ProviderException e) {
@@ -132,7 +143,6 @@ public class GitHubReviewContributionService {
 
     List<ProviderContribution> mapReviewContributions(JsonNode pullRequest, OffsetDateTime since) {
         List<ProviderContribution> result = new ArrayList<>();
-        String pullNumber = pullRequest.path("number").asText("");
         String pullTitle = pullRequest.path("title").asText("Pull request review");
 
         for (JsonNode review : pullRequest.path("reviews").path("nodes")) {
@@ -141,8 +151,8 @@ public class GitHubReviewContributionService {
 
             String id = review.path("databaseId").asText("");
             if (id.isBlank()) continue;
-            String body = review.path("body").asText("");
-            String title = body.isBlank() ? "Review: " + pullTitle : body;
+            String reviewBody = review.path("body").asText("");
+            String title = reviewBody.isBlank() ? "Review: " + pullTitle : reviewBody;
             ProviderContribution.State state = "DISMISSED".equalsIgnoreCase(review.path("state").asText(""))
                     ? ProviderContribution.State.CLOSED
                     : ProviderContribution.State.UNKNOWN;
@@ -161,7 +171,16 @@ public class GitHubReviewContributionService {
         return result;
     }
 
-    private OffsetDateTime retryAt(HttpResponse<?> response) {
+    OffsetDateTime rateLimitRetryAt(HttpResponse<?> response, String providerMessage) {
+        int status = response.statusCode();
+        String remaining = response.headers().firstValue("X-RateLimit-Remaining").orElse(null);
+        boolean exhausted = "0".equals(remaining);
+        boolean rateLimited = status == 429
+                || exhausted
+                || response.headers().firstValue("Retry-After").isPresent()
+                || signalsRateLimit(providerMessage);
+        if (!rateLimited) return null;
+
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         String retryAfter = response.headers().firstValue("Retry-After").orElse(null);
         if (retryAfter != null) {
@@ -176,7 +195,28 @@ public class GitHubReviewContributionService {
                 if (value.isAfter(now)) return value.plusSeconds(1);
             } catch (NumberFormatException ignored) { }
         }
-        return response.statusCode() == 403 || response.statusCode() == 429 ? now.plusMinutes(1) : null;
+        return now.plusMinutes(1);
+    }
+
+    private String graphqlErrorMessage(String body) {
+        try {
+            JsonNode json = mapper.readTree(body);
+            JsonNode errors = json.path("errors");
+            if (errors.isArray() && !errors.isEmpty()) {
+                String message = errors.get(0).path("message").asText(null);
+                if (message != null && !message.isBlank()) return message;
+            }
+            String message = json.path("message").asText(null);
+            return message == null || message.isBlank() ? null : message;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private boolean signalsRateLimit(String message) {
+        if (message == null) return false;
+        String normalized = message.toLowerCase(Locale.ROOT);
+        return normalized.contains("rate limit") || normalized.contains("secondary rate");
     }
 
     private OffsetDateTime parseDate(JsonNode node, String field) {
