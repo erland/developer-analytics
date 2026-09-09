@@ -39,11 +39,28 @@ class BackgroundJobRateLimitDeferralTest {
     }
 
     @Test
+    void concurrencySchedulingDeferralUsesWaitingWithoutConsumingAnAttempt() {
+        OffsetDateTime now = OffsetDateTime.of(2026, 9, 9, 12, 0, 0, 0, ZoneOffset.UTC);
+        OffsetDateTime retryAt = now.plusSeconds(5);
+        BackgroundJob job = BackgroundJob.queued(null, "GITHUB_CONTRIBUTION_DISCOVERY", 100, Map.of(), 5, now);
+
+        job.markRunning("worker-1", now);
+        job.deferForScheduling(retryAt);
+
+        assertEquals(BackgroundJobStatus.WAITING, job.getStatus());
+        assertEquals(0, job.getAttemptCount());
+        assertEquals(retryAt, job.getNextExecutionAt());
+        assertNull(job.getLockedAt());
+        assertNull(job.getLastError());
+    }
+
+    @Test
     void onlyRunningJobsCanBePausedForRateLimit() {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         BackgroundJob job = BackgroundJob.queued(null, "TEST", 100, Map.of(), 5, now);
 
         assertThrows(IllegalStateException.class, () -> job.deferForRateLimit(now.plusMinutes(1)));
+        assertThrows(IllegalStateException.class, () -> job.deferForScheduling(now.plusMinutes(1)));
     }
 
     @Test
