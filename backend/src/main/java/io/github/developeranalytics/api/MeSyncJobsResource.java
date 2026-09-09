@@ -131,7 +131,7 @@ public class MeSyncJobsResource {
                 .orElse(null);
         Integer analysisStep = ANALYSIS_STAGE.get(job.getJobType());
         return new JobSummary(
-                job.getId(), job.getJobType(), job.getStatus().name(), repositoryId,
+                job.getId(), job.getJobType(), payloadString(job, "syncMode"), job.getStatus().name(), repositoryId,
                 repositoryName, job.getAttemptCount(), job.getMaxAttempts(),
                 analysisStep, analysisStep == null ? null : ANALYSIS_STEPS_PER_REPOSITORY,
                 job.getProgressPercent(), job.getLastError(), job.getCreatedAt(),
@@ -145,6 +145,11 @@ public class MeSyncJobsResource {
         catch (IllegalArgumentException ignored) { return null; }
     }
 
+    private String payloadString(BackgroundJob job, String key) {
+        Object value = job.getPayload() == null ? null : job.getPayload().get(key);
+        return value == null ? null : String.valueOf(value);
+    }
+
     public record JobOverview(
             long queued, long waiting, long pausedRateLimit, long running, long completed, long failed,
             int totalRepositories, long analysisStepsCompleted, long analysisStepsTotal,
@@ -152,7 +157,7 @@ public class MeSyncJobsResource {
     ) {}
 
     public record JobSummary(
-            UUID id, String jobType, String status, UUID repositoryId,
+            UUID id, String jobType, String syncMode, String status, UUID repositoryId,
             String repositoryName, int attemptCount, int maxAttempts,
             Integer analysisStep, Integer analysisStepsTotal,
             Integer progressPercent, String lastError, OffsetDateTime createdAt,
