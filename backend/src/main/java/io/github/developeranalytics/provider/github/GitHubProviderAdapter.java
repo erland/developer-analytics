@@ -26,6 +26,7 @@ public class GitHubProviderAdapter implements SourceControlProvider {
 
     @Inject ObjectMapper mapper;
     @Inject GitHubRateLimitService rateLimits;
+    @Inject GitHubApiUsageTracker apiUsage;
 
     private final HttpClient http = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)
@@ -271,6 +272,7 @@ public class GitHubProviderAdapter implements SourceControlProvider {
     }
 
     HttpResponse<String> sendGet(URI uri, ProviderAccessToken accessToken) throws ProviderException {
+        apiUsage.record(endpointLabel(uri));
         HttpRequest request = HttpRequest.newBuilder(uri)
                 .header("Accept", "application/vnd.github+json")
                 .header("Authorization", "Bearer " + accessToken.value())
