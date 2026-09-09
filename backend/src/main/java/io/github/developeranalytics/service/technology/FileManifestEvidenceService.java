@@ -8,6 +8,7 @@ import io.github.developeranalytics.persistence.technology.TechnologyCatalogueRe
 import io.github.developeranalytics.provider.*;
 import io.github.developeranalytics.provider.snapshot.RepositorySnapshotProvider;
 import io.github.developeranalytics.service.connection.ProviderCredentialService;
+import io.github.developeranalytics.service.sync.ProviderRepositoryMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -20,50 +21,20 @@ import java.util.Locale;
 @ApplicationScoped
 public class FileManifestEvidenceService {
 
-    @Inject
-    RepositorySnapshotProvider snapshots;
-
-    @Inject
-    ProviderCredentialService credentials;
-
-    @Inject
-    TechnologyCatalogueService catalogueService;
-
-    @Inject
-    TechnologyCatalogueRepository catalogue;
-
-    @Inject
-    RepositoryTechnologyEvidenceRepository evidenceRepository;
+    @Inject RepositorySnapshotProvider snapshots;
+    @Inject ProviderCredentialService credentials;
+    @Inject ProviderRepositoryMapper repositories;
+    @Inject TechnologyCatalogueService catalogueService;
+    @Inject TechnologyCatalogueRepository catalogue;
+    @Inject RepositoryTechnologyEvidenceRepository evidenceRepository;
 
     @Transactional
     public Result collect(AppUser user, SourceRepository repository)
             throws ProviderException {
         catalogueService.seedBuiltInCatalogueIfEmpty();
 
-        ProviderAccessToken token =
-                credentials.requireAccessToken(user.getId(), "github");
-
-        ProviderRepository providerRepository = new ProviderRepository(
-                repository.getExternalRepositoryId(),
-                repository.getOwnerExternalId(),
-                repository.getOwnerLogin(),
-                repository.getOwnerLogin() == null
-                        ? ProviderRepository.OwnerType.OTHER
-                        : ProviderRepository.OwnerType.USER,
-                repository.getName(),
-                repository.getFullName(),
-                repository.getHtmlUrl(),
-                repository.getVisibility().name().equals("PRIVATE")
-                        ? ProviderRepository.Visibility.PRIVATE
-                        : ProviderRepository.Visibility.PUBLIC,
-                repository.isFork(),
-                repository.isArchived(),
-                null,
-                null,
-                repository.getLastActivityAt()
-        );
-
-        ProviderRepositorySnapshot snapshot = snapshots.fetch(token, providerRepository);
+        ProviderAccessToken token = credentials.requireAccessToken(user.getId(), "github");
+        ProviderRepositorySnapshot snapshot = snapshots.fetch(token, repositories.map(repository));
 
         List<TechnologyCatalogueEntry> technologies = catalogue.findActive();
         OffsetDateTime observedAt = OffsetDateTime.now(ZoneOffset.UTC);
@@ -80,43 +51,23 @@ public class FileManifestEvidenceService {
             for (TechnologyCatalogueEntry technology : technologies) {
                 for (String pattern : technology.getFileEvidence()) {
                     if (matchesFilePattern(normalizedPath, pattern)) {
-                        upsert(
-                                user,
-                                repository,
-                                technology,
-                                TechnologyEvidenceType.FILE,
-                                file.path(),
-                                null,
-                                observedAt
-                        );
+                        upsert(user, repository, technology, TechnologyEvidenceType.FILE,
+                                file.path(), null, observedAt);
                         fileMatches++;
                     }
                 }
 
                 for (String tokenPattern : technology.getManifestEvidence()) {
-                    if (!content.isBlank()
-                            && content.contains(tokenPattern.toLowerCase(Locale.ROOT))) {
-                        upsert(
-                                user,
-                                repository,
-                                technology,
-                                TechnologyEvidenceType.MANIFEST,
-                                file.path() + ":" + tokenPattern,
-                                null,
-                                observedAt
-                        );
+                    if (!content.isBlank() && content.contains(tokenPattern.toLowerCase(Locale.ROOT))) {
+                        upsert(user, repository, technology, TechnologyEvidenceType.MANIFEST,
+                                file.path() + ":" + tokenPattern, null, observedAt);
                         manifestMatches++;
                     }
                 }
             }
         }
 
-        return new Result(
-                snapshot.files().size(),
-                fileMatches,
-                manifestMatches,
-                snapshot.rateLimit()
-        );
+        return new Result(snapshot.files().size(), fileMatches, manifestMatches, snapshot.rateLimit());
     }
 
     boolean matchesFilePattern(String normalizedPath, String rawPattern) {
@@ -125,17 +76,12 @@ public class FileManifestEvidenceService {
         if (pattern.startsWith("*.")) {
             return normalizedPath.endsWith(pattern.substring(1));
         }
-
         if (pattern.endsWith("/")) {
-            return normalizedPath.startsWith(pattern)
-                    || normalizedPath.contains("/" + pattern);
+            return normalizedPath.startsWith(pattern) || normalizedPath.contains("/" + pattern);
         }
-
         if (pattern.startsWith(".")) {
-            return normalizedPath.equals(pattern)
-                    || normalizedPath.endsWith("/" + pattern);
+            return normalizedPath.equals(pattern) || normalizedPath.endsWith("/" + pattern);
         }
-
         return normalizedPath.equals(pattern)
                 || normalizedPath.endsWith("/" + pattern)
                 || normalizedPath.contains("/" + pattern + "/");
@@ -151,23 +97,13 @@ public class FileManifestEvidenceService {
             OffsetDateTime observedAt
     ) {
         RepositoryTechnologyEvidence evidence = evidenceRepository.find(
-                repository.getId(),
-                technology.getId(),
-                type,
-                sourceValue
-        ).orElse(null);
+                repository.getId(), technology.getId(), type, sourceValue).orElse(null);
 
         if (evidence == null) {
             evidence = new RepositoryTechnologyEvidence(
-                    user,
-                    repository,
-                    technology,
-                    type,
+                    user, repository, technology, type,
                     TechnologyEvidenceStrength.OBSERVED,
-                    sourceValue,
-                    measuredValue,
-                    observedAt
-            );
+                    sourceValue, measuredValue, observedAt);
             evidenceRepository.persist(evidence);
         } else {
             evidence.refresh(measuredValue, observedAt);
