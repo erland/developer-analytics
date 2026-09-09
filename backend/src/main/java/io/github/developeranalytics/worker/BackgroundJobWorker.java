@@ -58,13 +58,14 @@ public class BackgroundJobWorker {
                     githubRateLimitGate.blockingDecision(job);
             if (blocked.isPresent()) {
                 GitHubRateLimitService.GitHubRateLimitDecision decision = blocked.get();
-                job.deferWithoutAttempt(decision.resumeAt());
+                job.deferForRateLimit(decision.resumeAt());
                 StructuredLog.info(
                         LOG,
                         "background_job_deferred_github_rate_limit",
                         StructuredLog.fields(
                                 "backgroundJobId", job.getId(),
                                 "jobType", job.getJobType(),
+                                "status", job.getStatus(),
                                 "resumeAt", decision.resumeAt(),
                                 "remaining", decision.remaining(),
                                 "reserve", decision.reserve(),
