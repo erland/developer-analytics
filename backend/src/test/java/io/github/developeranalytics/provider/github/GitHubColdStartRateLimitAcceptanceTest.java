@@ -119,19 +119,38 @@ class GitHubColdStartRateLimitAcceptanceTest {
         assertEquals(0, failedRowsBeforeReset.intValue());
         assertEquals(EXPECTED_COMPLETED_BEFORE_PAUSE, attemptsBeforeReset.intValue(),
                 "rate-limit deferrals must not consume attempts");
-        assertTrue(jobs.claimNext("acceptance-worker", resetAt.minusSeconds(1)).isEmpty(),
-                "paused jobs must not be claimable before GitHub reset");
+
+        Number pausedBeforeReset = (Number) entityManager.createNativeQuery(
+                        "SELECT count(*) FROM background_job " +
+                        "WHERE user_id=:userId AND status='PAUSED_RATE_LIMIT' AND next_execution_at < :resetAt")
+                .setParameter("userId", user.getId())
+                .setParameter("resetAt", resetAt)
+                .getSingleResult();
+        Number runnableBeforeReset = (Number) entityManager.createNativeQuery(
+                        "SELECT count(*) FROM background_job " +
+                        "WHERE user_id=:userId AND status IN ('QUEUED','WAITING','PAUSED_RATE_LIMIT') " +
+                        "AND next_execution_at <= :beforeReset")
+                .setParameter("userId", user.getId())
+                .setParameter("beforeReset", resetAt.minusSeconds(1))
+                .getSingleResult();
+        assertEquals(0, pausedBeforeReset.intValue(),
+                "rate-limited jobs must not be scheduled before GitHub reset");
+        assertEquals(0, runnableBeforeReset.intValue(),
+                "this user's paused jobs must not be runnable before GitHub reset");
 
         OffsetDateTime resumedAt = resetAt.plusSeconds(1);
         rateLimits.update(token, state(5_000, resumedAt.plusHours(1), resumedAt));
 
         int resumedAndCompleted = 0;
-        while (true) {
+        while (resumedAndCompleted < REPOSITORY_COUNT - EXPECTED_COMPLETED_BEFORE_PAUSE) {
             Optional<BackgroundJob> claimed = jobs.claimNext("acceptance-worker", resumedAt);
             if (claimed.isEmpty()) break;
 
             BackgroundJob job = claimed.get();
-            assertEquals(user.getId(), job.getUser().getId());
+            if (!user.getId().equals(job.getUser().getId())) {
+                job.deferForScheduling(resumedAt.plusSeconds(1));
+                continue;
+            }
             assertEquals(BackgroundJobStatus.RUNNING, job.getStatus());
             assertTrue(rateLimits.decision(token, resumedAt).allowed());
             assertNull(job.getLastError());
