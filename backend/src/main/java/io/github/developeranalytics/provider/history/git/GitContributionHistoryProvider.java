@@ -1,5 +1,6 @@
 package io.github.developeranalytics.provider.history.git;
 
+import io.github.developeranalytics.observability.StructuredLog;
 import io.github.developeranalytics.provider.ProviderAccessToken;
 import io.github.developeranalytics.provider.ProviderException;
 import io.github.developeranalytics.provider.ProviderRepository;
@@ -7,6 +8,7 @@ import io.github.developeranalytics.provider.history.ContributionHistoryProvider
 import io.github.developeranalytics.provider.history.HistoricalCommitFileChanges;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.net.URI;
@@ -16,6 +18,8 @@ import java.util.List;
 /** Historical contribution source backed by a temporary local bare Git clone. */
 @ApplicationScoped
 public class GitContributionHistoryProvider implements ContributionHistoryProvider {
+
+    private static final Logger LOG = Logger.getLogger(GitContributionHistoryProvider.class);
 
     @Inject GitCloneWorkspaceService workspaces;
     @Inject GitLocalHistoryReader historyReader;
@@ -31,7 +35,19 @@ public class GitContributionHistoryProvider implements ContributionHistoryProvid
 
         URI cloneUri = cloneUri(repository);
         try (TemporaryGitRepository workspace = workspaces.cloneBareBlobless(cloneUri, accessToken)) {
-            return historyReader.read(workspace.repositoryPath(), commitShas);
+            List<HistoricalCommitFileChanges> result = historyReader.read(workspace.repositoryPath(), commitShas);
+            StructuredLog.info(
+                    LOG,
+                    "git_history_backfill_transfer",
+                    StructuredLog.fields(
+                            "repository", repository.fullName(),
+                            "requestedCommits", commitShas.size(),
+                            "analyzedCommits", result.size(),
+                            "cloneDurationMs", workspace.transferDuration().toMillis(),
+                            "temporaryGitBytes", workspace.sizeBytes()
+                    )
+            );
+            return result;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new ProviderException("Interrupted while preparing local Git history for " + repository.fullName(), 0, e);
