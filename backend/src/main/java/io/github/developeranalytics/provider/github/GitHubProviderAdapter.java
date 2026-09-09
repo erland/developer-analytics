@@ -280,35 +280,6 @@ public class GitHubProviderAdapter implements SourceControlProvider {
         return node.hasNonNull(field) ? OffsetDateTime.parse(node.get(field).asText()) : null;
     }
 
-    public ProviderContributorStatistics fetchContributorStatistics(ProviderAccessToken accessToken,
-                                                                    ProviderRepository repository,
-                                                                    String userLogin) throws ProviderException {
-        String fullName = repository.fullName();
-        if (fullName == null || !fullName.contains("/")) throw new ProviderException("GitHub repository full name is required", 0);
-        HttpResponse<String> response = sendGet(URI.create(API_BASE + "/repos/" + fullName + "/stats/contributors"), accessToken);
-        JsonNode array = parse(response.body());
-        if (!array.isArray()) throw new ProviderException("GitHub contributor statistics response was not an array", response.statusCode());
-        int contributors = 0, humans = 0, bots = 0, userCommits = 0, repositoryCommits = 0;
-        long userAdditions = 0, userDeletions = 0;
-        for (JsonNode node : array) {
-            JsonNode author = node.path("author");
-            String login = author.path("login").asText("");
-            boolean bot = "Bot".equalsIgnoreCase(author.path("type").asText("")) || login.toLowerCase(Locale.ROOT).endsWith("[bot]");
-            contributors++;
-            repositoryCommits += node.path("total").asInt(0);
-            if (bot) bots++; else humans++;
-            if (userLogin != null && userLogin.equalsIgnoreCase(login)) {
-                userCommits += node.path("total").asInt(0);
-                for (JsonNode week : node.path("weeks")) {
-                    userAdditions += week.path("a").asLong(0);
-                    userDeletions += week.path("d").asLong(0);
-                }
-            }
-        }
-        return new ProviderContributorStatistics(contributors, humans, bots, userCommits, repositoryCommits,
-                userAdditions, userDeletions, OffsetDateTime.now(ZoneOffset.UTC));
-    }
-
     HttpResponse<String> sendGet(URI uri, ProviderAccessToken accessToken) throws ProviderException {
         HttpRequest request = HttpRequest.newBuilder(uri)
                 .header("Accept", "application/vnd.github+json")
