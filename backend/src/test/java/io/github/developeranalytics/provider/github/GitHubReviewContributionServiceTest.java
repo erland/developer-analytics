@@ -40,7 +40,7 @@ class GitHubReviewContributionServiceTest {
                 pullRequest, OffsetDateTime.parse("2026-09-08T00:00:00Z"));
 
         assertEquals(1, result.size());
-        assertEquals("review-1234", result.getFirst().providerContributionId());
+        assertEquals("review-1234", result.getFirst().externalContributionId());
         assertEquals(ProviderContribution.Type.REVIEW, result.getFirst().type());
         assertEquals("Looks good", result.getFirst().title());
     }
@@ -77,7 +77,7 @@ class GitHubReviewContributionServiceTest {
                 pullRequest, OffsetDateTime.parse("2026-09-08T00:00:00Z"));
 
         assertEquals(1, result.size());
-        assertEquals("review-11", result.getFirst().providerContributionId());
+        assertEquals("review-11", result.getFirst().externalContributionId());
         assertEquals(ProviderContribution.State.CLOSED, result.getFirst().state());
         assertEquals("Review: Example", result.getFirst().title());
     }
