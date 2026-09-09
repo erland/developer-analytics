@@ -5,6 +5,8 @@ CREATE TABLE provider_sync_run (
     sync_mode VARCHAR(32) NOT NULL,
     status VARCHAR(32) NOT NULL,
     repositories_planned INTEGER NOT NULL DEFAULT 0,
+    api_request_count INTEGER NOT NULL DEFAULT 0,
+    api_requests_by_endpoint JSONB NOT NULL DEFAULT '{}'::jsonb,
     rate_limit_pause_count INTEGER NOT NULL DEFAULT 0,
     paused_duration_seconds BIGINT NOT NULL DEFAULT 0,
     pause_started_at TIMESTAMPTZ,
