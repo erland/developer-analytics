@@ -2,7 +2,7 @@
 
 **Repository:** `erland/developer-analytics`  
 **Branch:** `feature/git-history-backfill`  
-**Status:** Steg 5B implementerat; CI-verifiering pågår  
+**Status:** Steg 6 klart; steg 7 nästa  
 **Mål:** Ersätta REST-anrop per historisk commit med Git-baserad lokal historikanalys för change-kind-backfill, utan att ändra den ordinarie inkrementella GitHub-synken.
 
 ## Målbild
@@ -63,7 +63,7 @@ Ordinarie löpande synk för metadata, languages, pull requests, issues, reviews
 
 **Klart:** `GitHubChangeKindBackfillJobHandler` använder Git-historikprovidern som primär källa. Användbara Git-resultat persistieras och klassificeras lokalt; commits som saknas eller har ogiltigt resultat faller tillbaka till befintlig REST commit-detail. Om Git-hämtningen misslyckas används REST. Befintlig continuation-, deduplicerings- och scope-logik är oförändrad, och den ordinarie inkrementella contribution-synken har inte ändrats. Fokuserade worker-tester täcker primär Git-väg, partiell fallback och full REST-fallback.
 
-## Steg 5 – Resurs- och säkerhetsskydd
+## Steg 5 – Resurs- och säkerhetsskydd ✅
 
 - [x] Begränsa Git-backfill till högst 1 samtidig clone per worker initialt.
 - [x] Kontrollera ledigt diskutrymme före clone.
@@ -73,7 +73,7 @@ Ordinarie löpande synk för metadata, languages, pull requests, issues, reviews
 - [x] Säkerställ att cleanup körs efter success, fallback och fel.
 - [x] Logga inga access tokens eller credential-URL:er.
 
-**Implementerat:** clone har konfigurerbar timeout, maxstorlek och minsta diskreserv. Ett worker-lokalt lås tillåter högst en Git-klon samtidigt; konkurrerande backfill använder REST-fallback i stället för att blockera. Clone övervakas medan den körs och stoppas om resursgränser överskrids. Cleanup sker även vid timeout/fel och Git-feltext token-redigeras.
+**Klart:** clone har konfigurerbar timeout, maxstorlek och minsta diskreserv. Ett worker-lokalt lås tillåter högst en Git-klon samtidigt; konkurrerande backfill använder REST-fallback i stället för att blockera. Clone övervakas medan den körs och stoppas om resursgränser överskrids. Cleanup sker även vid timeout/fel och Git-feltext token-redigeras. Full CI verifierar skydden.
 
 ### Steg 5B – Återanvänd clone över flera backfill-batchar ✅
 
@@ -85,16 +85,14 @@ Ordinarie löpande synk för metadata, languages, pull requests, issues, reviews
 
 **Effekt:** ett repository med 2 000 commits kräver normalt omkring 2 temporära clones i stället för omkring 20, utan permanent Git-cache. Jobbet är fortfarande begränsat till högst 1 000 historiska commits och continuation tar nästa segment vid behov.
 
-**Klart när:** ett mycket stort eller problematiskt repo inte kan fylla disken eller blockera workern obegränsat, och samma temporära clone återanvänds effektivt inom ett bounded backfill-jobb.
+## Steg 6 – Automatisk uppgraderings-/backfill-trigger ✅
 
-## Steg 6 – Automatisk uppgraderings-/backfill-trigger
+- [x] Kontrollera periodiskt i worker-rollen om repositories har äldre contribution scope.
+- [x] Köa endast saknade backfill-jobb och använd befintlig deduplicering.
+- [x] Gör triggern idempotent så vanliga restarts inte skapar parallella backfill-kedjor.
+- [x] Låt normal inkrementell sync fortsätta även medan historisk backfill pågår.
 
-- [ ] Kontrollera vid worker/startup eller ordinarie sync-planering om repositories har äldre contribution scope eller ofullständig change-kind-backfill.
-- [ ] Köa endast saknade backfill-jobb och använd befintlig deduplicering.
-- [ ] Gör triggern idempotent så vanliga restarts inte skapar parallella backfill-kedjor.
-- [ ] Låt normal inkrementell sync fortsätta även medan historisk backfill pågår.
-
-**Klart när:** deployment av en version som kräver historisk backfill självläkande börjar fylla den utan manuell sync-start.
+**Klart:** `ContributionScopeUpgradeService` hittar en begränsad mängd GitHub-repositories med äldre contribution scope och köar change-kind-backfill via befintlig `RepositoryDiscoveryJobService`. `BackgroundJobWorker` kör kontrollen periodiskt endast i worker-rollen. Urvalet filtrerar bort repositories som inte ingår i analysen eller har `ACCESS_REVOKED`, och befintlig jobbdeduplicering gör triggern idempotent. Full CI inklusive large-account acceptance är grön.
 
 ## Steg 7 – Acceptance, prestanda och dokumentation
 
