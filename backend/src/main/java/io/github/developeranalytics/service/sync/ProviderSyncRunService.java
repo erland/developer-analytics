@@ -73,7 +73,7 @@ public class ProviderSyncRunService {
         ProviderSyncRun run = runs.findByIdForUpdate(runId).orElse(null);
         if (run == null || run.getStatus() == ProviderSyncRun.Status.COMPLETED) return;
         JobCounts counts = jobCounts(runId);
-        if (counts.total() >= run.getRepositoriesPlanned() && counts.active() == 0) run.complete(now);
+        if (counts.total() >= run.getRepositoriesPlanned() && allLinkedJobsActive(runId) == 0) run.complete(now);
     }
 
     public Optional<ProviderSyncRun> findForUser(UUID runId, UUID userId) { return runs.findByIdForUser(runId, userId); }
@@ -116,6 +116,14 @@ public class ProviderSyncRunService {
                 .setParameter("jobType", GitHubContributionDiscoveryJobHandler.JOB_TYPE)
                 .setParameter("runId", runId.toString()).getSingleResult();
         return new JobCounts(number(row[0]), number(row[1]), number(row[2]), number(row[3]));
+    }
+
+    private int allLinkedJobsActive(UUID runId) {
+        Number count = (Number) em.createNativeQuery(
+                "SELECT count(*) FROM background_job WHERE payload->>'providerSyncRunId'=:runId " +
+                "AND status IN ('QUEUED','WAITING','PAUSED_RATE_LIMIT','RUNNING')")
+                .setParameter("runId", runId.toString()).getSingleResult();
+        return number(count);
     }
 
     private int number(Object value) { return value == null ? 0 : ((Number) value).intValue(); }
