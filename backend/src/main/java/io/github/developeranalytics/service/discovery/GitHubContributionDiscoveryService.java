@@ -1,17 +1,23 @@
 package io.github.developeranalytics.service.discovery;
 
-import io.github.developeranalytics.domain.model.*;
+import io.github.developeranalytics.domain.model.AppUser;
+import io.github.developeranalytics.domain.model.ContributionSyncRun;
+import io.github.developeranalytics.domain.model.SourceRepository;
+import io.github.developeranalytics.observability.StructuredLog;
 import io.github.developeranalytics.persistence.repository.ContributionRepository;
 import io.github.developeranalytics.persistence.repository.ContributionSyncRunRepository;
-import io.github.developeranalytics.provider.*;
+import io.github.developeranalytics.provider.PagedResult;
+import io.github.developeranalytics.provider.ProviderAccessToken;
+import io.github.developeranalytics.provider.ProviderContribution;
+import io.github.developeranalytics.provider.ProviderContributorSnapshot;
+import io.github.developeranalytics.provider.ProviderException;
+import io.github.developeranalytics.provider.ProviderRateLimit;
+import io.github.developeranalytics.provider.ProviderRepository;
 import io.github.developeranalytics.provider.github.GitHubContributorSnapshotService;
 import io.github.developeranalytics.provider.github.GitHubProviderAdapter;
-import io.github.developeranalytics.service.connection.ProviderCredentialService;
-import io.github.developeranalytics.service.connection.ProviderSession;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import io.github.developeranalytics.observability.StructuredLog;
 import org.jboss.logging.Logger;
 
 import java.time.OffsetDateTime;
@@ -25,7 +31,7 @@ public class GitHubContributionDiscoveryService {
     @Inject GitHubContributorSnapshotService contributorSnapshots;
     @Inject ContributorSnapshotPersistenceService contributorSnapshotPersistence;
     @Inject GitHubContributionIngestionService ingestion;
-    @Inject ProviderCredentialService credentials;
+    @Inject GitHubContributionSyncContextResolver contextResolver;
     @Inject ContributionRepository contributions;
     @Inject ContributionSyncRunRepository syncRuns;
     @Inject GitHubCommitFileChangeService commitFileChanges;
@@ -33,19 +39,11 @@ public class GitHubContributionDiscoveryService {
     @Transactional
     public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since)
             throws ProviderException {
-        ProviderSession providerSession = credentials.requireSession(user.getId(), "github");
-        ProviderAccessToken token = providerSession.accessToken();
-        String userLogin = providerSession.login();
-        if (userLogin == null || userLogin.isBlank()) {
-            userLogin = github.fetchCurrentUser(token).login();
-        }
-
-        ProviderRepository providerRepository = new ProviderRepository(
-                repository.getExternalRepositoryId(), repository.getOwnerExternalId(), repository.getOwnerLogin(),
-                mapOwnerType(repository), repository.getName(), repository.getFullName(), repository.getHtmlUrl(),
-                repository.getVisibility() == RepositoryVisibility.PRIVATE
-                        ? ProviderRepository.Visibility.PRIVATE : ProviderRepository.Visibility.PUBLIC,
-                repository.isFork(), repository.isArchived(), null, null, repository.getLastActivityAt());
+        GitHubContributionSyncContextResolver.SyncContext context =
+                contextResolver.resolve(user.getId(), repository);
+        ProviderAccessToken token = context.accessToken();
+        String userLogin = context.userLogin();
+        ProviderRepository providerRepository = context.providerRepository();
 
         OffsetDateTime startedAt = OffsetDateTime.now(java.time.ZoneOffset.UTC);
         if (repository.getContributionScopeVersion() < 2 && since == null) {
@@ -127,10 +125,6 @@ public class GitHubContributionDiscoveryService {
             run.fail(e.getMessage(), OffsetDateTime.now(java.time.ZoneOffset.UTC));
             throw e;
         }
-    }
-
-    private ProviderRepository.OwnerType mapOwnerType(SourceRepository repository) {
-        return repository.getOwnerLogin() == null ? ProviderRepository.OwnerType.OTHER : ProviderRepository.OwnerType.USER;
     }
 
     public record DiscoveryResult(UUID syncRunId, UUID repositoryId, int seen, int created, int updated, int pagesProcessed) {}
