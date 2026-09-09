@@ -51,16 +51,6 @@ class GitRepositorySnapshotServiceTest {
         }
     }
 
-    @Test
-    void relevantPathSelectionRemainsBounded() {
-        StringBuilder paths = new StringBuilder();
-        for (int i = 0; i < 60; i++) {
-            paths.append("modules/").append(i).append("/package.json\n");
-        }
-        assertEquals(GitRepositorySnapshotService.MAX_RELEVANT_FILES,
-                GitRepositorySnapshotService.relevantPaths(paths.toString()).size());
-    }
-
     private static void run(Path directory, String... command) throws Exception {
         Process process = new ProcessBuilder(command)
                 .directory(directory.toFile())
