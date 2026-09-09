@@ -1,6 +1,7 @@
 package io.github.developeranalytics.service.discovery;
 
 import io.github.developeranalytics.domain.model.AppUser;
+import io.github.developeranalytics.domain.model.ContributionSyncMode;
 import io.github.developeranalytics.domain.model.ContributionSyncRun;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.observability.StructuredLog;
@@ -43,7 +44,10 @@ public class GitHubContributionDiscoveryService {
     @Transactional
     public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since)
             throws ProviderException {
-        return discover(user, repository, since, null, ignored -> {});
+        ContributionSyncMode mode = since == null
+                ? ContributionSyncMode.INITIAL_FULL
+                : ContributionSyncMode.INCREMENTAL;
+        return discover(user, repository, since, null, ignored -> {}, mode);
     }
 
     @Transactional
@@ -52,25 +56,27 @@ public class GitHubContributionDiscoveryService {
             SourceRepository repository,
             OffsetDateTime since,
             String initialCursor,
-            Consumer<String> checkpoint
+            Consumer<String> checkpoint,
+            ContributionSyncMode syncMode
     ) throws ProviderException {
         GitHubContributionSyncContextResolver.SyncContext context =
                 contextResolver.resolve(user.getId(), repository);
         ProviderAccessToken token = context.accessToken();
         String userLogin = context.userLogin();
         ProviderRepository providerRepository = context.providerRepository();
+        ContributionSyncMode effectiveMode = syncMode == null ? ContributionSyncMode.UNKNOWN : syncMode;
 
         OffsetDateTime startedAt = OffsetDateTime.now(ZoneOffset.UTC);
         if (repository.getContributionScopeVersion() < 2 && since == null && initialCursor == null) {
             contributions.deleteForRepository(user.getId(), repository.getId());
         }
         repository.markSyncing();
-        ContributionSyncRun run = new ContributionSyncRun(user, repository, "github");
+        ContributionSyncRun run = new ContributionSyncRun(user, repository, "github", effectiveMode);
         syncRuns.persist(run);
         run.start(startedAt);
         StructuredLog.info(LOG, "contribution_sync_started",
                 StructuredLog.fields("syncId", run.getId(), "provider", "github", "repositoryId", repository.getId(),
-                        "resumeCursor", initialCursor));
+                        "syncMode", effectiveMode, "resumeCursor", initialCursor));
 
         int seen = 0;
         int created = 0;
@@ -105,7 +111,7 @@ public class GitHubContributionDiscoveryService {
                         run.pauseForRateLimit(decision.resumeAt(), pausedAt);
                         StructuredLog.info(LOG, "contribution_sync_paused_rate_limit",
                                 StructuredLog.fields("syncId", run.getId(), "repositoryId", repository.getId(),
-                                        "nextCursor", cursor, "resumeAt", decision.resumeAt(),
+                                        "syncMode", effectiveMode, "nextCursor", cursor, "resumeAt", decision.resumeAt(),
                                         "remaining", decision.remaining(), "reserve", decision.reserve()));
                         return new DiscoveryResult(run.getId(), repository.getId(), seen, created, updated, pages,
                                 false, cursor, decision.resumeAt());
@@ -125,7 +131,8 @@ public class GitHubContributionDiscoveryService {
                             false, null, resetAt);
                 }
                 StructuredLog.warn(LOG, "contributor_statistics_unavailable", statisticsError,
-                        StructuredLog.fields("repositoryId", repository.getId(), "httpStatus", statisticsError.getStatusCode()));
+                        StructuredLog.fields("repositoryId", repository.getId(), "syncMode", effectiveMode,
+                                "httpStatus", statisticsError.getStatusCode()));
             }
 
             OffsetDateTime completedAt = OffsetDateTime.now(ZoneOffset.UTC);
@@ -136,7 +143,8 @@ public class GitHubContributionDiscoveryService {
             repository.markSynced(completedAt);
             StructuredLog.info(LOG, "contribution_sync_completed",
                     StructuredLog.fields("syncId", run.getId(), "repositoryId", repository.getId(),
-                            "provider", "github", "seen", seen, "created", created, "updated", updated, "pages", pages));
+                            "provider", "github", "syncMode", effectiveMode,
+                            "seen", seen, "created", created, "updated", updated, "pages", pages));
             return new DiscoveryResult(run.getId(), repository.getId(), seen, created, updated, pages,
                     true, null, null);
         } catch (ProviderException e) {
@@ -145,23 +153,24 @@ public class GitHubContributionDiscoveryService {
                 run.pauseForRateLimit(resetAt, OffsetDateTime.now(ZoneOffset.UTC));
                 StructuredLog.info(LOG, "contribution_sync_paused_rate_limit",
                         StructuredLog.fields("syncId", run.getId(), "provider", "github",
-                                "repositoryId", repository.getId(), "httpStatus", e.getStatusCode(),
-                                "nextCursor", cursor, "resumeAt", resetAt));
+                                "repositoryId", repository.getId(), "syncMode", effectiveMode,
+                                "httpStatus", e.getStatusCode(), "nextCursor", cursor, "resumeAt", resetAt));
                 return new DiscoveryResult(run.getId(), repository.getId(), seen, created, updated, pages,
                         false, cursor, resetAt);
             }
 
             StructuredLog.warn(LOG, "contribution_sync_provider_error", e,
                     StructuredLog.fields("syncId", run.getId(), "provider", "github",
-                            "repositoryId", repository.getId(), "httpStatus", e.getStatusCode(),
-                            "retryAt", e.getRetryAt()));
+                            "repositoryId", repository.getId(), "syncMode", effectiveMode,
+                            "httpStatus", e.getStatusCode(), "retryAt", e.getRetryAt()));
             OffsetDateTime failedAt = OffsetDateTime.now(ZoneOffset.UTC);
             repository.markSyncFailed(e.getMessage());
             run.fail(e.getMessage(), failedAt);
             throw e;
         } catch (RuntimeException e) {
             StructuredLog.warn(LOG, "contribution_sync_runtime_error", e,
-                    StructuredLog.fields("syncId", run.getId(), "provider", "github", "repositoryId", repository.getId()));
+                    StructuredLog.fields("syncId", run.getId(), "provider", "github",
+                            "repositoryId", repository.getId(), "syncMode", effectiveMode));
             repository.markSyncFailed(e.getMessage());
             run.fail(e.getMessage(), OffsetDateTime.now(ZoneOffset.UTC));
             throw e;
