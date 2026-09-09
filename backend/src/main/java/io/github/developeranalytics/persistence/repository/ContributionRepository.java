@@ -55,7 +55,7 @@ public class ContributionRepository {
                 .setParameter("repositoryId", repositoryId)
                 .setParameter("type", Contribution.Type.COMMIT)
                 .setParameter("version", classifierVersion)
-                .setMaxResults(Math.max(1, Math.min(limit, 500)))
+                .setMaxResults(Math.max(1, Math.min(limit, 1_000)))
                 .getResultList();
     }
 

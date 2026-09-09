@@ -5,6 +5,7 @@ import io.github.developeranalytics.observability.StructuredLog;
 import io.github.developeranalytics.persistence.repository.BackgroundJobRepository;
 import io.github.developeranalytics.provider.ProviderException;
 import io.github.developeranalytics.service.job.JobFailureClassifier;
+import io.github.developeranalytics.service.sync.ContributionScopeUpgradeService;
 import io.github.developeranalytics.service.sync.SynchronisationRecoveryService;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -24,6 +25,7 @@ public class BackgroundJobWorker {
     @Inject BackgroundJobDispatcher dispatcher;
     @Inject JobFailureClassifier failureClassifier;
     @Inject SynchronisationRecoveryService recovery;
+    @Inject ContributionScopeUpgradeService contributionScopeUpgrades;
     @ConfigProperty(name="developer-analytics.runtime-role", defaultValue="api") String runtimeRole;
     @ConfigProperty(name="developer-analytics.worker.id", defaultValue="worker-1") String workerId;
 
@@ -38,6 +40,12 @@ public class BackgroundJobWorker {
     void recoverInterruptedJobs() {
         if(!"worker".equalsIgnoreCase(runtimeRole)) return;
         recovery.recoverInterruptedJobs();
+    }
+
+    @Scheduled(every="60s", delayed="10s", concurrentExecution=Scheduled.ConcurrentExecution.SKIP)
+    void enqueueContributionScopeUpgrades() {
+        if(!"worker".equalsIgnoreCase(runtimeRole)) return;
+        contributionScopeUpgrades.enqueueMissingBackfills();
     }
 
     void execute(BackgroundJob job) {

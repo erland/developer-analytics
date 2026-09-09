@@ -72,6 +72,7 @@ public class SourceRepository {
     public String getProvider() { return provider; }
     public String getExternalRepositoryId() { return externalRepositoryId; }
     public String getName() { return name; }
+    public RepositoryOwnerType getOwnerType() { return ownerType; }
     public RepositoryVisibility getVisibility() { return visibility; }
     public RepositoryOwnershipRelation getOwnershipRelation() { return ownershipRelation; }
     public RepositorySyncStatus getSyncStatus() { return syncStatus; }

@@ -1,15 +1,23 @@
 package io.github.developeranalytics.service.discovery;
 
-import io.github.developeranalytics.domain.model.*;
+import io.github.developeranalytics.domain.model.AppUser;
+import io.github.developeranalytics.domain.model.ContributionSyncRun;
+import io.github.developeranalytics.domain.model.SourceRepository;
+import io.github.developeranalytics.observability.StructuredLog;
 import io.github.developeranalytics.persistence.repository.ContributionRepository;
 import io.github.developeranalytics.persistence.repository.ContributionSyncRunRepository;
-import io.github.developeranalytics.provider.*;
+import io.github.developeranalytics.provider.PagedResult;
+import io.github.developeranalytics.provider.ProviderAccessToken;
+import io.github.developeranalytics.provider.ProviderContribution;
+import io.github.developeranalytics.provider.ProviderContributorSnapshot;
+import io.github.developeranalytics.provider.ProviderException;
+import io.github.developeranalytics.provider.ProviderRateLimit;
+import io.github.developeranalytics.provider.ProviderRepository;
+import io.github.developeranalytics.provider.github.GitHubContributorSnapshotService;
 import io.github.developeranalytics.provider.github.GitHubProviderAdapter;
-import io.github.developeranalytics.service.connection.ProviderCredentialService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import io.github.developeranalytics.observability.StructuredLog;
 import org.jboss.logging.Logger;
 
 import java.time.OffsetDateTime;
@@ -20,24 +28,22 @@ public class GitHubContributionDiscoveryService {
     private static final Logger LOG = Logger.getLogger(GitHubContributionDiscoveryService.class);
 
     @Inject GitHubProviderAdapter github;
-    @Inject ProviderCredentialService credentials;
+    @Inject GitHubContributorSnapshotService contributorSnapshots;
+    @Inject ContributorSnapshotPersistenceService contributorSnapshotPersistence;
+    @Inject GitHubContributionIngestionService ingestion;
+    @Inject GitHubContributionSyncContextResolver contextResolver;
     @Inject ContributionRepository contributions;
     @Inject ContributionSyncRunRepository syncRuns;
-    @Inject GitHubWeeklyActivityService weeklyActivity;
     @Inject GitHubCommitFileChangeService commitFileChanges;
 
     @Transactional
     public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since)
             throws ProviderException {
-        ProviderAccessToken token = credentials.requireAccessToken(user.getId(), "github");
-        ProviderUser providerUser = github.fetchCurrentUser(token);
-
-        ProviderRepository providerRepository = new ProviderRepository(
-                repository.getExternalRepositoryId(), repository.getOwnerExternalId(), repository.getOwnerLogin(),
-                mapOwnerType(repository), repository.getName(), repository.getFullName(), repository.getHtmlUrl(),
-                repository.getVisibility() == RepositoryVisibility.PRIVATE
-                        ? ProviderRepository.Visibility.PRIVATE : ProviderRepository.Visibility.PUBLIC,
-                repository.isFork(), repository.isArchived(), null, null, repository.getLastActivityAt());
+        GitHubContributionSyncContextResolver.SyncContext context =
+                contextResolver.resolve(user.getId(), repository);
+        ProviderAccessToken token = context.accessToken();
+        String userLogin = context.userLogin();
+        ProviderRepository providerRepository = context.providerRepository();
 
         OffsetDateTime startedAt = OffsetDateTime.now(java.time.ZoneOffset.UTC);
         if (repository.getContributionScopeVersion() < 2 && since == null) {
@@ -59,40 +65,14 @@ public class GitHubContributionDiscoveryService {
         try {
             do {
                 PagedResult<ProviderContribution> page =
-                        github.listContributions(token, providerRepository, since, cursor, providerUser.login());
+                        github.listContributions(token, providerRepository, since, cursor, userLogin);
                 pages++;
 
-                for (ProviderContribution pc : page.items()) {
-                    Contribution.Type type = mapType(pc.type());
-                    Contribution contribution = contributions.findByProviderIdentity(
-                            user.getId(), "github", pc.externalContributionId(), type).orElse(null);
-                    boolean existing = contribution != null;
-                    if (!existing) {
-                        contribution = new Contribution(user, repository, "github",
-                                pc.externalContributionId(), type, pc.occurredAt());
-                        contributions.persist(contribution);
-                        created++;
-                    } else {
-                        updated++;
-                    }
-
-                    boolean cachedCommitDetails = type == Contribution.Type.COMMIT
-                            && existing
-                            && commitFileChanges.hasCurrentClassification(contribution);
-
-                    contribution.updateFromDiscovery(
-                            pc.title(), pc.occurredAt(), mapState(pc.state()),
-                            cachedCommitDetails ? contribution.getAdditions() : pc.additions(),
-                            cachedCommitDetails ? contribution.getDeletions() : pc.deletions(),
-                            cachedCommitDetails ? contribution.getChangedFiles() : pc.changedFiles(),
-                            pc.merged());
-
-                    if (type == Contribution.Type.COMMIT && !cachedCommitDetails) {
-                        GitHubCommitFileChangeService.CommitDetails details =
-                                commitFileChanges.refresh(user, repository, contribution, token);
-                        contribution.updateFileStatistics(
-                                details.additions(), details.deletions(), details.changedFiles());
-                    }
+                for (ProviderContribution providerContribution : page.items()) {
+                    GitHubContributionIngestionService.IngestionResult result =
+                            ingestion.ingest(user, repository, providerContribution, token);
+                    if (result.created()) created++;
+                    if (result.updated()) updated++;
                     seen++;
                 }
 
@@ -103,12 +83,9 @@ public class GitHubContributionDiscoveryService {
             } while (cursor != null);
 
             try {
-                ProviderContributorStatistics statistics = github.fetchContributorStatistics(
-                        token, providerRepository, providerUser.login());
-                repository.updateContributorStatistics(
-                        statistics.contributorCount(), statistics.humanContributorCount(), statistics.botContributorCount(),
-                        statistics.userCommitCount(), statistics.repositoryCommitCount(), statistics.userAdditions(),
-                        statistics.userDeletions(), statistics.observedAt());
+                ProviderContributorSnapshot snapshot = contributorSnapshots.fetch(
+                        token, providerRepository, userLogin);
+                contributorSnapshotPersistence.persist(user.getId(), repository, snapshot);
             } catch (ProviderException statisticsError) {
                 if (statisticsError.getStatusCode() == 403 || statisticsError.getStatusCode() == 429) {
                     throw statisticsError;
@@ -116,8 +93,6 @@ public class GitHubContributionDiscoveryService {
                 StructuredLog.warn(LOG, "contributor_statistics_unavailable", statisticsError,
                         StructuredLog.fields("repositoryId", repository.getId(), "httpStatus", statisticsError.getStatusCode()));
             }
-
-            weeklyActivity.refresh(user.getId(), repository, token, providerUser.login());
 
             OffsetDateTime completedAt = OffsetDateTime.now(java.time.ZoneOffset.UTC);
             run.complete(completedAt);
@@ -150,28 +125,6 @@ public class GitHubContributionDiscoveryService {
             run.fail(e.getMessage(), OffsetDateTime.now(java.time.ZoneOffset.UTC));
             throw e;
         }
-    }
-
-    private Contribution.Type mapType(ProviderContribution.Type type) {
-        return switch (type) {
-            case COMMIT -> Contribution.Type.COMMIT;
-            case PULL_REQUEST -> Contribution.Type.PULL_REQUEST;
-            case REVIEW -> Contribution.Type.REVIEW;
-            case ISSUE -> Contribution.Type.ISSUE;
-        };
-    }
-
-    private Contribution.State mapState(ProviderContribution.State state) {
-        return switch (state) {
-            case OPEN -> Contribution.State.OPEN;
-            case CLOSED -> Contribution.State.CLOSED;
-            case MERGED -> Contribution.State.MERGED;
-            case UNKNOWN -> Contribution.State.UNKNOWN;
-        };
-    }
-
-    private ProviderRepository.OwnerType mapOwnerType(SourceRepository repository) {
-        return repository.getOwnerLogin() == null ? ProviderRepository.OwnerType.OTHER : ProviderRepository.OwnerType.USER;
     }
 
     public record DiscoveryResult(UUID syncRunId, UUID repositoryId, int seen, int created, int updated, int pagesProcessed) {}

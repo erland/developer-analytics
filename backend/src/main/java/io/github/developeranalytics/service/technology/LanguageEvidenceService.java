@@ -8,6 +8,7 @@ import io.github.developeranalytics.persistence.technology.TechnologyCatalogueRe
 import io.github.developeranalytics.provider.*;
 import io.github.developeranalytics.provider.github.GitHubProviderAdapter;
 import io.github.developeranalytics.service.connection.ProviderCredentialService;
+import io.github.developeranalytics.service.sync.ProviderRepositoryMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -20,51 +21,20 @@ import java.util.Locale;
 @ApplicationScoped
 public class LanguageEvidenceService {
 
-    @Inject
-    GitHubProviderAdapter github;
-
-    @Inject
-    ProviderCredentialService credentials;
-
-    @Inject
-    TechnologyCatalogueService catalogueService;
-
-    @Inject
-    TechnologyCatalogueRepository catalogue;
-
-    @Inject
-    RepositoryTechnologyEvidenceRepository evidenceRepository;
+    @Inject GitHubProviderAdapter github;
+    @Inject ProviderCredentialService credentials;
+    @Inject ProviderRepositoryMapper repositories;
+    @Inject TechnologyCatalogueService catalogueService;
+    @Inject TechnologyCatalogueRepository catalogue;
+    @Inject RepositoryTechnologyEvidenceRepository evidenceRepository;
 
     @Transactional
     public Result collect(AppUser user, SourceRepository repository)
             throws ProviderException {
         catalogueService.seedBuiltInCatalogueIfEmpty();
 
-        ProviderAccessToken token =
-                credentials.requireAccessToken(user.getId(), "github");
-
-        ProviderRepository providerRepository = new ProviderRepository(
-                repository.getExternalRepositoryId(),
-                repository.getOwnerExternalId(),
-                repository.getOwnerLogin(),
-                repository.getOwnerLogin() == null
-                        ? ProviderRepository.OwnerType.OTHER
-                        : ProviderRepository.OwnerType.USER,
-                repository.getName(),
-                repository.getFullName(),
-                repository.getHtmlUrl(),
-                repository.getVisibility().name().equals("PRIVATE")
-                        ? ProviderRepository.Visibility.PRIVATE
-                        : ProviderRepository.Visibility.PUBLIC,
-                repository.isFork(),
-                repository.isArchived(),
-                null,
-                null,
-                repository.getLastActivityAt()
-        );
-
-        ProviderLanguageBreakdown languages =
-                github.fetchRepositoryLanguages(token, providerRepository);
+        ProviderAccessToken token = credentials.requireAccessToken(user.getId(), "github");
+        ProviderLanguageBreakdown languages = github.fetchRepositoryLanguages(token, repositories.map(repository));
 
         List<TechnologyCatalogueEntry> technologies = catalogue.findActive();
         OffsetDateTime observedAt = OffsetDateTime.now(ZoneOffset.UTC);
@@ -75,32 +45,21 @@ public class LanguageEvidenceService {
         for (var language : languages.bytesByLanguage().entrySet()) {
             totalBytes += language.getValue();
 
-            TechnologyCatalogueEntry technology =
-                    findLanguageTechnology(technologies, language.getKey());
-
+            TechnologyCatalogueEntry technology = findLanguageTechnology(technologies, language.getKey());
             if (technology == null) {
                 technology = catalogueService.ensureLanguageTechnology(language.getKey());
             }
 
-            RepositoryTechnologyEvidence evidence =
-                    evidenceRepository.find(
-                            repository.getId(),
-                            technology.getId(),
-                            TechnologyEvidenceType.LANGUAGE,
-                            language.getKey()
-                    ).orElse(null);
+            RepositoryTechnologyEvidence evidence = evidenceRepository.find(
+                    repository.getId(), technology.getId(), TechnologyEvidenceType.LANGUAGE, language.getKey())
+                    .orElse(null);
 
             if (evidence == null) {
                 evidence = new RepositoryTechnologyEvidence(
-                        user,
-                        repository,
-                        technology,
+                        user, repository, technology,
                         TechnologyEvidenceType.LANGUAGE,
                         TechnologyEvidenceStrength.OBSERVED,
-                        language.getKey(),
-                        language.getValue(),
-                        observedAt
-                );
+                        language.getKey(), language.getValue(), observedAt);
                 evidenceRepository.persist(evidence);
             } else {
                 evidence.refresh(language.getValue(), observedAt);
@@ -124,12 +83,9 @@ public class LanguageEvidenceService {
             String providerLanguage
     ) {
         String target = providerLanguage.toLowerCase(Locale.ROOT);
-
         for (TechnologyCatalogueEntry technology : technologies) {
             for (String evidence : technology.getLanguageEvidence()) {
-                if (evidence.toLowerCase(Locale.ROOT).equals(target)) {
-                    return technology;
-                }
+                if (evidence.toLowerCase(Locale.ROOT).equals(target)) return technology;
             }
         }
         return null;

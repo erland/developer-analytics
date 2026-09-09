@@ -55,4 +55,29 @@ class ProviderCredentialServiceTest {
         assertEquals("real-github-token", token.value());
         assertEquals("[REDACTED]", token.toString());
     }
+
+    @Test
+    @Transactional
+    void resolvesAccessTokenAndPersistedLoginAsOneProviderSession() {
+        AppUser user = AppUser.create();
+        entityManager.persist(user);
+
+        ProviderIdentity identity = new ProviderIdentity(
+                user, "github", "3002", "bob", "Bob");
+        entityManager.persist(identity);
+
+        ProviderConnection connection = new ProviderConnection(
+                user, identity, "github");
+        entityManager.persist(connection);
+        entityManager.flush();
+
+        credentials.storeAccessToken(user.getId(), "github", "session-token");
+        entityManager.flush();
+
+        ProviderSession session = credentials.requireSession(user.getId(), " GITHUB ");
+
+        assertEquals("session-token", session.accessToken().value());
+        assertEquals("[REDACTED]", session.accessToken().toString());
+        assertEquals("bob", session.login());
+    }
 }
