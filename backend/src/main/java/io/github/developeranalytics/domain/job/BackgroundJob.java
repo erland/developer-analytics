@@ -79,11 +79,23 @@ public class BackgroundJob {
     }
 
     public void deferForRateLimit(OffsetDateTime nextExecution) {
+        deferWithoutAttempt(nextExecution, BackgroundJobStatus.PAUSED_RATE_LIMIT, "Only a running job can be paused for rate limit");
+    }
+
+    public void deferForScheduling(OffsetDateTime nextExecution) {
+        deferWithoutAttempt(nextExecution, BackgroundJobStatus.WAITING, "Only a running job can be deferred for scheduling");
+    }
+
+    private void deferWithoutAttempt(
+            OffsetDateTime nextExecution,
+            BackgroundJobStatus deferredStatus,
+            String invalidStateMessage
+    ) {
         if (nextExecution == null) throw new IllegalArgumentException("nextExecution is required");
         if (status != BackgroundJobStatus.RUNNING) {
-            throw new IllegalStateException("Only a running job can be paused for rate limit");
+            throw new IllegalStateException(invalidStateMessage);
         }
-        status = BackgroundJobStatus.PAUSED_RATE_LIMIT;
+        status = deferredStatus;
         lockedAt = null;
         lockedBy = null;
         lastError = null;
