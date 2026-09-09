@@ -34,6 +34,7 @@ class GitRepositorySnapshotServiceTest {
             run(work.getParent(), "git", "clone", "--bare", work.toString(), bare.toString());
 
             GitRepositorySnapshotService service = new GitRepositorySnapshotService();
+            service.commands = new GitCommandRunner();
             ProviderRepositorySnapshot snapshot = service.readSnapshot(bare, null);
 
             assertEquals(3, snapshot.files().size());
