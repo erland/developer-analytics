@@ -80,10 +80,12 @@ class GitHubRateLimitServiceTest {
         ProviderAccessToken token = token("first-token");
         OffsetDateTime observedAt = OffsetDateTime.now(ZoneOffset.UTC);
         service.update(token, state(5000, 2500, observedAt.plusHours(1), observedAt));
+        service.blockUntil(token, observedAt.plusMinutes(5));
 
         service.clear(token);
 
         assertTrue(service.current(token).isEmpty());
+        assertTrue(service.decision(token, observedAt).allowed());
     }
 
     @Test
@@ -169,6 +171,26 @@ class GitHubRateLimitServiceTest {
         assertFalse(decision.allowed());
         assertEquals(retryAt, decision.resumeAt());
         assertTrue(decision.secondaryLimited());
+    }
+
+    @Test
+    void providerWideBlockDoesNotOverwriteRestBudgetAndExpires() {
+        ProviderAccessToken token = token("graphql-budget");
+        OffsetDateTime now = OffsetDateTime.of(2026, 9, 9, 12, 0, 0, 0, ZoneOffset.UTC);
+        OffsetDateTime retryAt = now.plusMinutes(3);
+        service.update(token, state(5000, 4000, now.plusHours(1), now.minusSeconds(1)));
+
+        service.blockUntil(token, retryAt);
+
+        GitHubRateLimitService.GitHubRateLimitDecision blocked = service.decision(token, now);
+        assertFalse(blocked.allowed());
+        assertEquals(retryAt, blocked.resumeAt());
+        assertTrue(blocked.secondaryLimited());
+        assertEquals(4000, service.current(token).orElseThrow().remaining());
+        assertEquals("core", service.current(token).orElseThrow().resource());
+
+        assertTrue(service.decision(token, retryAt.plusSeconds(1)).allowed());
+        assertEquals(4000, service.current(token).orElseThrow().remaining());
     }
 
     private ProviderAccessToken token(String value) {
