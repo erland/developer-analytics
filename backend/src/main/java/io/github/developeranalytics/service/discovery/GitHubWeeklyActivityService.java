@@ -6,6 +6,7 @@ import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.observability.StructuredLog;
 import io.github.developeranalytics.persistence.repository.RepositoryUserActivityWeekRepository;
 import io.github.developeranalytics.provider.ProviderAccessToken;
+import io.github.developeranalytics.provider.ProviderContributorActivityWeek;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -34,6 +35,22 @@ public class GitHubWeeklyActivityService {
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
 
+    /** Persist weekly activity already obtained from the shared contributor statistics response. */
+    @Transactional
+    public void replace(UUID userId, SourceRepository repository, List<ProviderContributorActivityWeek> activity) {
+        List<RepositoryUserActivityWeekRepository.WeekInput> inputs = activity == null
+                ? List.of()
+                : activity.stream()
+                        .map(week -> new RepositoryUserActivityWeekRepository.WeekInput(
+                                week.weekStart(), week.commits(), week.additions(), week.deletions()))
+                        .toList();
+        weeks.replace(userId, repository.getId(), inputs, OffsetDateTime.now(ZoneOffset.UTC));
+    }
+
+    /**
+     * Legacy standalone refresh retained for callers outside the normal contribution-sync path.
+     * The normal sync now uses one shared /stats/contributors response for totals and weekly activity.
+     */
     @Transactional
     public boolean refresh(UUID userId, SourceRepository repository,
                            ProviderAccessToken token, String userLogin) {
