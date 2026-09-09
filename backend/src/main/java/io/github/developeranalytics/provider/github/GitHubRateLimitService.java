@@ -25,6 +25,7 @@ public class GitHubRateLimitService {
     int percentageReserve;
 
     private final ConcurrentMap<String, GitHubRateLimitState> states = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, OffsetDateTime> providerBlocks = new ConcurrentHashMap<>();
 
     public GitHubRateLimitState update(ProviderAccessToken accessToken, GitHubRateLimitState observed) {
         String key = credentialKey(accessToken);
@@ -38,6 +39,18 @@ public class GitHubRateLimitService {
         });
     }
 
+    /**
+     * Applies a credential-wide temporary block without replacing the latest REST core budget.
+     * This is used for provider-wide throttles such as GraphQL/secondary-rate-limit responses,
+     * whose quota units must not be mixed with REST core request counts.
+     */
+    public void blockUntil(ProviderAccessToken accessToken, OffsetDateTime retryAt) {
+        if (retryAt == null) throw new IllegalArgumentException("retryAt is required");
+        String key = credentialKey(accessToken);
+        providerBlocks.merge(key, retryAt,
+                (current, observed) -> observed.isAfter(current) ? observed : current);
+    }
+
     public Optional<GitHubRateLimitState> current(ProviderAccessToken accessToken) {
         if (accessToken == null) return Optional.empty();
         return Optional.ofNullable(states.get(credentialKey(accessToken)));
@@ -49,7 +62,16 @@ public class GitHubRateLimitService {
 
     GitHubRateLimitDecision decision(ProviderAccessToken accessToken, OffsetDateTime now) {
         if (now == null) throw new IllegalArgumentException("now is required");
-        Optional<GitHubRateLimitState> current = current(accessToken);
+        String key = credentialKey(accessToken);
+        OffsetDateTime providerBlock = providerBlocks.get(key);
+        if (providerBlock != null) {
+            if (providerBlock.isAfter(now)) {
+                return GitHubRateLimitDecision.block(providerBlock, null, null, true);
+            }
+            providerBlocks.remove(key, providerBlock);
+        }
+
+        Optional<GitHubRateLimitState> current = Optional.ofNullable(states.get(key));
         if (current.isEmpty()) return GitHubRateLimitDecision.allow();
 
         GitHubRateLimitState state = current.get();
@@ -83,7 +105,10 @@ public class GitHubRateLimitService {
     }
 
     public void clear(ProviderAccessToken accessToken) {
-        if (accessToken != null) states.remove(credentialKey(accessToken));
+        if (accessToken == null) return;
+        String key = credentialKey(accessToken);
+        states.remove(key);
+        providerBlocks.remove(key);
     }
 
     private String credentialKey(ProviderAccessToken accessToken) {
