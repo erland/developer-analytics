@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 export type SyncJobSummary = {
   id: string
   jobType: string
+  syncMode: string | null
   status: string
   repositoryId: string | null
   repositoryName: string | null
