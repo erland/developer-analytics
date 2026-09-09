@@ -1,6 +1,7 @@
 package io.github.developeranalytics.service.connection;
 
 import io.github.developeranalytics.domain.model.ProviderConnection;
+import io.github.developeranalytics.domain.model.ProviderIdentity;
 import io.github.developeranalytics.persistence.auth.ProviderConnectionRepository;
 import io.github.developeranalytics.provider.ProviderAccessToken;
 import io.github.developeranalytics.security.CredentialCipher;
@@ -58,6 +59,15 @@ public class ProviderCredentialService {
                         connection.getCredentialKeyVersion()
                 )
         );
+    }
+
+    /** Returns the already persisted provider login when available, without a remote API call. */
+    public String providerLogin(UUID userId, String provider) {
+        return connections.findForUserAndProvider(userId, normalize(provider))
+                .map(ProviderConnection::getProviderIdentity)
+                .map(ProviderIdentity::getLogin)
+                .filter(login -> !login.isBlank())
+                .orElse(null);
     }
 
     @Transactional
