@@ -23,10 +23,10 @@ public class GitHubContributionDiscoveryService {
 
     @Inject GitHubProviderAdapter github;
     @Inject GitHubContributorSnapshotService contributorSnapshots;
+    @Inject ContributorSnapshotPersistenceService contributorSnapshotPersistence;
     @Inject ProviderCredentialService credentials;
     @Inject ContributionRepository contributions;
     @Inject ContributionSyncRunRepository syncRuns;
-    @Inject GitHubWeeklyActivityService weeklyActivity;
     @Inject GitHubCommitFileChangeService commitFileChanges;
 
     @Transactional
@@ -112,12 +112,7 @@ public class GitHubContributionDiscoveryService {
             try {
                 ProviderContributorSnapshot snapshot = contributorSnapshots.fetch(
                         token, providerRepository, userLogin);
-                ProviderContributorStatistics statistics = snapshot.statistics();
-                repository.updateContributorStatistics(
-                        statistics.contributorCount(), statistics.humanContributorCount(), statistics.botContributorCount(),
-                        statistics.userCommitCount(), statistics.repositoryCommitCount(), statistics.userAdditions(),
-                        statistics.userDeletions(), statistics.observedAt());
-                weeklyActivity.replace(user.getId(), repository, snapshot.userActivityWeeks());
+                contributorSnapshotPersistence.persist(user.getId(), repository, snapshot);
             } catch (ProviderException statisticsError) {
                 if (statisticsError.getStatusCode() == 403 || statisticsError.getStatusCode() == 429) {
                     throw statisticsError;
