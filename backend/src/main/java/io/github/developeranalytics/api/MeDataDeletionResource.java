@@ -3,6 +3,7 @@ package io.github.developeranalytics.api;
 import io.github.developeranalytics.auth.AuthenticationService;
 import io.github.developeranalytics.auth.CurrentUser;
 import io.github.developeranalytics.auth.CurrentUserService;
+import io.github.developeranalytics.service.account.DataDeletionFailedException;
 import io.github.developeranalytics.service.account.UserDataDeletionService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -16,6 +17,7 @@ import jakarta.ws.rs.core.Response;
 public class MeDataDeletionResource {
 
     public static final String CONFIRMATION = "DELETE_MY_DATA";
+    public static final String DELETION_FAILED_CODE = "DATA_DELETION_FAILED";
 
     @Inject
     CurrentUserService currentUserService;
@@ -38,8 +40,19 @@ public class MeDataDeletionResource {
             );
         }
 
-        UserDataDeletionService.DeletionResult result =
-                deletionService.deleteUser(current.user().getId());
+        final UserDataDeletionService.DeletionResult result;
+        try {
+            result = deletionService.deleteUser(current.user().getId());
+        } catch (DataDeletionFailedException e) {
+            return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                    .entity(new DeleteFailureResponse(
+                            false,
+                            DELETION_FAILED_CODE,
+                            "Your data could not be deleted safely. The deletion was rolled back; please retry.",
+                            true
+                    ))
+                    .build();
+        }
 
         NewCookie expiredSession = new NewCookie.Builder(
                 AuthenticationService.SESSION_COOKIE
@@ -68,5 +81,12 @@ public class MeDataDeletionResource {
             java.util.Map<String, Long> deletedDataCounts,
             int persistedReportsDeleted,
             String reportDeletionNote
+    ) {}
+
+    public record DeleteFailureResponse(
+            boolean deleted,
+            String code,
+            String message,
+            boolean retryable
     ) {}
 }
