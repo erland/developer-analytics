@@ -48,13 +48,6 @@ public class ProviderCredentialService {
         return decryptAccessToken(connection, provider);
     }
 
-    /** Returns the already persisted provider login when available, without a remote API call. */
-    public String providerLogin(UUID userId, String provider) {
-        return connections.findForUserAndProvider(userId, normalize(provider))
-                .map(this::providerLogin)
-                .orElse(null);
-    }
-
     @Transactional
     public void removeCredential(UUID userId, String provider) {
         ProviderConnection connection = connections
