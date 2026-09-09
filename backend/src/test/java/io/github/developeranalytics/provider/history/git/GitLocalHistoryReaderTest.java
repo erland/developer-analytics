@@ -63,7 +63,9 @@ class GitLocalHistoryReaderTest {
 
             run(work, "git", "clone", "--bare", repository.toString(), bare.toString());
 
-            HistoricalCommitFileChanges result = new GitLocalHistoryReader().read(bare, List.of(sha)).get(0);
+            GitLocalHistoryReader reader = new GitLocalHistoryReader();
+            reader.commands = new GitCommandRunner();
+            HistoricalCommitFileChanges result = reader.read(bare, List.of(sha)).get(0);
             assertEquals(sha, result.commitSha());
             assertEquals(3, result.fileChanges().size());
             assertEquals(3, result.fileChanges().stream().map(ProviderContributionFileChange::path).distinct().count());
