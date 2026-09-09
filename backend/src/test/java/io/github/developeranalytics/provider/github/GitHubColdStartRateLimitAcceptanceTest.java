@@ -27,6 +27,9 @@ class GitHubColdStartRateLimitAcceptanceTest {
 
     private static final int REPOSITORY_COUNT = 240;
     private static final int COLD_START_PRIORITY = -1_000;
+    private static final int INITIAL_REMAINING = 250;
+    private static final int REQUESTS_PER_REPOSITORY = 10;
+    private static final int EXPECTED_COMPLETED_BEFORE_PAUSE = 5;
 
     @Inject EntityManager entityManager;
     @Inject BackgroundJobRepository jobs;
@@ -34,23 +37,10 @@ class GitHubColdStartRateLimitAcceptanceTest {
 
     @Test
     @TestTransaction
-    void coldStartPausesHundredsOfJobsWithoutFailuresAndResumesAfterReset() {
+    void coldStartRunsUntilReservePausesRemainingJobsThenResumesAndCompletesAfterReset() {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         OffsetDateTime resetAt = now.plusMinutes(15);
         ProviderAccessToken token = new ProviderAccessToken("cold-start-acceptance-token");
-
-        rateLimits.update(token, new GitHubRateLimitState(
-                5_000,
-                100,
-                resetAt,
-                now,
-                "core",
-                null,
-                false
-        ));
-        GitHubRateLimitService.GitHubRateLimitDecision decision = rateLimits.decision(token);
-        assertFalse(decision.allowed());
-        assertEquals(resetAt, decision.resumeAt());
 
         AppUser user = AppUser.create();
         entityManager.persist(user);
@@ -80,52 +70,108 @@ class GitHubColdStartRateLimitAcceptanceTest {
                     now,
                     "github:contributions:" + repository.getId()
             );
-            job.markRunning("acceptance-worker", now);
-            job.deferForRateLimit(decision.resumeAt());
             entityManager.persist(job);
         }
         entityManager.flush();
 
-        Number paused = (Number) entityManager.createNativeQuery(
-                        "SELECT count(*) FROM background_job WHERE user_id=:userId AND status='PAUSED_RATE_LIMIT'")
-                .setParameter("userId", user.getId())
-                .getSingleResult();
-        Number failed = (Number) entityManager.createNativeQuery(
-                        "SELECT count(*) FROM background_job WHERE user_id=:userId AND status='FAILED'")
-                .setParameter("userId", user.getId())
-                .getSingleResult();
-        Number attempts = (Number) entityManager.createNativeQuery(
+        int remaining = INITIAL_REMAINING;
+        rateLimits.update(token, state(remaining, resetAt, now));
+
+        int completedBeforePause = 0;
+        int paused = 0;
+        while (completedBeforePause + paused < REPOSITORY_COUNT) {
+            BackgroundJob job = jobs.claimNext("acceptance-worker", now.plusSeconds(1))
+                    .orElseThrow(() -> new AssertionError("cold-start fixture unexpectedly ran out of claimable jobs"));
+            assertEquals(user.getId(), job.getUser().getId());
+            assertEquals(BackgroundJobStatus.RUNNING, job.getStatus());
+
+            GitHubRateLimitService.GitHubRateLimitDecision decision = rateLimits.decision(token, now.plusSeconds(1));
+            if (!decision.allowed()) {
+                job.deferForRateLimit(decision.resumeAt());
+                paused++;
+                continue;
+            }
+
+            job.complete();
+            completedBeforePause++;
+            remaining -= REQUESTS_PER_REPOSITORY;
+            rateLimits.update(token, state(remaining, resetAt, now.plusSeconds(completedBeforePause + 1L)));
+        }
+        entityManager.flush();
+
+        assertEquals(EXPECTED_COMPLETED_BEFORE_PAUSE, completedBeforePause,
+                "some repositories should complete before the reserve threshold is reached");
+        assertEquals(REPOSITORY_COUNT - EXPECTED_COMPLETED_BEFORE_PAUSE, paused,
+                "all remaining repositories should pause once the reserve is reached");
+
+        Number completedRowsBeforeReset = countJobs(user, "COMPLETED");
+        Number pausedRowsBeforeReset = countJobs(user, "PAUSED_RATE_LIMIT");
+        Number failedRowsBeforeReset = countJobs(user, "FAILED");
+        Number attemptsBeforeReset = (Number) entityManager.createNativeQuery(
                         "SELECT coalesce(sum(attempt_count),0) FROM background_job WHERE user_id=:userId")
                 .setParameter("userId", user.getId())
                 .getSingleResult();
-        Number claimableBeforeReset = (Number) entityManager.createNativeQuery(
-                        "SELECT count(*) FROM background_job WHERE user_id=:userId " +
-                        "AND status IN ('QUEUED','WAITING','PAUSED_RATE_LIMIT') " +
-                        "AND next_execution_at <= :beforeReset AND locked_at IS NULL")
-                .setParameter("userId", user.getId())
-                .setParameter("beforeReset", now.plusMinutes(5))
-                .getSingleResult();
 
-        assertEquals(REPOSITORY_COUNT, paused.intValue());
-        assertEquals(0, failed.intValue());
-        assertEquals(0, attempts.intValue());
-        assertEquals(0, claimableBeforeReset.intValue(),
-                "paused cold-start jobs must not be claimable before GitHub reset");
+        assertEquals(EXPECTED_COMPLETED_BEFORE_PAUSE, completedRowsBeforeReset.intValue());
+        assertEquals(REPOSITORY_COUNT - EXPECTED_COMPLETED_BEFORE_PAUSE, pausedRowsBeforeReset.intValue());
+        assertEquals(0, failedRowsBeforeReset.intValue());
+        assertEquals(EXPECTED_COMPLETED_BEFORE_PAUSE, attemptsBeforeReset.intValue(),
+                "rate-limit deferrals must not consume attempts");
+        assertTrue(jobs.claimNext("acceptance-worker", resetAt.minusSeconds(1)).isEmpty(),
+                "paused jobs must not be claimable before GitHub reset");
 
-        Optional<BackgroundJob> resumed = jobs.claimNext("acceptance-worker", resetAt.plusSeconds(1));
-        assertTrue(resumed.isPresent(), "a paused cold-start job should become claimable after reset");
-        assertEquals(user.getId(), resumed.get().getUser().getId(),
-                "the resumed job should belong to the cold-start fixture");
-        assertEquals(BackgroundJobStatus.RUNNING, resumed.get().getStatus());
-        assertEquals(1, resumed.get().getAttemptCount());
-        assertNull(resumed.get().getLastError());
+        OffsetDateTime resumedAt = resetAt.plusSeconds(1);
+        rateLimits.update(token, state(5_000, resumedAt.plusHours(1), resumedAt));
 
-        Number remainingFailed = (Number) entityManager.createNativeQuery(
-                        "SELECT count(*) FROM background_job WHERE user_id=:userId AND status='FAILED'")
-                .setParameter("userId", user.getId())
-                .getSingleResult();
-        assertEquals(0, remainingFailed.intValue());
+        int resumedAndCompleted = 0;
+        while (true) {
+            Optional<BackgroundJob> claimed = jobs.claimNext("acceptance-worker", resumedAt);
+            if (claimed.isEmpty()) break;
+
+            BackgroundJob job = claimed.get();
+            assertEquals(user.getId(), job.getUser().getId());
+            assertEquals(BackgroundJobStatus.RUNNING, job.getStatus());
+            assertTrue(rateLimits.decision(token, resumedAt).allowed());
+            assertNull(job.getLastError());
+
+            job.complete();
+            resumedAndCompleted++;
+        }
+        entityManager.flush();
+
+        assertEquals(REPOSITORY_COUNT - EXPECTED_COMPLETED_BEFORE_PAUSE, resumedAndCompleted);
+        assertEquals(REPOSITORY_COUNT, countJobs(user, "COMPLETED").intValue());
+        assertEquals(0, countJobs(user, "PAUSED_RATE_LIMIT").intValue());
+        assertEquals(0, countJobs(user, "FAILED").intValue());
+        assertEquals(REPOSITORY_COUNT, countJobs(user, null).intValue(),
+                "every repository cold-start job should eventually complete");
 
         rateLimits.clear(token);
+    }
+
+    private GitHubRateLimitState state(int remaining, OffsetDateTime resetAt, OffsetDateTime observedAt) {
+        return new GitHubRateLimitState(
+                5_000,
+                remaining,
+                resetAt,
+                observedAt,
+                "core",
+                null,
+                false
+        );
+    }
+
+    private Number countJobs(AppUser user, String status) {
+        if (status == null) {
+            return (Number) entityManager.createNativeQuery(
+                            "SELECT count(*) FROM background_job WHERE user_id=:userId")
+                    .setParameter("userId", user.getId())
+                    .getSingleResult();
+        }
+        return (Number) entityManager.createNativeQuery(
+                        "SELECT count(*) FROM background_job WHERE user_id=:userId AND status=:status")
+                .setParameter("userId", user.getId())
+                .setParameter("status", status)
+                .getSingleResult();
     }
 }
