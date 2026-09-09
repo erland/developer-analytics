@@ -1,6 +1,7 @@
 package io.github.developeranalytics.provider.github;
 
 import io.github.developeranalytics.provider.ProviderAccessToken;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -12,7 +13,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag("unit")
 class GitHubRateLimitServiceTest {
 
-    private final GitHubRateLimitService service = new GitHubRateLimitService();
+    private GitHubRateLimitService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new GitHubRateLimitService();
+        service.absoluteReserve = 200;
+        service.percentageReserve = 5;
+    }
 
     @Test
     void storesLatestObservationPerCredential() {
@@ -93,6 +101,74 @@ class GitHubRateLimitServiceTest {
 
         assertNull(state.resource());
         assertTrue(state.exhausted());
+    }
+
+    @Test
+    void allowsWhenNoBudgetHasBeenObserved() {
+        assertTrue(service.decision(token("unknown"), OffsetDateTime.now(ZoneOffset.UTC)).allowed());
+    }
+
+    @Test
+    void blocksWhenRemainingIsAtAbsoluteReserve() {
+        ProviderAccessToken token = token("low-budget");
+        OffsetDateTime now = OffsetDateTime.of(2026, 9, 9, 12, 0, 0, 0, ZoneOffset.UTC);
+        OffsetDateTime resetAt = now.plusMinutes(20);
+        service.percentageReserve = 0;
+        service.update(token, state(5000, 200, resetAt, now.minusSeconds(1)));
+
+        GitHubRateLimitService.GitHubRateLimitDecision decision = service.decision(token, now);
+
+        assertFalse(decision.allowed());
+        assertEquals(resetAt, decision.resumeAt());
+        assertEquals(200, decision.reserve());
+    }
+
+    @Test
+    void usesHigherPercentageReserve() {
+        ProviderAccessToken token = token("percentage-budget");
+        OffsetDateTime now = OffsetDateTime.of(2026, 9, 9, 12, 0, 0, 0, ZoneOffset.UTC);
+        OffsetDateTime resetAt = now.plusMinutes(20);
+        service.absoluteReserve = 100;
+        service.percentageReserve = 10;
+        service.update(token, state(5000, 450, resetAt, now.minusSeconds(1)));
+
+        GitHubRateLimitService.GitHubRateLimitDecision decision = service.decision(token, now);
+
+        assertFalse(decision.allowed());
+        assertEquals(500, decision.reserve());
+    }
+
+    @Test
+    void allowsWhenBudgetIsAboveReserve() {
+        ProviderAccessToken token = token("healthy-budget");
+        OffsetDateTime now = OffsetDateTime.of(2026, 9, 9, 12, 0, 0, 0, ZoneOffset.UTC);
+        service.update(token, state(5000, 251, now.plusMinutes(20), now.minusSeconds(1)));
+
+        assertTrue(service.decision(token, now).allowed());
+    }
+
+    @Test
+    void passedResetNoLongerBlocksOldLowBudget() {
+        ProviderAccessToken token = token("reset-budget");
+        OffsetDateTime now = OffsetDateTime.of(2026, 9, 9, 12, 0, 0, 0, ZoneOffset.UTC);
+        service.update(token, state(5000, 0, now.minusSeconds(1), now.minusMinutes(10)));
+
+        assertTrue(service.decision(token, now).allowed());
+    }
+
+    @Test
+    void secondaryLimitUsesRetryAtEvenWhenPrimaryBudgetIsHealthy() {
+        ProviderAccessToken token = token("secondary-budget");
+        OffsetDateTime now = OffsetDateTime.of(2026, 9, 9, 12, 0, 0, 0, ZoneOffset.UTC);
+        OffsetDateTime retryAt = now.plusMinutes(2);
+        service.update(token, new GitHubRateLimitState(
+                5000, 4000, now.plusHours(1), now.minusSeconds(1), "core", retryAt, true));
+
+        GitHubRateLimitService.GitHubRateLimitDecision decision = service.decision(token, now);
+
+        assertFalse(decision.allowed());
+        assertEquals(retryAt, decision.resumeAt());
+        assertTrue(decision.secondaryLimited());
     }
 
     private ProviderAccessToken token(String value) {
