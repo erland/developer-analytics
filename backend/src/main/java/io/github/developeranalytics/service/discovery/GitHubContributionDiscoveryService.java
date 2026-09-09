@@ -24,6 +24,7 @@ public class GitHubContributionDiscoveryService {
     @Inject GitHubProviderAdapter github;
     @Inject GitHubContributorSnapshotService contributorSnapshots;
     @Inject ContributorSnapshotPersistenceService contributorSnapshotPersistence;
+    @Inject GitHubContributionIngestionService ingestion;
     @Inject ProviderCredentialService credentials;
     @Inject ContributionRepository contributions;
     @Inject ContributionSyncRunRepository syncRuns;
@@ -69,37 +70,11 @@ public class GitHubContributionDiscoveryService {
                         github.listContributions(token, providerRepository, since, cursor, userLogin);
                 pages++;
 
-                for (ProviderContribution pc : page.items()) {
-                    Contribution.Type type = mapType(pc.type());
-                    Contribution contribution = contributions.findByProviderIdentity(
-                            user.getId(), "github", pc.externalContributionId(), type).orElse(null);
-                    boolean existing = contribution != null;
-                    if (!existing) {
-                        contribution = new Contribution(user, repository, "github",
-                                pc.externalContributionId(), type, pc.occurredAt());
-                        contributions.persist(contribution);
-                        created++;
-                    } else {
-                        updated++;
-                    }
-
-                    boolean cachedCommitDetails = type == Contribution.Type.COMMIT
-                            && existing
-                            && commitFileChanges.hasCurrentClassification(contribution);
-
-                    contribution.updateFromDiscovery(
-                            pc.title(), pc.occurredAt(), mapState(pc.state()),
-                            cachedCommitDetails ? contribution.getAdditions() : pc.additions(),
-                            cachedCommitDetails ? contribution.getDeletions() : pc.deletions(),
-                            cachedCommitDetails ? contribution.getChangedFiles() : pc.changedFiles(),
-                            pc.merged());
-
-                    if (type == Contribution.Type.COMMIT && !cachedCommitDetails) {
-                        GitHubCommitFileChangeService.CommitDetails details =
-                                commitFileChanges.refresh(user, repository, contribution, token);
-                        contribution.updateFileStatistics(
-                                details.additions(), details.deletions(), details.changedFiles());
-                    }
+                for (ProviderContribution providerContribution : page.items()) {
+                    GitHubContributionIngestionService.IngestionResult result =
+                            ingestion.ingest(user, repository, providerContribution, token);
+                    if (result.created()) created++;
+                    if (result.updated()) updated++;
                     seen++;
                 }
 
@@ -152,24 +127,6 @@ public class GitHubContributionDiscoveryService {
             run.fail(e.getMessage(), OffsetDateTime.now(java.time.ZoneOffset.UTC));
             throw e;
         }
-    }
-
-    private Contribution.Type mapType(ProviderContribution.Type type) {
-        return switch (type) {
-            case COMMIT -> Contribution.Type.COMMIT;
-            case PULL_REQUEST -> Contribution.Type.PULL_REQUEST;
-            case REVIEW -> Contribution.Type.REVIEW;
-            case ISSUE -> Contribution.Type.ISSUE;
-        };
-    }
-
-    private Contribution.State mapState(ProviderContribution.State state) {
-        return switch (state) {
-            case OPEN -> Contribution.State.OPEN;
-            case CLOSED -> Contribution.State.CLOSED;
-            case MERGED -> Contribution.State.MERGED;
-            case UNKNOWN -> Contribution.State.UNKNOWN;
-        };
     }
 
     private ProviderRepository.OwnerType mapOwnerType(SourceRepository repository) {
