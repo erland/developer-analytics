@@ -72,9 +72,11 @@ public class GitHubProviderAdapter implements SourceControlProvider {
         for (JsonNode item : tree) {
             if (!"blob".equals(item.path("type").asText())) continue;
             String path = item.path("path").asText("");
-            if (isRelevantTechnologyFile(path)) {
+            long size = item.path("size").asLong(-1L);
+            if (RepositorySnapshotFilePolicy.isRelevantTechnologyFile(path)
+                    && RepositorySnapshotFilePolicy.isReadableFileSize(size)) {
                 relevantPaths.add(path);
-                if (relevantPaths.size() >= 40) break;
+                if (relevantPaths.size() >= RepositorySnapshotFilePolicy.MAX_RELEVANT_FILES) break;
             }
         }
 
@@ -95,19 +97,6 @@ public class GitHubProviderAdapter implements SourceControlProvider {
             }
         }
         return new ProviderRepositorySnapshot(files, parseRateLimit(treeResponse));
-    }
-
-    private boolean isRelevantTechnologyFile(String rawPath) {
-        String path = rawPath.toLowerCase(Locale.ROOT);
-        String name = path.contains("/") ? path.substring(path.lastIndexOf('/') + 1) : path;
-        return name.equals("pom.xml") || name.equals("package.json") || name.equals("dockerfile") ||
-                name.equals("docker-compose.yml") || name.equals("docker-compose.yaml") || name.equals("compose.yml") ||
-                name.equals("compose.yaml") || name.equals("package.swift") || name.equals("pyproject.toml") ||
-                name.equals("requirements.txt") || name.equals(".terraform.lock.hcl") || name.endsWith(".tf") ||
-                name.equals("chart.yaml") || name.equals("kustomization.yaml") || name.equals("androidmanifest.xml") ||
-                name.equals("project.pbxproj") || name.equals("platformio.ini") || name.endsWith(".ino") ||
-                path.startsWith(".github/workflows/") || path.contains("/.github/workflows/") ||
-                path.startsWith("db/migration/") || path.contains("/db/migration/");
     }
 
     private String encodePath(String path) {
