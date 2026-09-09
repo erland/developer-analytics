@@ -5,6 +5,7 @@ import io.github.developeranalytics.domain.job.BackgroundJobStatus;
 import io.github.developeranalytics.observability.StructuredLog;
 import io.github.developeranalytics.persistence.repository.BackgroundJobRepository;
 import io.github.developeranalytics.provider.ProviderException;
+import io.github.developeranalytics.provider.github.GitHubApiUsageTracker;
 import io.github.developeranalytics.provider.github.GitHubRateLimitService;
 import io.github.developeranalytics.service.job.JobFailureClassifier;
 import io.github.developeranalytics.service.sync.ContributionScopeUpgradeService;
@@ -31,6 +32,7 @@ public class BackgroundJobWorker {
     @Inject ContributionScopeUpgradeService contributionScopeUpgrades;
     @Inject GitHubRateLimitJobGate githubRateLimitGate;
     @Inject GitHubApiConcurrencyGate githubApiConcurrencyGate;
+    @Inject GitHubApiUsageTracker githubApiUsage;
     @ConfigProperty(name="developer-analytics.runtime-role", defaultValue="api") String runtimeRole;
     @ConfigProperty(name="developer-analytics.worker.id", defaultValue="worker-1") String workerId;
 
@@ -95,13 +97,24 @@ public class BackgroundJobWorker {
                 return;
             }
 
+            try (GitHubApiUsageTracker.Scope usageScope = githubApiUsage.begin()) {
+                executeMeasured(job, usageScope);
+            }
+        } finally {
+            MDC.remove("backgroundJobId");
+        }
+    }
+
+    private void executeMeasured(BackgroundJob job, GitHubApiUsageTracker.Scope usageScope) {
+        try {
             StructuredLog.info(
                     LOG,
                     "background_job_started",
                     StructuredLog.fields(
                             "backgroundJobId", job.getId(),
                             "jobType", job.getJobType(),
-                            "attempt", job.getAttemptCount()
+                            "attempt", job.getAttemptCount(),
+                            "syncMode", payloadValue(job, "syncMode")
                     )
             );
 
@@ -172,8 +185,25 @@ public class BackgroundJobWorker {
                     nextExecution
             );
         } finally {
-            MDC.remove("backgroundJobId");
+            GitHubApiUsageTracker.UsageSnapshot usage = usageScope.snapshot();
+            StructuredLog.info(
+                    LOG,
+                    "github_api_job_usage",
+                    StructuredLog.fields(
+                            "backgroundJobId", job.getId(),
+                            "jobType", job.getJobType(),
+                            "repositoryId", payloadValue(job, "repositoryId"),
+                            "syncMode", payloadValue(job, "syncMode"),
+                            "requests", usage.totalRequests(),
+                            "requestsByEndpoint", usage.requestsByEndpoint(),
+                            "status", job.getStatus()
+                    )
+            );
         }
+    }
+
+    private Object payloadValue(BackgroundJob job, String key) {
+        return job.getPayload() == null ? null : job.getPayload().get(key);
     }
 
     private OffsetDateTime providerRetryAt(Throwable failure) {
