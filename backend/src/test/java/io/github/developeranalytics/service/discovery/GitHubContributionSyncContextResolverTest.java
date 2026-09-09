@@ -83,7 +83,7 @@ class GitHubContributionSyncContextResolverTest {
                 List.of(),
                 ownerLogin == null ? RepositoryOwnerType.ORGANIZATION : RepositoryOwnerType.USER,
                 ownerLogin == null
-                        ? RepositoryOwnershipRelation.ORGANIZATION_MEMBERSHIP
+                        ? RepositoryOwnershipRelation.ORGANIZATION_OWNED
                         : RepositoryOwnershipRelation.OWNED_BY_USER,
                 visibility,
                 false,
