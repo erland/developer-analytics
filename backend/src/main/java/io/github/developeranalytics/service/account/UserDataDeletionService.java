@@ -1,84 +1,52 @@
 package io.github.developeranalytics.service.account;
 
+import io.github.developeranalytics.observability.StructuredLog;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
+import org.jboss.logging.Logger;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
 public class UserDataDeletionService {
 
+    private static final Logger LOG = Logger.getLogger(UserDataDeletionService.class);
+
     @Inject
-    EntityManager entityManager;
+    UserDataDeletionPersistenceService persistence;
 
-    @Transactional
     public DeletionResult deleteUser(UUID userId) {
-        Map<String, Long> before = new LinkedHashMap<>();
+        long started = System.nanoTime();
+        StructuredLog.info(LOG, "data_deletion_started", StructuredLog.fields());
 
-        before.put("providerConnections", count(
-                "select count(c.id) from ProviderConnection c where c.user.id=:userId",
-                userId
-        ));
-        before.put("repositories", count(
-                "select count(r.id) from SourceRepository r where r.user.id=:userId",
-                userId
-        ));
-        before.put("contributions", count(
-                "select count(c.id) from Contribution c where c.user.id=:userId",
-                userId
-        ));
-        before.put("backgroundJobs", count(
-                "select count(j.id) from BackgroundJob j where j.user.id=:userId",
-                userId
-        ));
-        before.put("technologyEvidence", count(
-                "select count(e.id) from RepositoryTechnologyEvidence e where e.user.id=:userId",
-                userId
-        ));
-        before.put("technologyAssessments", count(
-                "select count(a.id) from UserTechnologyAssessment a where a.user.id=:userId",
-                userId
-        ));
-        before.put("projectAssessments", count(
-                "select count(a.id) from ProjectSignificanceAssessment a where a.user.id=:userId",
-                userId
-        ));
-        before.put("aiAssessments", count(
-                "select count(a.id) from UserAiInsight a where a.user.id=:userId",
-                userId
-        ) + count(
-                "select count(a.id) from ReturnedAiAssessment a where a.user.id=:userId",
-                userId
-        ));
-
-        int deletedUsers = entityManager.createNativeQuery(
-                "DELETE FROM app_user WHERE id=:userId"
-        )
-        .setParameter("userId", userId)
-        .executeUpdate();
-
-        if (deletedUsers != 1) {
-            throw new NotFoundException("User account no longer exists");
+        try {
+            DeletionResult result = persistence.deleteUser(userId);
+            StructuredLog.info(LOG, "data_deletion_completed", StructuredLog.fields(
+                    "durationMs", elapsedMillis(started),
+                    "providerConnections", result.deletedDataCounts().get("providerConnections"),
+                    "repositories", result.deletedDataCounts().get("repositories"),
+                    "contributions", result.deletedDataCounts().get("contributions"),
+                    "backgroundJobs", result.deletedDataCounts().get("backgroundJobs")
+            ));
+            return result;
+        } catch (NotFoundException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            StructuredLog.warn(LOG, "data_deletion_failed", e, StructuredLog.fields(
+                    "durationMs", elapsedMillis(started),
+                    "rolledBack", true
+            ));
+            throw new DataDeletionFailedException(
+                    "User data deletion could not be completed safely",
+                    e
+            );
         }
-
-        entityManager.flush();
-
-        return new DeletionResult(
-                userId,
-                Map.copyOf(before),
-                0
-        );
     }
 
-    private long count(String jpql, UUID userId) {
-        return entityManager.createQuery(jpql, Long.class)
-                .setParameter("userId", userId)
-                .getSingleResult();
+    private long elapsedMillis(long started) {
+        return (System.nanoTime() - started) / 1_000_000L;
     }
 
     public record DeletionResult(
