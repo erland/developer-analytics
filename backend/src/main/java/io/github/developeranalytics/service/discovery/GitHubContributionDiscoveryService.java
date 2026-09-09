@@ -3,6 +3,7 @@ package io.github.developeranalytics.service.discovery;
 import io.github.developeranalytics.domain.model.AppUser;
 import io.github.developeranalytics.domain.model.ContributionSyncMode;
 import io.github.developeranalytics.domain.model.ContributionSyncRun;
+import io.github.developeranalytics.domain.model.ProviderSyncRun;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.observability.StructuredLog;
 import io.github.developeranalytics.persistence.repository.ContributionRepository;
@@ -45,25 +46,23 @@ public class GitHubContributionDiscoveryService {
     @Inject GitHubApiUsageTracker apiUsage;
 
     @Transactional
-    public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since)
-            throws ProviderException {
-        ContributionSyncMode mode = since == null
-                ? ContributionSyncMode.INITIAL_FULL
-                : ContributionSyncMode.INCREMENTAL;
-        return discover(user, repository, since, null, ignored -> {}, mode);
+    public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since) throws ProviderException {
+        ContributionSyncMode mode = since == null ? ContributionSyncMode.INITIAL_FULL : ContributionSyncMode.INCREMENTAL;
+        return discover(user, repository, since, null, ignored -> {}, mode, null);
     }
 
     @Transactional
-    public DiscoveryResult discover(
-            AppUser user,
-            SourceRepository repository,
-            OffsetDateTime since,
-            String initialCursor,
-            Consumer<String> checkpoint,
-            ContributionSyncMode syncMode
-    ) throws ProviderException {
-        GitHubContributionSyncContextResolver.SyncContext context =
-                contextResolver.resolve(user.getId(), repository);
+    public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since,
+                                    String initialCursor, Consumer<String> checkpoint,
+                                    ContributionSyncMode syncMode) throws ProviderException {
+        return discover(user, repository, since, initialCursor, checkpoint, syncMode, null);
+    }
+
+    @Transactional
+    public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since,
+                                    String initialCursor, Consumer<String> checkpoint,
+                                    ContributionSyncMode syncMode, ProviderSyncRun providerSyncRun) throws ProviderException {
+        GitHubContributionSyncContextResolver.SyncContext context = contextResolver.resolve(user.getId(), repository);
         ProviderAccessToken token = context.accessToken();
         String userLogin = context.userLogin();
         ProviderRepository providerRepository = context.providerRepository();
@@ -71,142 +70,94 @@ public class GitHubContributionDiscoveryService {
         boolean contributorStatsOnly = isContributorStatsContinuation(initialCursor);
 
         OffsetDateTime startedAt = OffsetDateTime.now(ZoneOffset.UTC);
-        if (!contributorStatsOnly && repository.getContributionScopeVersion() < 2
-                && since == null && initialCursor == null) {
+        if (!contributorStatsOnly && repository.getContributionScopeVersion() < 2 && since == null && initialCursor == null) {
             contributions.deleteForRepository(user.getId(), repository.getId());
         }
         repository.markSyncing();
-        ContributionSyncRun run = new ContributionSyncRun(user, repository, "github", effectiveMode);
+        ContributionSyncRun run = new ContributionSyncRun(user, repository, "github", effectiveMode, providerSyncRun);
         syncRuns.persist(run);
         run.start(startedAt);
         StructuredLog.info(LOG, "contribution_sync_started",
-                StructuredLog.fields("syncId", run.getId(), "provider", "github", "repositoryId", repository.getId(),
-                        "syncMode", effectiveMode, "resumeCursor", initialCursor,
-                        "contributorStatsOnly", contributorStatsOnly));
+                StructuredLog.fields("syncId", run.getId(), "providerSyncRunId", providerSyncRun == null ? null : providerSyncRun.getId(),
+                        "provider", "github", "repositoryId", repository.getId(), "syncMode", effectiveMode,
+                        "resumeCursor", initialCursor, "contributorStatsOnly", contributorStatsOnly));
 
-        int seen = 0;
-        int created = 0;
-        int updated = 0;
-        int pages = 0;
+        int seen = 0, created = 0, updated = 0, pages = 0;
         String cursor = contributorStatsOnly ? null : blankToNull(initialCursor);
 
         try {
             if (!contributorStatsOnly) {
                 do {
-                    PagedResult<ProviderContribution> page =
-                            github.listContributions(token, providerRepository, since, cursor, userLogin);
+                    PagedResult<ProviderContribution> page = github.listContributions(token, providerRepository, since, cursor, userLogin);
                     pages++;
-
                     for (ProviderContribution providerContribution : page.items()) {
-                        GitHubContributionIngestionService.IngestionResult result =
-                                ingestion.ingest(user, repository, providerContribution, token);
+                        GitHubContributionIngestionService.IngestionResult result = ingestion.ingest(user, repository, providerContribution, token);
                         if (result.created()) created++;
                         if (result.updated()) updated++;
                         seen++;
                     }
-
                     ProviderRateLimit rate = page.rateLimit();
-                    run.progress(seen, created, updated, pages,
-                            rate == null ? null : rate.remaining(), rate == null ? null : rate.resetAt());
+                    run.progress(seen, created, updated, pages, rate == null ? null : rate.remaining(), rate == null ? null : rate.resetAt());
                     cursor = blankToNull(page.nextCursor());
                     checkpoint.accept(cursor);
-
                     if (cursor != null) {
                         GitHubRateLimitService.GitHubRateLimitDecision decision = rateLimits.decision(token);
                         if (!decision.allowed()) {
-                            OffsetDateTime pausedAt = OffsetDateTime.now(ZoneOffset.UTC);
                             captureApiUsage(run);
-                            run.pauseForRateLimit(decision.resumeAt(), pausedAt);
-                            StructuredLog.info(LOG, "contribution_sync_paused_rate_limit",
-                                    StructuredLog.fields("syncId", run.getId(), "repositoryId", repository.getId(),
-                                            "syncMode", effectiveMode, "nextCursor", cursor, "resumeAt", decision.resumeAt(),
-                                            "remaining", decision.remaining(), "reserve", decision.reserve(),
-                                            "apiRequests", run.getApiRequestCount(),
-                                            "apiRequestsByEndpoint", run.getApiRequestsByEndpoint()));
-                            return new DiscoveryResult(run.getId(), repository.getId(), seen, created, updated, pages,
-                                    false, cursor, decision.resumeAt());
+                            run.pauseForRateLimit(decision.resumeAt(), OffsetDateTime.now(ZoneOffset.UTC));
+                            return new DiscoveryResult(run.getId(), repository.getId(), seen, created, updated, pages, false, cursor, decision.resumeAt());
                         }
                     }
                 } while (cursor != null);
-
-                // Commit/PR/issue/review discovery is complete. Persist a phase checkpoint before
-                // contributor statistics so a throttle here does not restart the full history scan.
                 checkpoint.accept(CONTRIBUTOR_STATS_CONTINUATION);
             }
 
             try {
-                ProviderContributorSnapshot snapshot = contributorSnapshots.fetch(
-                        token, providerRepository, userLogin);
+                ProviderContributorSnapshot snapshot = contributorSnapshots.fetch(token, providerRepository, userLogin);
                 contributorSnapshotPersistence.persist(user.getId(), repository, snapshot);
             } catch (ProviderException statisticsError) {
                 if (isRateLimit(statisticsError, token)) {
                     OffsetDateTime resetAt = retryAt(statisticsError, token);
                     captureApiUsage(run);
                     run.pauseForRateLimit(resetAt, OffsetDateTime.now(ZoneOffset.UTC));
-                    return new DiscoveryResult(run.getId(), repository.getId(), seen, created, updated, pages,
-                            false, CONTRIBUTOR_STATS_CONTINUATION, resetAt);
+                    return new DiscoveryResult(run.getId(), repository.getId(), seen, created, updated, pages, false, CONTRIBUTOR_STATS_CONTINUATION, resetAt);
                 }
                 StructuredLog.warn(LOG, "contributor_statistics_unavailable", statisticsError,
-                        StructuredLog.fields("repositoryId", repository.getId(), "syncMode", effectiveMode,
-                                "httpStatus", statisticsError.getStatusCode()));
+                        StructuredLog.fields("repositoryId", repository.getId(), "syncMode", effectiveMode, "httpStatus", statisticsError.getStatusCode()));
             }
 
             checkpoint.accept(null);
             OffsetDateTime completedAt = OffsetDateTime.now(ZoneOffset.UTC);
             captureApiUsage(run);
             run.complete(completedAt);
-            if (!commitFileChanges.hasMissingCurrentClassification(user, repository)) {
-                repository.markContributionScopeCurrent();
-            }
+            if (!commitFileChanges.hasMissingCurrentClassification(user, repository)) repository.markContributionScopeCurrent();
             repository.markSynced(completedAt);
             StructuredLog.info(LOG, "contribution_sync_completed",
-                    StructuredLog.fields("syncId", run.getId(), "repositoryId", repository.getId(),
-                            "provider", "github", "syncMode", effectiveMode,
+                    StructuredLog.fields("syncId", run.getId(), "providerSyncRunId", providerSyncRun == null ? null : providerSyncRun.getId(),
+                            "repositoryId", repository.getId(), "provider", "github", "syncMode", effectiveMode,
                             "seen", seen, "created", created, "updated", updated, "pages", pages,
-                            "apiRequests", run.getApiRequestCount(),
-                            "apiRequestsByEndpoint", run.getApiRequestsByEndpoint()));
-            return new DiscoveryResult(run.getId(), repository.getId(), seen, created, updated, pages,
-                    true, null, null);
+                            "apiRequests", run.getApiRequestCount(), "apiRequestsByEndpoint", run.getApiRequestsByEndpoint()));
+            return new DiscoveryResult(run.getId(), repository.getId(), seen, created, updated, pages, true, null, null);
         } catch (ProviderException e) {
             captureApiUsage(run);
             if (isRateLimit(e, token)) {
                 OffsetDateTime resetAt = retryAt(e, token);
                 String nextCursor = contributorStatsOnly ? CONTRIBUTOR_STATS_CONTINUATION : cursor;
                 run.pauseForRateLimit(resetAt, OffsetDateTime.now(ZoneOffset.UTC));
-                StructuredLog.info(LOG, "contribution_sync_paused_rate_limit",
-                        StructuredLog.fields("syncId", run.getId(), "provider", "github",
-                                "repositoryId", repository.getId(), "syncMode", effectiveMode,
-                                "httpStatus", e.getStatusCode(), "nextCursor", nextCursor, "resumeAt", resetAt,
-                                "apiRequests", run.getApiRequestCount(),
-                                "apiRequestsByEndpoint", run.getApiRequestsByEndpoint()));
-                return new DiscoveryResult(run.getId(), repository.getId(), seen, created, updated, pages,
-                        false, nextCursor, resetAt);
+                return new DiscoveryResult(run.getId(), repository.getId(), seen, created, updated, pages, false, nextCursor, resetAt);
             }
-
-            StructuredLog.warn(LOG, "contribution_sync_provider_error", e,
-                    StructuredLog.fields("syncId", run.getId(), "provider", "github",
-                            "repositoryId", repository.getId(), "syncMode", effectiveMode,
-                            "httpStatus", e.getStatusCode(), "retryAt", e.getRetryAt(),
-                            "apiRequests", run.getApiRequestCount()));
-            OffsetDateTime failedAt = OffsetDateTime.now(ZoneOffset.UTC);
             repository.markSyncFailed(e.getMessage());
-            run.fail(e.getMessage(), failedAt);
+            run.fail(e.getMessage(), OffsetDateTime.now(ZoneOffset.UTC));
             throw e;
         } catch (RuntimeException e) {
             captureApiUsage(run);
-            StructuredLog.warn(LOG, "contribution_sync_runtime_error", e,
-                    StructuredLog.fields("syncId", run.getId(), "provider", "github",
-                            "repositoryId", repository.getId(), "syncMode", effectiveMode,
-                            "apiRequests", run.getApiRequestCount()));
             repository.markSyncFailed(e.getMessage());
             run.fail(e.getMessage(), OffsetDateTime.now(ZoneOffset.UTC));
             throw e;
         }
     }
 
-    static boolean isContributorStatsContinuation(String cursor) {
-        return CONTRIBUTOR_STATS_CONTINUATION.equals(cursor);
-    }
+    static boolean isContributorStatsContinuation(String cursor) { return CONTRIBUTOR_STATS_CONTINUATION.equals(cursor); }
 
     private void captureApiUsage(ContributionSyncRun run) {
         GitHubApiUsageTracker.UsageSnapshot snapshot = apiUsage.snapshot();
@@ -226,19 +177,8 @@ public class GitHubContributionDiscoveryService {
         return OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(1);
     }
 
-    private String blankToNull(String value) {
-        return value == null || value.isBlank() ? null : value;
-    }
+    private String blankToNull(String value) { return value == null || value.isBlank() ? null : value; }
 
-    public record DiscoveryResult(
-            UUID syncRunId,
-            UUID repositoryId,
-            int seen,
-            int created,
-            int updated,
-            int pagesProcessed,
-            boolean complete,
-            String nextCursor,
-            OffsetDateTime resumeAt
-    ) {}
+    public record DiscoveryResult(UUID syncRunId, UUID repositoryId, int seen, int created, int updated,
+                                  int pagesProcessed, boolean complete, String nextCursor, OffsetDateTime resumeAt) {}
 }
