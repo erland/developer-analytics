@@ -28,7 +28,7 @@ public class GitHubApiConcurrencyGate {
 
     public Decision decision(BackgroundJob job, OffsetDateTime now) {
         if (job == null || job.getUser() == null || !isApiHeavyJobType(job.getJobType())) {
-            return Decision.allowed();
+            return Decision.permit();
         }
 
         int limit = Math.max(1, maxConcurrentJobsPerUser);
@@ -39,7 +39,7 @@ public class GitHubApiConcurrencyGate {
         );
 
         if (otherRunning < limit) {
-            return Decision.allowed();
+            return Decision.permit();
         }
 
         OffsetDateTime observedAt = now == null ? OffsetDateTime.now() : now;
@@ -51,7 +51,7 @@ public class GitHubApiConcurrencyGate {
     }
 
     public record Decision(boolean allowed, OffsetDateTime retryAt, long running, int limit) {
-        static Decision allowed() {
+        static Decision permit() {
             return new Decision(true, null, 0L, 0);
         }
 
