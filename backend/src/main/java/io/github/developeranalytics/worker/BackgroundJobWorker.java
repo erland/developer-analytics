@@ -29,6 +29,7 @@ public class BackgroundJobWorker {
     @Inject SynchronisationRecoveryService recovery;
     @Inject ContributionScopeUpgradeService contributionScopeUpgrades;
     @Inject GitHubRateLimitJobGate githubRateLimitGate;
+    @Inject GitHubApiConcurrencyGate githubApiConcurrencyGate;
     @ConfigProperty(name="developer-analytics.runtime-role", defaultValue="api") String runtimeRole;
     @ConfigProperty(name="developer-analytics.worker.id", defaultValue="worker-1") String workerId;
 
@@ -70,6 +71,24 @@ public class BackgroundJobWorker {
                                 "remaining", decision.remaining(),
                                 "reserve", decision.reserve(),
                                 "secondaryLimited", decision.secondaryLimited()
+                        )
+                );
+                return;
+            }
+
+            GitHubApiConcurrencyGate.Decision concurrencyDecision =
+                    githubApiConcurrencyGate.decision(job, OffsetDateTime.now(ZoneOffset.UTC));
+            if (!concurrencyDecision.allowed()) {
+                job.deferForScheduling(concurrencyDecision.retryAt());
+                StructuredLog.info(
+                        LOG,
+                        "background_job_deferred_github_concurrency",
+                        StructuredLog.fields(
+                                "backgroundJobId", job.getId(),
+                                "jobType", job.getJobType(),
+                                "retryAt", concurrencyDecision.retryAt(),
+                                "running", concurrencyDecision.running(),
+                                "limit", concurrencyDecision.limit()
                         )
                 );
                 return;
