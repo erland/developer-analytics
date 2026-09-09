@@ -25,7 +25,7 @@ class ContributorSnapshotPersistenceServiceTest {
     void persistsTotalsAndDelegatesWeeklyActivity() {
         AppUser user = AppUser.create();
         SourceRepository repository = new SourceRepository(user, "github", "repo-1", "alice", "demo");
-        UUID userId = user.getId();
+        UUID userId = UUID.randomUUID();
         OffsetDateTime observedAt = OffsetDateTime.of(2026, 9, 1, 12, 0, 0, 0, ZoneOffset.UTC);
         List<ProviderContributorActivityWeek> weeks = List.of(
                 new ProviderContributorActivityWeek(LocalDate.of(2026, 8, 24), 3, 120, 20),
@@ -59,7 +59,7 @@ class ContributorSnapshotPersistenceServiceTest {
     void delegatesEmptyWeeklyActivitySoPreviousRowsCanBeReplaced() {
         AppUser user = AppUser.create();
         SourceRepository repository = new SourceRepository(user, "github", "repo-2", "alice", "empty");
-        UUID userId = user.getId();
+        UUID userId = UUID.randomUUID();
         ProviderContributorSnapshot snapshot = new ProviderContributorSnapshot(
                 new ProviderContributorStatistics(1, 1, 0, 0, 1, 0, 0, OffsetDateTime.now(ZoneOffset.UTC)),
                 List.of());
