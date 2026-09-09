@@ -1,10 +1,12 @@
 package io.github.developeranalytics.service.account;
 
+import io.github.developeranalytics.observability.StructuredLog;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
+import org.jboss.logging.Logger;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -14,11 +16,14 @@ import java.util.UUID;
 @ApplicationScoped
 public class UserDataDeletionPersistenceService {
 
+    private static final Logger LOG = Logger.getLogger(UserDataDeletionPersistenceService.class);
+
     @Inject
     EntityManager entityManager;
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public UserDataDeletionService.DeletionResult deleteUser(UUID userId) {
+        long countsStarted = System.nanoTime();
         Map<String, Long> before = new LinkedHashMap<>();
 
         before.put("providerConnections", count(
@@ -56,7 +61,9 @@ public class UserDataDeletionPersistenceService {
                 "select count(a.id) from ReturnedAiAssessment a where a.user.id=:userId",
                 userId
         ));
+        long countsDurationMs = elapsedMillis(countsStarted);
 
+        long deleteStarted = System.nanoTime();
         int deletedUsers = entityManager.createNativeQuery(
                 "DELETE FROM app_user WHERE id=:userId"
         )
@@ -68,6 +75,14 @@ public class UserDataDeletionPersistenceService {
         }
 
         entityManager.flush();
+        long deleteDurationMs = elapsedMillis(deleteStarted);
+
+        StructuredLog.info(LOG, "data_deletion_database_phases", StructuredLog.fields(
+                "countsDurationMs", countsDurationMs,
+                "cascadeDeleteDurationMs", deleteDurationMs,
+                "repositories", before.get("repositories"),
+                "contributions", before.get("contributions")
+        ));
 
         return new UserDataDeletionService.DeletionResult(
                 userId,
@@ -80,5 +95,9 @@ public class UserDataDeletionPersistenceService {
         return entityManager.createQuery(jpql, Long.class)
                 .setParameter("userId", userId)
                 .getSingleResult();
+    }
+
+    private long elapsedMillis(long started) {
+        return (System.nanoTime() - started) / 1_000_000L;
     }
 }
