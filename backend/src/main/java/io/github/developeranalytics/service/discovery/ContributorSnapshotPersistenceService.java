@@ -5,6 +5,7 @@ import io.github.developeranalytics.provider.ProviderContributorSnapshot;
 import io.github.developeranalytics.provider.ProviderContributorStatistics;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 import java.util.UUID;
@@ -14,8 +15,9 @@ import java.util.UUID;
 public class ContributorSnapshotPersistenceService {
 
     @Inject GitHubWeeklyActivityService weeklyActivity;
+    @Inject EntityManager entityManager;
 
-    @Transactional
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public void persist(UUID userId, SourceRepository repository, ProviderContributorSnapshot snapshot) {
         if (userId == null) throw new IllegalArgumentException("userId is required");
         if (repository == null) throw new IllegalArgumentException("repository is required");
@@ -23,8 +25,9 @@ public class ContributorSnapshotPersistenceService {
             throw new IllegalArgumentException("snapshot statistics are required");
         }
 
+        SourceRepository managedRepository = entityManager.merge(repository);
         ProviderContributorStatistics statistics = snapshot.statistics();
-        repository.updateContributorStatistics(
+        managedRepository.updateContributorStatistics(
                 statistics.contributorCount(),
                 statistics.humanContributorCount(),
                 statistics.botContributorCount(),
@@ -34,6 +37,6 @@ public class ContributorSnapshotPersistenceService {
                 statistics.userDeletions(),
                 statistics.observedAt()
         );
-        weeklyActivity.replace(userId, repository, snapshot.userActivityWeeks());
+        weeklyActivity.replace(userId, managedRepository, snapshot.userActivityWeeks());
     }
 }
