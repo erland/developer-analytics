@@ -18,21 +18,16 @@ public class RepositoryAnalysisOrchestrator {
     @Inject SourceRepositoryRepository repositories;
     @Inject RepositoryDiscoveryJobService jobs;
 
-    @Transactional
-    public QueueResult enqueueAll(AppUser user) { return enqueueAll(user, null); }
+    @Transactional public QueueResult enqueueAll(AppUser user) { return enqueueAll(user, null); }
 
     @Transactional
     public QueueResult enqueueAll(AppUser user, UUID providerSyncRunId) {
-        List<SourceRepository> selected = repositories.findAnalysisCandidates(user.getId());
-        List<SourceRepository> candidates = selected.stream().filter(SourceRepository::needsAnalysisRefresh).toList();
-        int repositoryJobsQueued = 0;
-        int contributionJobsQueued = 0;
-        int alreadyQueued = 0;
+        List<SourceRepository> candidates = repositories.findAnalysisCandidates(user.getId()).stream()
+                .filter(SourceRepository::needsAnalysisRefresh).toList();
+        int repositoryJobsQueued = 0, contributionJobsQueued = 0, alreadyQueued = 0;
         for (SourceRepository repository : candidates) {
             QueueCounts counts = enqueueRepositoryJobs(user, repository, providerSyncRunId);
-            repositoryJobsQueued += counts.queued();
-            contributionJobsQueued += counts.contributionQueued();
-            alreadyQueued += counts.alreadyQueued();
+            repositoryJobsQueued += counts.queued(); contributionJobsQueued += counts.contributionQueued(); alreadyQueued += counts.alreadyQueued();
         }
         int aggregateJobsQueued = repositoryJobsQueued > 0 ? enqueueAggregateJobs(user) : 0;
         return new QueueResult(candidates.size(), repositoryJobsQueued, contributionJobsQueued, alreadyQueued, aggregateJobsQueued);
@@ -58,7 +53,11 @@ public class RepositoryAnalysisOrchestrator {
                 jobs.enqueueFileManifestEvidence(user, repositoryId),
                 jobs.enqueueDeterministicClassification(user, repositoryId, repository.getLastActivityAt())
         };
-        for (BackgroundJob job : otherJobs) { if (job == null) alreadyQueued++; else queued++; }
+        for (BackgroundJob job : otherJobs) {
+            if (job == null) { alreadyQueued++; continue; }
+            if (providerSyncRunId != null) job.putPayloadValue(ProviderSyncRunService.PAYLOAD_KEY, providerSyncRunId.toString());
+            queued++;
+        }
         return new QueueCounts(queued, contributionQueued, alreadyQueued);
     }
 
@@ -71,7 +70,5 @@ public class RepositoryAnalysisOrchestrator {
     }
 
     private record QueueCounts(int queued, int contributionQueued, int alreadyQueued) {}
-
-    public record QueueResult(int repositoriesConsidered, int repositoryJobsQueued, int contributionJobsQueued,
-                              int alreadyQueued, int aggregateJobsQueued) {}
+    public record QueueResult(int repositoriesConsidered, int repositoryJobsQueued, int contributionJobsQueued, int alreadyQueued, int aggregateJobsQueued) {}
 }
