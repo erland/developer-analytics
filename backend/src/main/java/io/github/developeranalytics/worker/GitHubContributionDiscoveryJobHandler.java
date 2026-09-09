@@ -1,6 +1,7 @@
 package io.github.developeranalytics.worker;
 
 import io.github.developeranalytics.domain.job.BackgroundJob;
+import io.github.developeranalytics.domain.model.ContributionSyncMode;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.persistence.repository.ContributionRepository;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
@@ -17,6 +18,7 @@ public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandl
 
     public static final String JOB_TYPE = "GITHUB_CONTRIBUTION_DISCOVERY";
     public static final String CONTINUATION_CURSOR = "contributionCursor";
+    public static final String SYNC_MODE = "syncMode";
     private static final int INCREMENTAL_OVERLAP_DAYS = 3;
 
     @Inject SourceRepositoryRepository repositories;
@@ -50,13 +52,17 @@ public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandl
                         .map(latest -> latest.minusDays(INCREMENTAL_OVERLAP_DAYS))
                         .orElse(null);
 
+        ContributionSyncMode syncMode = determineSyncMode(since);
+        job.putPayloadValue(SYNC_MODE, syncMode.name());
+
         String initialCursor = payloadString(job, CONTINUATION_CURSOR);
         GitHubContributionDiscoveryService.DiscoveryResult result = discovery.discover(
                 job.getUser(),
                 repository,
                 since,
                 initialCursor,
-                cursor -> job.putPayloadValue(CONTINUATION_CURSOR, cursor)
+                cursor -> job.putPayloadValue(CONTINUATION_CURSOR, cursor),
+                syncMode
         );
 
         if (!result.complete()) {
@@ -69,6 +75,10 @@ public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandl
         if (repository.getContributionScopeVersion() < SourceRepository.CURRENT_CONTRIBUTION_SCOPE_VERSION) {
             jobs.enqueueChangeKindBackfill(job.getUser(), repository.getId());
         }
+    }
+
+    static ContributionSyncMode determineSyncMode(OffsetDateTime since) {
+        return since == null ? ContributionSyncMode.INITIAL_FULL : ContributionSyncMode.INCREMENTAL;
     }
 
     private String payloadString(BackgroundJob job, String key) {
