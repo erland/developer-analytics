@@ -2,7 +2,7 @@
 
 **Repository:** `erland/developer-analytics`  
 **Branch:** `feature/git-history-backfill`  
-**Status:** Steg 6 klart; steg 7 nästa  
+**Status:** Steg 7 pågår; acceptance och mätstöd implementerat  
 **Mål:** Ersätta REST-anrop per historisk commit med Git-baserad lokal historikanalys för change-kind-backfill, utan att ändra den ordinarie inkrementella GitHub-synken.
 
 ## Målbild
@@ -94,22 +94,39 @@ Ordinarie löpande synk för metadata, languages, pull requests, issues, reviews
 
 **Klart:** `ContributionScopeUpgradeService` hittar en begränsad mängd GitHub-repositories med äldre contribution scope och köar change-kind-backfill via befintlig `RepositoryDiscoveryJobService`. `BackgroundJobWorker` kör kontrollen periodiskt endast i worker-rollen. Urvalet filtrerar bort repositories som inte ingår i analysen eller har `ACCESS_REVOKED`, och befintlig jobbdeduplicering gör triggern idempotent. Full CI inklusive large-account acceptance är grön.
 
-## Steg 7 – Acceptance, prestanda och dokumentation
+## Steg 7 – Acceptance, prestanda och dokumentation 🚧
 
-- [ ] Lägg acceptance-test som jämför Git-baserat resultat mot förväntade filförändringar.
-- [ ] Verifiera att blandade commits inte dubbelräknas.
-- [ ] Verifiera privata/public repositories där testmiljön tillåter det.
-- [ ] Mät minst:
-  - clone/fetch-tid
-  - temporär disk peak
-  - antal analyserade commits
-  - antal GitHub REST-anrop
-  - antal REST-fallbacks
-- [ ] Verifiera cleanup efter avbrutet jobb.
-- [ ] Uppdatera drift-/sync-dokumentation.
-- [ ] Kör full CI och large-account acceptance.
+- [x] Lägg acceptance-test som skapar ett verkligt lokalt Git-repository och jämför Git-baserat resultat mot förväntade filförändringar.
+- [x] Verifiera mixed commit med kod, dokumentation och CI/CD utan dubbla filposter.
+- [ ] Verifiera privata/public GitHub-repositories i en miljö med lämpliga credentials.
+- [x] Exponera mätvärden för clone/fetch-tid, temporär Git-storlek och antal analyserade commits via strukturerad logg.
+- [x] Exponera antal Git-analyserade commits och REST-fallbacks per backfill-jobb via strukturerad logg.
+- [x] Verifiera cleanup efter normal körning och resurs-/felvägar med befintliga workspace-tester.
+- [ ] Samla verkliga mätvärden från minst ett representativt public/private repository efter deployment eller credential-baserad acceptance-körning.
+- [ ] Uppdatera drift-/sync-dokumentation med observerade mätvärden och rekommenderade gränser.
+- [ ] Kör full CI och large-account acceptance på slutlig HEAD.
 
-**Klart när:** vi kan visa att historisk backfill kraftigt minskar REST-anrop utan oacceptabel disk- eller nätverkskostnad.
+### Operativa mätfält
+
+`git_history_backfill_transfer` loggar:
+
+- `repository`
+- `requestedCommits`
+- `analyzedCommits`
+- `cloneDurationMs`
+- `temporaryGitBytes`
+
+`git_history_backfill_job` loggar:
+
+- `repositoryId`
+- `processedCommits`
+- `gitCommits`
+- `restFallbacks`
+- `continuationQueued`
+
+Dessa fält gör det möjligt att verifiera den faktiska REST-reduktionen och resurskostnaden utan att lägga en permanent Git-cache.
+
+**Klart när:** slutlig CI är grön och vi har åtminstone en representativ credential-baserad körning med observerad clone-tid, temporär diskstorlek och fallback-frekvens. Public/local Git-semantik täcks automatiskt i CI; privat GitHub-access är avsiktligt miljöberoende.
 
 ## Förväntad effekt
 
