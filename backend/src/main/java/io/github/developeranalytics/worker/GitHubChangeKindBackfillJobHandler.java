@@ -130,7 +130,7 @@ public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler 
             SourceRepository repository,
             List<Contribution> work,
             ProviderAccessToken token
-    ) {
+    ) throws ProviderException {
         if (work.isEmpty()) return Map.of();
 
         List<String> commitShas = work.stream()
@@ -146,9 +146,9 @@ public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler 
                 }
             }
             return bySha;
-        } catch (ProviderException | RuntimeException ignored) {
-            // Git is an optimization for historical enrichment. If clone/history inspection
-            // fails, retain the existing per-commit REST path as the correctness fallback.
+        } catch (ProviderException providerError) {
+            if (Thread.currentThread().isInterrupted()) throw providerError;
+            // Git transport/provider failures fall back to the existing per-commit REST path.
             return Map.of();
         }
     }
@@ -162,8 +162,6 @@ public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler 
         int additions = 0;
         int deletions = 0;
 
-        // Replace only after the complete Git result for this commit has been obtained and
-        // validated, matching the all-or-nothing behavior of the existing REST implementation.
         fileChanges.deleteForContribution(contribution);
         for (ProviderContributionFileChange change : changes) {
             fileChanges.persist(new ContributionFileChange(
