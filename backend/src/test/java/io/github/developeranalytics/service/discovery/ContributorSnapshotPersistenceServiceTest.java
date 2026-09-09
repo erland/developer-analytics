@@ -2,6 +2,7 @@ package io.github.developeranalytics.service.discovery;
 
 import io.github.developeranalytics.domain.model.AppUser;
 import io.github.developeranalytics.domain.model.SourceRepository;
+import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
 import io.github.developeranalytics.provider.ProviderContributorActivityWeek;
 import io.github.developeranalytics.provider.ProviderContributorSnapshot;
 import io.github.developeranalytics.provider.ProviderContributorStatistics;
@@ -12,6 +13,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,6 +38,7 @@ class ContributorSnapshotPersistenceServiceTest {
         CapturingWeeklyActivityService weeklyActivity = new CapturingWeeklyActivityService();
         ContributorSnapshotPersistenceService service = new ContributorSnapshotPersistenceService();
         service.weeklyActivity = weeklyActivity;
+        service.repositories = new FakeSourceRepositoryRepository(repository);
 
         service.persist(userId, repository, snapshot);
 
@@ -64,10 +67,24 @@ class ContributorSnapshotPersistenceServiceTest {
         CapturingWeeklyActivityService weeklyActivity = new CapturingWeeklyActivityService();
         ContributorSnapshotPersistenceService service = new ContributorSnapshotPersistenceService();
         service.weeklyActivity = weeklyActivity;
+        service.repositories = new FakeSourceRepositoryRepository(repository);
 
         service.persist(userId, repository, snapshot);
 
         assertEquals(List.of(), weeklyActivity.activity);
+    }
+
+    private static final class FakeSourceRepositoryRepository extends SourceRepositoryRepository {
+        private final SourceRepository repository;
+
+        private FakeSourceRepositoryRepository(SourceRepository repository) {
+            this.repository = repository;
+        }
+
+        @Override
+        public Optional<SourceRepository> findByIdForUser(UUID repositoryId, UUID userId) {
+            return Optional.of(repository);
+        }
     }
 
     private static final class CapturingWeeklyActivityService extends GitHubWeeklyActivityService {

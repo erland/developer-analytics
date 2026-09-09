@@ -4,19 +4,23 @@ import io.github.developeranalytics.domain.model.AppUser;
 import io.github.developeranalytics.domain.model.Contribution;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.persistence.repository.ContributionRepository;
+import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
 import io.github.developeranalytics.provider.ProviderAccessToken;
 import io.github.developeranalytics.provider.ProviderContribution;
 import io.github.developeranalytics.provider.ProviderException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 /** Persists and enriches one GitHub contribution discovered by the provider adapter. */
 @ApplicationScoped
 public class GitHubContributionIngestionService {
 
     @Inject ContributionRepository contributions;
+    @Inject SourceRepositoryRepository repositories;
     @Inject GitHubCommitFileChangeService commitFileChanges;
 
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public IngestionResult ingest(
             AppUser user,
             SourceRepository repository,
@@ -27,6 +31,10 @@ public class GitHubContributionIngestionService {
         if (repository == null) throw new IllegalArgumentException("repository is required");
         if (providerContribution == null) throw new IllegalArgumentException("providerContribution is required");
 
+        SourceRepository managedRepository = repositories.findByIdForUser(repository.getId(), user.getId())
+                .orElseThrow(() -> new IllegalStateException("Repository not found for contribution ingestion"));
+        AppUser managedUser = managedRepository.getUser();
+
         Contribution.Type type = mapType(providerContribution.type());
         Contribution contribution = contributions.findByProviderIdentity(
                 user.getId(), "github", providerContribution.externalContributionId(), type).orElse(null);
@@ -34,8 +42,8 @@ public class GitHubContributionIngestionService {
 
         if (!existing) {
             contribution = new Contribution(
-                    user,
-                    repository,
+                    managedUser,
+                    managedRepository,
                     "github",
                     providerContribution.externalContributionId(),
                     type,
@@ -60,7 +68,7 @@ public class GitHubContributionIngestionService {
 
         if (type == Contribution.Type.COMMIT && !cachedCommitDetails) {
             GitHubCommitFileChangeService.CommitDetails details =
-                    commitFileChanges.refresh(user, repository, contribution, token);
+                    commitFileChanges.refresh(managedUser, managedRepository, contribution, token);
             contribution.updateFileStatistics(
                     details.additions(), details.deletions(), details.changedFiles());
         }
