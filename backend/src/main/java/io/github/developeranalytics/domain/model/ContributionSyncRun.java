@@ -1,7 +1,11 @@
 package io.github.developeranalytics.domain.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -43,6 +47,13 @@ public class ContributionSyncRun {
 
     @Column(name = "pages_processed", nullable = false)
     private int pagesProcessed;
+
+    @Column(name = "api_request_count", nullable = false)
+    private int apiRequestCount;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "api_requests_by_endpoint", columnDefinition = "jsonb", nullable = false)
+    private Map<String, Integer> apiRequestsByEndpoint = Map.of();
 
     @Column(name = "rate_limit_remaining")
     private Integer rateLimitRemaining;
@@ -96,6 +107,11 @@ public class ContributionSyncRun {
         rateLimitResetAt = resetAt;
     }
 
+    public void apiUsage(int requestCount, Map<String, Integer> requestsByEndpoint) {
+        apiRequestCount = Math.max(0, requestCount);
+        apiRequestsByEndpoint = Map.copyOf(requestsByEndpoint == null ? Map.of() : requestsByEndpoint);
+    }
+
     public void complete(OffsetDateTime now) {
         status = Status.COMPLETED;
         completedAt = now;
@@ -131,6 +147,8 @@ public class ContributionSyncRun {
     public int getContributionsCreated() { return contributionsCreated; }
     public int getContributionsUpdated() { return contributionsUpdated; }
     public int getPagesProcessed() { return pagesProcessed; }
+    public int getApiRequestCount() { return apiRequestCount; }
+    public Map<String, Integer> getApiRequestsByEndpoint() { return apiRequestsByEndpoint; }
     public Integer getRateLimitRemaining() { return rateLimitRemaining; }
     public OffsetDateTime getRateLimitResetAt() { return rateLimitResetAt; }
     public OffsetDateTime getStartedAt() { return startedAt; }
