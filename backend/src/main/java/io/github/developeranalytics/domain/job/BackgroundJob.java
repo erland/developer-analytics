@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -76,6 +77,14 @@ public class BackgroundJob {
             status=BackgroundJobStatus.WAITING;
             nextExecutionAt=next;
         }
+    }
+
+    public void putPayloadValue(String key, Object value) {
+        if (key == null || key.isBlank()) throw new IllegalArgumentException("payload key is required");
+        Map<String,Object> updated = new LinkedHashMap<>();
+        if (payload != null) updated.putAll(payload);
+        if (value == null) updated.remove(key); else updated.put(key, value);
+        payload = updated;
     }
 
     public void deferForRateLimit(OffsetDateTime nextExecution) {
