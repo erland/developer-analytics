@@ -4,6 +4,7 @@ import io.github.developeranalytics.domain.model.*;
 import io.github.developeranalytics.persistence.repository.ContributionRepository;
 import io.github.developeranalytics.persistence.repository.ContributionSyncRunRepository;
 import io.github.developeranalytics.provider.*;
+import io.github.developeranalytics.provider.github.GitHubContributorSnapshotService;
 import io.github.developeranalytics.provider.github.GitHubProviderAdapter;
 import io.github.developeranalytics.service.connection.ProviderCredentialService;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -20,6 +21,7 @@ public class GitHubContributionDiscoveryService {
     private static final Logger LOG = Logger.getLogger(GitHubContributionDiscoveryService.class);
 
     @Inject GitHubProviderAdapter github;
+    @Inject GitHubContributorSnapshotService contributorSnapshots;
     @Inject ProviderCredentialService credentials;
     @Inject ContributionRepository contributions;
     @Inject ContributionSyncRunRepository syncRuns;
@@ -30,7 +32,10 @@ public class GitHubContributionDiscoveryService {
     public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since)
             throws ProviderException {
         ProviderAccessToken token = credentials.requireAccessToken(user.getId(), "github");
-        ProviderUser providerUser = github.fetchCurrentUser(token);
+        String userLogin = credentials.providerLogin(user.getId(), "github");
+        if (userLogin == null || userLogin.isBlank()) {
+            userLogin = github.fetchCurrentUser(token).login();
+        }
 
         ProviderRepository providerRepository = new ProviderRepository(
                 repository.getExternalRepositoryId(), repository.getOwnerExternalId(), repository.getOwnerLogin(),
@@ -59,7 +64,7 @@ public class GitHubContributionDiscoveryService {
         try {
             do {
                 PagedResult<ProviderContribution> page =
-                        github.listContributions(token, providerRepository, since, cursor, providerUser.login());
+                        github.listContributions(token, providerRepository, since, cursor, userLogin);
                 pages++;
 
                 for (ProviderContribution pc : page.items()) {
@@ -103,12 +108,14 @@ public class GitHubContributionDiscoveryService {
             } while (cursor != null);
 
             try {
-                ProviderContributorStatistics statistics = github.fetchContributorStatistics(
-                        token, providerRepository, providerUser.login());
+                ProviderContributorSnapshot snapshot = contributorSnapshots.fetch(
+                        token, providerRepository, userLogin);
+                ProviderContributorStatistics statistics = snapshot.statistics();
                 repository.updateContributorStatistics(
                         statistics.contributorCount(), statistics.humanContributorCount(), statistics.botContributorCount(),
                         statistics.userCommitCount(), statistics.repositoryCommitCount(), statistics.userAdditions(),
                         statistics.userDeletions(), statistics.observedAt());
+                weeklyActivity.replace(user.getId(), repository, snapshot.userActivityWeeks());
             } catch (ProviderException statisticsError) {
                 if (statisticsError.getStatusCode() == 403 || statisticsError.getStatusCode() == 429) {
                     throw statisticsError;
@@ -116,8 +123,6 @@ public class GitHubContributionDiscoveryService {
                 StructuredLog.warn(LOG, "contributor_statistics_unavailable", statisticsError,
                         StructuredLog.fields("repositoryId", repository.getId(), "httpStatus", statisticsError.getStatusCode()));
             }
-
-            weeklyActivity.refresh(user.getId(), repository, token, providerUser.login());
 
             OffsetDateTime completedAt = OffsetDateTime.now(java.time.ZoneOffset.UTC);
             run.complete(completedAt);
