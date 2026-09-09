@@ -50,14 +50,14 @@ public class GitHubRateLimitService {
     GitHubRateLimitDecision decision(ProviderAccessToken accessToken, OffsetDateTime now) {
         if (now == null) throw new IllegalArgumentException("now is required");
         Optional<GitHubRateLimitState> current = current(accessToken);
-        if (current.isEmpty()) return GitHubRateLimitDecision.allowed();
+        if (current.isEmpty()) return GitHubRateLimitDecision.allow();
 
         GitHubRateLimitState state = current.get();
         OffsetDateTime blockedUntil = blockingUntil(state, now);
-        if (blockedUntil == null) return GitHubRateLimitDecision.allowed();
+        if (blockedUntil == null) return GitHubRateLimitDecision.allow();
 
         int reserve = reserveFor(state.limit());
-        return GitHubRateLimitDecision.blocked(blockedUntil, state.remaining(), reserve, state.secondaryLimited());
+        return GitHubRateLimitDecision.block(blockedUntil, state.remaining(), reserve, state.secondaryLimited());
     }
 
     int reserveFor(Integer limit) {
@@ -106,11 +106,11 @@ public class GitHubRateLimitService {
             Integer reserve,
             boolean secondaryLimited
     ) {
-        static GitHubRateLimitDecision allowed() {
+        static GitHubRateLimitDecision allow() {
             return new GitHubRateLimitDecision(true, null, null, null, false);
         }
 
-        static GitHubRateLimitDecision blocked(
+        static GitHubRateLimitDecision block(
                 OffsetDateTime resumeAt,
                 Integer remaining,
                 Integer reserve,
