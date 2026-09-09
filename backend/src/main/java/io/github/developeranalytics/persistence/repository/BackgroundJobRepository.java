@@ -21,11 +21,12 @@ public class BackgroundJobRepository {
         Long count = em.createQuery(
                 "select count(j) from BackgroundJob j " +
                 "where j.user.id=:userId and j.deduplicationKey=:key " +
-                "and j.status in (:queued, :waiting, :running)", Long.class)
+                "and j.status in (:queued, :waiting, :paused, :running)", Long.class)
             .setParameter("userId", userId)
             .setParameter("key", deduplicationKey)
             .setParameter("queued", BackgroundJobStatus.QUEUED)
             .setParameter("waiting", BackgroundJobStatus.WAITING)
+            .setParameter("paused", BackgroundJobStatus.PAUSED_RATE_LIMIT)
             .setParameter("running", BackgroundJobStatus.RUNNING)
             .getSingleResult();
         return count != null && count > 0;
@@ -34,7 +35,7 @@ public class BackgroundJobRepository {
     public boolean existsActiveRepositoryJobExcept(
             UUID userId, String jobType, UUID repositoryId, UUID excludedJobId) {
         String sql = "SELECT count(*) FROM background_job WHERE user_id=:userId AND job_type=:jobType " +
-                "AND status IN ('QUEUED','WAITING','RUNNING') " +
+                "AND status IN ('QUEUED','WAITING','PAUSED_RATE_LIMIT','RUNNING') " +
                 "AND payload->>'repositoryId'=:repositoryId" +
                 (excludedJobId == null ? "" : " AND id<>:excludedJobId");
         var query = em.createNativeQuery(sql)
@@ -58,11 +59,12 @@ public class BackgroundJobRepository {
     public List<BackgroundJob> findActiveForUser(UUID userId) {
         return em.createQuery(
                 "select j from BackgroundJob j where j.user.id=:userId " +
-                "and j.status in (:queued, :waiting, :running) order by j.createdAt asc",
+                "and j.status in (:queued, :waiting, :paused, :running) order by j.createdAt asc",
                 BackgroundJob.class)
             .setParameter("userId", userId)
             .setParameter("queued", BackgroundJobStatus.QUEUED)
             .setParameter("waiting", BackgroundJobStatus.WAITING)
+            .setParameter("paused", BackgroundJobStatus.PAUSED_RATE_LIMIT)
             .setParameter("running", BackgroundJobStatus.RUNNING)
             .getResultList();
     }
@@ -80,7 +82,7 @@ public class BackgroundJobRepository {
     public Optional<BackgroundJob> claimNext(String workerId, OffsetDateTime now) {
         @SuppressWarnings("unchecked")
         List<UUID> ids = em.createNativeQuery(
-            "SELECT id FROM background_job WHERE status IN ('QUEUED','WAITING') " +
+            "SELECT id FROM background_job WHERE status IN ('QUEUED','WAITING','PAUSED_RATE_LIMIT') " +
             "AND next_execution_at <= :now AND locked_at IS NULL " +
             "ORDER BY priority ASC, created_at ASC FOR UPDATE SKIP LOCKED LIMIT 1")
             .setParameter("now", now).getResultList();
@@ -96,7 +98,7 @@ public class BackgroundJobRepository {
         return em.createNativeQuery(
                 "UPDATE background_job SET status='CANCELLED', completed_at=:now, " +
                 "locked_at=NULL, locked_by=NULL, last_error='Cancelled because provider was disconnected' " +
-                "WHERE user_id=:userId AND status IN ('QUEUED','WAITING') " +
+                "WHERE user_id=:userId AND status IN ('QUEUED','WAITING','PAUSED_RATE_LIMIT') " +
                 "AND (payload->>'provider'=:provider OR deduplication_key LIKE :providerPrefix)")
             .setParameter("now", now)
             .setParameter("userId", userId)
