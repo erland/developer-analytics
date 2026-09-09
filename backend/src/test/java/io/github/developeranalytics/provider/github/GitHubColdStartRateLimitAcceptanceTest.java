@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class GitHubColdStartRateLimitAcceptanceTest {
 
     private static final int REPOSITORY_COUNT = 240;
+    private static final int COLD_START_PRIORITY = -1_000;
 
     @Inject EntityManager entityManager;
     @Inject BackgroundJobRepository jobs;
@@ -69,7 +70,7 @@ class GitHubColdStartRateLimitAcceptanceTest {
             BackgroundJob job = BackgroundJob.queuedDeduplicated(
                     user,
                     GitHubContributionDiscoveryJobHandler.JOB_TYPE,
-                    110,
+                    COLD_START_PRIORITY,
                     Map.of(
                             "provider", "github",
                             "repositoryId", repository.getId().toString(),
@@ -97,15 +98,24 @@ class GitHubColdStartRateLimitAcceptanceTest {
                         "SELECT coalesce(sum(attempt_count),0) FROM background_job WHERE user_id=:userId")
                 .setParameter("userId", user.getId())
                 .getSingleResult();
+        Number claimableBeforeReset = (Number) entityManager.createNativeQuery(
+                        "SELECT count(*) FROM background_job WHERE user_id=:userId " +
+                        "AND status IN ('QUEUED','WAITING','PAUSED_RATE_LIMIT') " +
+                        "AND next_execution_at <= :beforeReset AND locked_at IS NULL")
+                .setParameter("userId", user.getId())
+                .setParameter("beforeReset", now.plusMinutes(5))
+                .getSingleResult();
 
         assertEquals(REPOSITORY_COUNT, paused.intValue());
         assertEquals(0, failed.intValue());
         assertEquals(0, attempts.intValue());
-        assertTrue(jobs.claimNext("acceptance-worker", now.plusMinutes(5)).isEmpty(),
-                "paused jobs must not be claimable before GitHub reset");
+        assertEquals(0, claimableBeforeReset.intValue(),
+                "paused cold-start jobs must not be claimable before GitHub reset");
 
         Optional<BackgroundJob> resumed = jobs.claimNext("acceptance-worker", resetAt.plusSeconds(1));
         assertTrue(resumed.isPresent(), "a paused cold-start job should become claimable after reset");
+        assertEquals(user.getId(), resumed.get().getUser().getId(),
+                "the resumed job should belong to the cold-start fixture");
         assertEquals(BackgroundJobStatus.RUNNING, resumed.get().getStatus());
         assertEquals(1, resumed.get().getAttemptCount());
         assertNull(resumed.get().getLastError());
