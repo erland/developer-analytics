@@ -47,6 +47,24 @@ public class BackgroundJobRepository {
         return count != null && count.longValue() > 0;
     }
 
+    public long countRunningJobsForUserByTypesExcept(
+            UUID userId,
+            Collection<String> jobTypes,
+            UUID excludedJobId
+    ) {
+        if (userId == null || jobTypes == null || jobTypes.isEmpty()) return 0L;
+        String jpql = "select count(j) from BackgroundJob j where j.user.id=:userId " +
+                "and j.status=:running and j.jobType in :jobTypes" +
+                (excludedJobId == null ? "" : " and j.id<>:excludedJobId");
+        var query = em.createQuery(jpql, Long.class)
+                .setParameter("userId", userId)
+                .setParameter("running", BackgroundJobStatus.RUNNING)
+                .setParameter("jobTypes", jobTypes);
+        if (excludedJobId != null) query.setParameter("excludedJobId", excludedJobId);
+        Long count = query.getSingleResult();
+        return count == null ? 0L : count;
+    }
+
     public List<BackgroundJob> findRecentForUser(UUID userId, int limit) {
         return em.createQuery(
                 "select j from BackgroundJob j where j.user.id=:userId order by j.createdAt desc",
