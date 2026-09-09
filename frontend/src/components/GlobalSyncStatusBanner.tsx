@@ -1,8 +1,11 @@
-import { useGitHubSyncStatus } from '../hooks/useGitHubSyncStatus'
+import type { GitHubSyncStatusState } from '../hooks/useGitHubSyncStatus'
 import './GlobalSyncStatusBanner.css'
 
-export function GlobalSyncStatusBanner() {
-  const sync = useGitHubSyncStatus(true)
+type Props = {
+  sync: GitHubSyncStatusState
+}
+
+export function GlobalSyncStatusBanner({ sync }: Props) {
   const overview = sync.overview
 
   if (!overview || sync.status === 'loading' || sync.status === 'idle' || sync.status === 'error') {
