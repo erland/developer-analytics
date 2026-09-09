@@ -1,6 +1,7 @@
 package io.github.developeranalytics.worker;
 
 import io.github.developeranalytics.domain.job.BackgroundJob;
+import io.github.developeranalytics.domain.job.BackgroundJobStatus;
 import io.github.developeranalytics.observability.StructuredLog;
 import io.github.developeranalytics.persistence.repository.BackgroundJobRepository;
 import io.github.developeranalytics.provider.ProviderException;
@@ -105,6 +106,19 @@ public class BackgroundJobWorker {
             );
 
             dispatcher.dispatch(job);
+            if (job.getStatus() != BackgroundJobStatus.RUNNING) {
+                StructuredLog.info(
+                        LOG,
+                        "background_job_deferred_by_handler",
+                        StructuredLog.fields(
+                                "backgroundJobId", job.getId(),
+                                "jobType", job.getJobType(),
+                                "status", job.getStatus(),
+                                "nextExecutionAt", job.getNextExecutionAt()
+                        )
+                );
+                return;
+            }
             job.complete();
 
             StructuredLog.info(
