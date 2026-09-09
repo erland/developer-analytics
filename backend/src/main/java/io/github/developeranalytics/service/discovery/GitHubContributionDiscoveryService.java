@@ -7,6 +7,7 @@ import io.github.developeranalytics.provider.*;
 import io.github.developeranalytics.provider.github.GitHubContributorSnapshotService;
 import io.github.developeranalytics.provider.github.GitHubProviderAdapter;
 import io.github.developeranalytics.service.connection.ProviderCredentialService;
+import io.github.developeranalytics.service.connection.ProviderSession;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -31,8 +32,9 @@ public class GitHubContributionDiscoveryService {
     @Transactional
     public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since)
             throws ProviderException {
-        ProviderAccessToken token = credentials.requireAccessToken(user.getId(), "github");
-        String userLogin = credentials.providerLogin(user.getId(), "github");
+        ProviderSession providerSession = credentials.requireSession(user.getId(), "github");
+        ProviderAccessToken token = providerSession.accessToken();
+        String userLogin = providerSession.login();
         if (userLogin == null || userLogin.isBlank()) {
             userLogin = github.fetchCurrentUser(token).login();
         }
