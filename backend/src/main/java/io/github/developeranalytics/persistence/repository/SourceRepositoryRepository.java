@@ -1,5 +1,6 @@
 package io.github.developeranalytics.persistence.repository;
 
+import io.github.developeranalytics.domain.model.RepositorySyncStatus;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -49,13 +50,27 @@ public class SourceRepositoryRepository {
                 "order by r.lastActivityAt desc nulls last, r.name",
                 SourceRepository.class)
             .setParameter("userId", userId)
-            .setParameter("accessRevoked",
-                    io.github.developeranalytics.domain.model.RepositorySyncStatus.ACCESS_REVOKED)
+            .setParameter("accessRevoked", RepositorySyncStatus.ACCESS_REVOKED)
             .setFirstResult(offset)
             .setMaxResults(limit)
             .getResultList();
     }
 
+    public List<SourceRepository> findContributionScopeUpgradeCandidates(int limit) {
+        return entityManager.createQuery(
+                "select r from SourceRepository r " +
+                "where r.provider=:provider " +
+                "and r.includedInAnalysis = true " +
+                "and r.syncStatus <> :accessRevoked " +
+                "and r.contributionScopeVersion < :currentVersion " +
+                "order by r.lastActivityAt desc nulls last, r.name",
+                SourceRepository.class)
+            .setParameter("provider", "github")
+            .setParameter("accessRevoked", RepositorySyncStatus.ACCESS_REVOKED)
+            .setParameter("currentVersion", SourceRepository.CURRENT_CONTRIBUTION_SCOPE_VERSION)
+            .setMaxResults(Math.max(1, Math.min(limit, 500)))
+            .getResultList();
+    }
 
     public List<SourceRepository> findAnalysisCandidates(UUID userId) {
         return entityManager.createQuery(
@@ -66,10 +81,7 @@ public class SourceRepositoryRepository {
                 "order by r.lastActivityAt desc nulls last, r.name",
                 SourceRepository.class)
             .setParameter("userId", userId)
-            .setParameter(
-                    "accessRevoked",
-                    io.github.developeranalytics.domain.model.RepositorySyncStatus.ACCESS_REVOKED
-            )
+            .setParameter("accessRevoked", RepositorySyncStatus.ACCESS_REVOKED)
             .getResultList();
     }
 
@@ -87,20 +99,19 @@ public class SourceRepositoryRepository {
             .getResultList();
     }
 
-
-public List<SourceRepository> findPrivateForUser(UUID userId) {
-    return entityManager.createQuery(
-            "select r from SourceRepository r " +
-            "where r.user.id=:userId and r.visibility=:visibility " +
-            "order by r.name",
-            SourceRepository.class)
-        .setParameter("userId", userId)
-        .setParameter(
-                "visibility",
-                io.github.developeranalytics.domain.model.RepositoryVisibility.PRIVATE
-        )
-        .getResultList();
-}
+    public List<SourceRepository> findPrivateForUser(UUID userId) {
+        return entityManager.createQuery(
+                "select r from SourceRepository r " +
+                "where r.user.id=:userId and r.visibility=:visibility " +
+                "order by r.name",
+                SourceRepository.class)
+            .setParameter("userId", userId)
+            .setParameter(
+                    "visibility",
+                    io.github.developeranalytics.domain.model.RepositoryVisibility.PRIVATE
+            )
+            .getResultList();
+    }
 
     public Optional<SourceRepository> findByIdForUser(UUID repositoryId, UUID userId) {
         return entityManager.createQuery(
