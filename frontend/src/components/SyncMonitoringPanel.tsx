@@ -32,6 +32,13 @@ export function syncHeadline(jobs: SyncJobOverview): SyncHeadline {
   return { kind: 'idle', title: 'No analysis yet', detail: 'No repository analysis jobs have been scheduled.' }
 }
 
+export function partitionSyncIssues(errors: SyncJob[]) {
+  return {
+    activeIssues: errors.filter((job) => job.status !== 'COMPLETED'),
+    recoveredIssues: errors.filter((job) => job.status === 'COMPLETED'),
+  }
+}
+
 export function SyncMonitoringPanel() {
   const monitoring = useSyncMonitoring()
   const [retryMessage, setRetryMessage] = useState<string | null>(null)
@@ -42,8 +49,7 @@ export function SyncMonitoringPanel() {
   const headline = syncHeadline(jobs)
   const current = jobs.activeJobs.find((job) => job.status === 'RUNNING')
   const currentRun = current?.repositoryId ? contributionRuns.find((run) => run.repositoryId === current.repositoryId && run.status === 'RUNNING') : undefined
-  const activeIssues = errors.filter((job) => job.status !== 'COMPLETED')
-  const recoveredIssues = errors.filter((job) => job.status === 'COMPLETED')
+  const { activeIssues, recoveredIssues } = partitionSyncIssues(errors)
 
   async function retry(job: SyncJob) {
     if (!job.repositoryId) return
@@ -73,11 +79,9 @@ export function SyncMonitoringPanel() {
         <Status label="Failed" value={jobs.failed} />
       </div>
       {current ? <div className="sync-current"><strong>Current: {current.repositoryName ?? humanizeJob(current.jobType)}</strong><span>{current.analysisStep && current.analysisStepsTotal ? `Step ${current.analysisStep}/${current.analysisStepsTotal} · ` : ''}{humanizeJob(current.jobType)} · attempt {current.attemptCount}/{current.maxAttempts}</span>{currentRun ? <span>{currentRun.contributionsSeen} contributions · {currentRun.pagesProcessed} pages processed</span> : null}</div> : headline.kind === 'complete' ? <p className="empty-state">All scheduled analysis work is finished.</p> : <p className="empty-state">No background analysis job is running right now.</p>}
-      <div className="sync-errors-heading"><h3>Recent synchronisation issues</h3><span>{errors.length} shown</span></div>
-      <p className="settings-intro">Recovered entries are historical issues that completed successfully later and do not require action.</p>
-      {activeIssues.length > 0 ? <div className="sync-error-list">{activeIssues.map((job) => <IssueRow key={job.id} job={job} retry={retry} />)}</div> : null}
-      {recoveredIssues.length > 0 ? <div className="sync-error-list">{recoveredIssues.map((job) => <IssueRow key={job.id} job={job} retry={retry} />)}</div> : null}
-      {errors.length === 0 ? <p className="empty-state">No synchronisation issues recorded.</p> : null}
+      <div className="sync-errors-heading"><h3>Recent synchronisation issues</h3><span>{activeIssues.length} current</span></div>
+      {activeIssues.length > 0 ? <div className="sync-error-list">{activeIssues.map((job) => <IssueRow key={job.id} job={job} retry={retry} />)}</div> : <p className="empty-state">No current synchronisation issues.</p>}
+      {recoveredIssues.length > 0 ? <details className="sync-resolved-issues"><summary>Show resolved issues ({recoveredIssues.length})</summary><p className="settings-intro">These historical issues completed successfully later and do not require action.</p><div className="sync-error-list">{recoveredIssues.map((job) => <IssueRow key={job.id} job={job} retry={retry} />)}</div></details> : null}
       {retryMessage ? <p role="status" className="settings-intro">{retryMessage}</p> : null}
     </div>
   </details>
