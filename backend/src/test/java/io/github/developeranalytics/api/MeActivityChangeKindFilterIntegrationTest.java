@@ -84,7 +84,7 @@ class MeActivityChangeKindFilterIntegrationTest {
             };
             resource.activity = activity;
             resource.filteredActivity = filteredActivity;
-            resource.coverage = coverage;
+            resource.changeKindCoverage = coverage;
 
             var all = get(resource, List.of());
             var code = get(resource, List.of("CODE"));
