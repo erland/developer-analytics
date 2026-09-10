@@ -2,7 +2,6 @@ package io.github.developeranalytics.service.activity;
 
 import io.github.developeranalytics.domain.model.Contribution;
 import io.github.developeranalytics.persistence.project.ProjectInventoryRepository;
-import io.github.developeranalytics.persistence.repository.RepositoryUserActivityWeekRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -17,7 +16,6 @@ import java.util.*;
 @ApplicationScoped
 public class ActivityApplicationService {
     @Inject EntityManager entityManager;
-    @Inject RepositoryUserActivityWeekRepository weeklyActivity;
     @Inject ProjectInventoryRepository projectInventory;
 
     @Transactional
@@ -32,7 +30,7 @@ public class ActivityApplicationService {
         if (matchingRepositoryIds.isEmpty()) return emptyResponse();
 
         StringBuilder jpql = new StringBuilder(
-                "select c.occurredAt, c.repository.id, c.repository.name from Contribution c " +
+                "select c.occurredAt, c.repository.id, c.repository.name, c.additions, c.deletions from Contribution c " +
                 "where c.user.id=:userId and c.type=:type and c.repository.id in :repositoryIds");
         if (fromDate != null) jpql.append(" and c.occurredAt >= :fromDate");
         if (toDate != null) jpql.append(" and c.occurredAt < :toDate");
@@ -48,7 +46,6 @@ public class ActivityApplicationService {
         Map<UUID, String> technologies = loadPrimaryTechnologies(userId);
         Map<UUID, List<String>> allProjectTypes = loadProjectTypes(userId);
         Map<UUID, List<String>> allTechnologies = loadTechnologies(userId);
-        Map<UUID, String> repositoryNames = new HashMap<>();
 
         Map<Integer, PeriodAccumulator> years = new TreeMap<>();
         Map<YearMonth, PeriodAccumulator> months = new TreeMap<>();
@@ -58,60 +55,53 @@ public class ActivityApplicationService {
 
         OffsetDateTime first = null;
         OffsetDateTime last = null;
+        int lineStatisticsCommitCount = 0;
+        long additions = 0;
+        long deletions = 0;
+
         for (Object[] row : rows) {
             OffsetDateTime occurredAt = (OffsetDateTime) row[0];
             UUID repositoryId = (UUID) row[1];
             String repositoryName = (String) row[2];
-            repositoryNames.put(repositoryId, repositoryName);
+            Number additionsValue = (Number) row[3];
+            Number deletionsValue = (Number) row[4];
+            boolean hasLineStatistics = additionsValue != null && deletionsValue != null;
+            long commitAdditions = hasLineStatistics ? additionsValue.longValue() : 0;
+            long commitDeletions = hasLineStatistics ? deletionsValue.longValue() : 0;
+
             YearMonth activityMonth = YearMonth.from(occurredAt);
             LocalDate weekStart = occurredAt.toLocalDate().minusDays(occurredAt.getDayOfWeek().getValue() - 1L);
-            accumulateCommit(years.computeIfAbsent(occurredAt.getYear(), ignored -> new PeriodAccumulator()), repositoryId, repositoryName);
-            accumulateCommit(months.computeIfAbsent(activityMonth, ignored -> new PeriodAccumulator()), repositoryId, repositoryName);
-            accumulateCommit(weeks.computeIfAbsent(weekStart, ignored -> new PeriodAccumulator()), repositoryId, repositoryName);
-            accumulateCommit(projectMonths.computeIfAbsent(repositoryId, ignored -> new TreeMap<>())
-                    .computeIfAbsent(activityMonth, ignored -> new PeriodAccumulator()), repositoryId, repositoryName);
-            accumulateCommit(projectMonthWeeks.computeIfAbsent(repositoryId, ignored -> new TreeMap<>())
+            accumulate(years.computeIfAbsent(occurredAt.getYear(), ignored -> new PeriodAccumulator()), repositoryId, repositoryName,
+                    hasLineStatistics, commitAdditions, commitDeletions);
+            accumulate(months.computeIfAbsent(activityMonth, ignored -> new PeriodAccumulator()), repositoryId, repositoryName,
+                    hasLineStatistics, commitAdditions, commitDeletions);
+            accumulate(weeks.computeIfAbsent(weekStart, ignored -> new PeriodAccumulator()), repositoryId, repositoryName,
+                    hasLineStatistics, commitAdditions, commitDeletions);
+            accumulate(projectMonths.computeIfAbsent(repositoryId, ignored -> new TreeMap<>())
+                    .computeIfAbsent(activityMonth, ignored -> new PeriodAccumulator()), repositoryId, repositoryName,
+                    hasLineStatistics, commitAdditions, commitDeletions);
+            accumulate(projectMonthWeeks.computeIfAbsent(repositoryId, ignored -> new TreeMap<>())
                     .computeIfAbsent(activityMonth, ignored -> new TreeMap<>())
-                    .computeIfAbsent(weekStart, ignored -> new PeriodAccumulator()), repositoryId, repositoryName);
+                    .computeIfAbsent(weekStart, ignored -> new PeriodAccumulator()), repositoryId, repositoryName,
+                    hasLineStatistics, commitAdditions, commitDeletions);
+
+            if (hasLineStatistics) {
+                lineStatisticsCommitCount++;
+                additions += commitAdditions;
+                deletions += commitDeletions;
+            }
             if (first == null || occurredAt.isBefore(first)) first = occurredAt;
             if (last == null || occurredAt.isAfter(last)) last = occurredAt;
         }
 
-        int lineStatisticsCommitCount = 0;
-        long additions = 0;
-        long deletions = 0;
-        long measuredCommits = 0;
-        for (RepositoryUserActivityWeekRepository.WeekRow row : weeklyActivity.findForUser(userId)) {
-            LocalDate weekStart = row.weekStart();
-            if (fromDate != null && weekStart.isBefore(fromDate.toLocalDate())) continue;
-            if (toDate != null && !weekStart.isBefore(toDate.toLocalDate())) continue;
-            UUID repositoryId = row.repositoryId();
-            if (!matchingRepositoryIds.contains(repositoryId)) continue;
-            String repositoryName = repositoryNames.getOrDefault(repositoryId, repositoryName(userId, repositoryId));
-            YearMonth activityMonth = YearMonth.from(weekStart);
-            lineStatisticsCommitCount += row.commits();
-            measuredCommits += row.commits();
-            additions += row.additions();
-            deletions += row.deletions();
-            accumulateLines(years.computeIfAbsent(weekStart.getYear(), ignored -> new PeriodAccumulator()), repositoryId, repositoryName, row);
-            accumulateLines(months.computeIfAbsent(activityMonth, ignored -> new PeriodAccumulator()), repositoryId, repositoryName, row);
-            accumulateLines(weeks.computeIfAbsent(weekStart, ignored -> new PeriodAccumulator()), repositoryId, repositoryName, row);
-            accumulateLines(projectMonths.computeIfAbsent(repositoryId, ignored -> new TreeMap<>())
-                    .computeIfAbsent(activityMonth, ignored -> new PeriodAccumulator()), repositoryId, repositoryName, row);
-            accumulateLines(projectMonthWeeks.computeIfAbsent(repositoryId, ignored -> new TreeMap<>())
-                    .computeIfAbsent(activityMonth, ignored -> new TreeMap<>())
-                    .computeIfAbsent(weekStart, ignored -> new PeriodAccumulator()), repositoryId, repositoryName, row);
-        }
-
-        double average = measuredCommits > 0 ? (double) (additions + deletions) / measuredCommits : 0.0;
+        double average = lineStatisticsCommitCount > 0
+                ? (double) (additions + deletions) / lineStatisticsCommitCount
+                : 0.0;
 
         List<YearPoint> yearPoints = years.entrySet().stream().map(e -> toYearPoint(e.getKey(), e.getValue())).toList();
         List<MonthPoint> monthPoints = months.entrySet().stream().map(e -> toMonthPoint(e.getKey(), e.getValue())).toList();
         List<WeekPoint> weekPoints = weeks.entrySet().stream().map(e -> toWeekPoint(e.getKey(), e.getValue())).toList();
-        Set<UUID> activeRepositoryIds = new HashSet<>();
-        rows.forEach(row -> activeRepositoryIds.add((UUID) row[1]));
-        months.values().forEach(value -> activeRepositoryIds.addAll(value.projectIds));
-        int activeProjects = activeRepositoryIds.size();
+        int activeProjects = rows.stream().map(row -> (UUID) row[1]).collect(java.util.stream.Collectors.toSet()).size();
 
         StringBuilder projectJpql = new StringBuilder(
                 "select c.repository.id, c.repository.name, min(c.occurredAt), max(c.occurredAt), count(c.id) " +
@@ -144,7 +134,7 @@ public class ActivityApplicationService {
 
         return new ActivityResult(rows.size(), activeProjects, average, 0.0, additions, deletions, first, last,
                 yearPoints, monthPoints, weekPoints, projectsOverTime,
-                measuredCommits > 0 || lineStatisticsCommitCount > 0, lineStatisticsCommitCount);
+                lineStatisticsCommitCount > 0, lineStatisticsCommitCount);
     }
 
     private ActivityResult emptyResponse() {
@@ -152,22 +142,16 @@ public class ActivityApplicationService {
                 List.of(), List.of(), List.of(), List.of(), false, 0);
     }
 
-    private String repositoryName(UUID userId, UUID repositoryId) {
-        return entityManager.createQuery(
-                "select r.name from SourceRepository r where r.user.id=:userId and r.id=:repositoryId", String.class)
-                .setParameter("userId", userId).setParameter("repositoryId", repositoryId)
-                .getResultStream().findFirst().orElse("Unknown project");
-    }
-
-    private void accumulateCommit(PeriodAccumulator a, UUID repositoryId, String repositoryName) {
-        a.commits++; a.projectIds.add(repositoryId); a.projectNames.add(repositoryName);
-    }
-
-    private void accumulateLines(PeriodAccumulator a, UUID repositoryId, String repositoryName,
-                                 RepositoryUserActivityWeekRepository.WeekRow row) {
-        a.additions += row.additions(); a.deletions += row.deletions();
-        a.lineStatisticsCommitCount += row.commits();
-        a.projectIds.add(repositoryId); a.projectNames.add(repositoryName);
+    private void accumulate(PeriodAccumulator a, UUID repositoryId, String repositoryName,
+                            boolean hasLineStatistics, long additions, long deletions) {
+        a.commits++;
+        a.projectIds.add(repositoryId);
+        a.projectNames.add(repositoryName);
+        if (hasLineStatistics) {
+            a.additions += additions;
+            a.deletions += deletions;
+            a.lineStatisticsCommitCount++;
+        }
     }
 
     private YearPoint toYearPoint(int year, PeriodAccumulator v) { return new YearPoint(year, v.commits, v.additions, v.deletions, v.additions + v.deletions, v.lineStatisticsCommitCount, v.projectIds.size(), List.copyOf(v.projectNames)); }
@@ -178,7 +162,7 @@ public class ActivityApplicationService {
     private Map<UUID, String> loadPrimaryProjectTypes(UUID userId) {
         List<Object[]> rows = entityManager.createQuery(
                 "select c.repository.id, c.category.displayName, c.confidence from RepositoryProjectCategory c " +
-                "where c.repository.user.id=:userId and c.repository.includedInAnalysis=true", Object[].class)
+                        "where c.repository.user.id=:userId and c.repository.includedInAnalysis=true", Object[].class)
                 .setParameter("userId", userId).getResultList();
         Map<UUID, RankedLabel> ranked = new HashMap<>();
         for (Object[] row : rows) {
@@ -192,34 +176,25 @@ public class ActivityApplicationService {
     private Map<UUID, String> loadPrimaryTechnologies(UUID userId) {
         List<Object[]> rows = entityManager.createQuery(
                 "select e.repository.id, e.technology.displayName, e.strength from RepositoryTechnologyEvidence e " +
-                "where e.user.id=:userId and e.repository.includedInAnalysis=true", Object[].class)
+                        "where e.user.id=:userId and e.repository.includedInAnalysis=true", Object[].class)
                 .setParameter("userId", userId).getResultList();
         Map<UUID, RankedLabel> ranked=new HashMap<>();
         for(Object[] row:rows){UUID id=(UUID)row[0];String label=(String)row[1];String strength=row[2]==null?"EXPOSURE":row[2].toString();int rank=switch(strength){case "OBSERVED"->5;case "STRONG"->4;case "MODERATE"->3;case "LIMITED"->2;default->1;};RankedLabel old=ranked.get(id);if(old==null||rank>old.rank||(rank==old.rank&&label.compareToIgnoreCase(old.label)<0))ranked.put(id,new RankedLabel(label,rank));}
         Map<UUID,String> result=new HashMap<>();ranked.forEach((id,v)->result.put(id,v.label));return result;
     }
 
-    /**
-     * Returns every observed project type for each repository. The primary label above remains in the
-     * response for backwards compatibility and compact colouring, while this collection is the
-     * authoritative set for future AnalysisScope matching.
-     */
     private Map<UUID, List<String>> loadProjectTypes(UUID userId) {
         List<Object[]> rows = entityManager.createQuery(
                 "select distinct c.repository.id, c.category.displayName from RepositoryProjectCategory c " +
-                "where c.repository.user.id=:userId and c.repository.includedInAnalysis=true", Object[].class)
+                        "where c.repository.user.id=:userId and c.repository.includedInAnalysis=true", Object[].class)
                 .setParameter("userId", userId).getResultList();
         return collectLabels(rows);
     }
 
-    /**
-     * Returns every technology observed for each repository. A repository must not stop matching a
-     * technology merely because another technology happened to win the primary-label ranking.
-     */
     private Map<UUID, List<String>> loadTechnologies(UUID userId) {
         List<Object[]> rows = entityManager.createQuery(
                 "select distinct e.repository.id, e.technology.displayName from RepositoryTechnologyEvidence e " +
-                "where e.user.id=:userId and e.repository.includedInAnalysis=true", Object[].class)
+                        "where e.user.id=:userId and e.repository.includedInAnalysis=true", Object[].class)
                 .setParameter("userId", userId).getResultList();
         return collectLabels(rows);
     }
