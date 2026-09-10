@@ -2,6 +2,7 @@ package io.github.developeranalytics.service.sync;
 
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
+import io.github.developeranalytics.service.change.ChangeKindClassifier;
 import io.github.developeranalytics.service.job.RepositoryDiscoveryJobService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -22,7 +23,8 @@ public class ContributionScopeUpgradeService {
 
     int enqueueMissingBackfills(int limit) {
         int enqueued = 0;
-        for (SourceRepository repository : repositories.findContributionScopeUpgradeCandidates(limit)) {
+        for (SourceRepository repository : repositories.findContributionScopeUpgradeCandidates(
+                limit, ChangeKindClassifier.CLASSIFIER_VERSION)) {
             if (repository.getId() == null || repository.getUser() == null) {
                 continue;
             }
