@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 @Tag("persistence")
@@ -65,12 +66,13 @@ class ExistingChangeKindBackfillDeploymentTest {
         });
 
         int enqueued = upgrades.enqueueMissingBackfills();
-        assertEquals(1, enqueued,
-                "the periodic reconciliation pass must queue existing incomplete repositories without a full resync");
+        assertTrue(enqueued >= 1,
+                "the periodic reconciliation pass must queue incomplete repositories without a full resync");
 
         QuarkusTransaction.requiringNew().run(() -> {
             List<BackgroundJob> active = jobs.findActiveForUser(ids[0]);
-            assertEquals(1, active.size());
+            assertEquals(1, active.size(),
+                    "the test user's incomplete repository should receive exactly one backfill job");
 
             BackgroundJob job = active.getFirst();
             assertEquals(GitHubChangeKindBackfillJobHandler.JOB_TYPE, job.getJobType());
@@ -84,12 +86,14 @@ class ExistingChangeKindBackfillDeploymentTest {
             assertNotNull(job.getDeduplicationKey());
         });
 
-        assertEquals(0, upgrades.enqueueMissingBackfills(),
-                "a later reconciliation pass must rely on active-job deduplication rather than queueing duplicates");
+        // Other Quarkus persistence tests can leave unrelated upgrade candidates in the shared
+        // test database, so the global enqueue count is intentionally not asserted here. What
+        // matters for deployment behaviour is that this repository remains deduplicated.
+        upgrades.enqueueMissingBackfills();
 
         QuarkusTransaction.requiringNew().run(() -> {
             assertEquals(1, jobs.findActiveForUser(ids[0]).size(),
-                    "only one resumable backfill job should remain active for the repository");
+                    "a later reconciliation pass must not queue a duplicate for the same repository");
         });
 
         QuarkusTransaction.requiringNew().run(() -> entityManager.createNativeQuery(
