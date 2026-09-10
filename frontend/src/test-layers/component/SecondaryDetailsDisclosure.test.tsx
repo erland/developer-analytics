@@ -30,18 +30,18 @@ describe('secondary details disclosures', () => {
     })
   })
 
-  it('keeps synchronisation summary visible while operational details start collapsed', async () => {
+  it('keeps synchronisation status visible while operational details start collapsed', async () => {
     const user = userEvent.setup()
     render(<SyncMonitoringPanel />)
 
-    const details = screen.getByText('Analysis progress').closest('details')
+    const details = screen.getByText('Analysis status').closest('details')
     expect(details).not.toHaveAttribute('open')
-    expect(screen.getByText('18/22 repositories completed · 74/88 analysis steps · 1 running · 2 failed')).toBeInTheDocument()
+    expect(screen.getByText('Needs attention · 2 jobs have stopped after all retry attempts.')).toBeInTheDocument()
 
-    await user.click(screen.getByText('Analysis progress'))
+    await user.click(screen.getByText('Analysis status'))
     expect(details).toHaveAttribute('open')
     expect(screen.getByText('74 of 88 steps completed')).toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'Analysis pipeline progress' })).toHaveAttribute('value', '74')
-    expect(screen.getByText('Recent synchronisation errors')).toBeInTheDocument()
+    expect(screen.getByText('Recent synchronisation issues')).toBeInTheDocument()
   })
 })
