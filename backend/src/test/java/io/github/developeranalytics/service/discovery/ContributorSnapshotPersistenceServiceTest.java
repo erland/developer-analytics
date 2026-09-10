@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class ContributorSnapshotPersistenceServiceTest {
 
     @Test
-    void persistsTotalsAndDelegatesWeeklyActivity() {
+    void persistsContributorTotalsWithoutDependingOnWeeklyActivityStorage() {
         AppUser user = AppUser.create();
         SourceRepository repository = new SourceRepository(user, "github", "repo-1", "alice", "demo");
         UUID userId = UUID.randomUUID();
@@ -35,9 +35,7 @@ class ContributorSnapshotPersistenceServiceTest {
                 new ProviderContributorStatistics(8, 7, 1, 11, 42, 320, 60, observedAt),
                 weeks);
 
-        CapturingWeeklyActivityService weeklyActivity = new CapturingWeeklyActivityService();
         ContributorSnapshotPersistenceService service = new ContributorSnapshotPersistenceService();
-        service.weeklyActivity = weeklyActivity;
         service.repositories = new FakeSourceRepositoryRepository(repository);
 
         service.persist(userId, repository, snapshot);
@@ -50,28 +48,6 @@ class ContributorSnapshotPersistenceServiceTest {
         assertEquals(320L, repository.getUserAdditions());
         assertEquals(60L, repository.getUserDeletions());
         assertEquals(observedAt, repository.getContributorStatsAt());
-        assertEquals(userId, weeklyActivity.userId);
-        assertEquals(repository, weeklyActivity.repository);
-        assertEquals(weeks, weeklyActivity.activity);
-    }
-
-    @Test
-    void delegatesEmptyWeeklyActivitySoPreviousRowsCanBeReplaced() {
-        AppUser user = AppUser.create();
-        SourceRepository repository = new SourceRepository(user, "github", "repo-2", "alice", "empty");
-        UUID userId = UUID.randomUUID();
-        ProviderContributorSnapshot snapshot = new ProviderContributorSnapshot(
-                new ProviderContributorStatistics(1, 1, 0, 0, 1, 0, 0, OffsetDateTime.now(ZoneOffset.UTC)),
-                List.of());
-
-        CapturingWeeklyActivityService weeklyActivity = new CapturingWeeklyActivityService();
-        ContributorSnapshotPersistenceService service = new ContributorSnapshotPersistenceService();
-        service.weeklyActivity = weeklyActivity;
-        service.repositories = new FakeSourceRepositoryRepository(repository);
-
-        service.persist(userId, repository, snapshot);
-
-        assertEquals(List.of(), weeklyActivity.activity);
     }
 
     private static final class FakeSourceRepositoryRepository extends SourceRepositoryRepository {
@@ -84,19 +60,6 @@ class ContributorSnapshotPersistenceServiceTest {
         @Override
         public Optional<SourceRepository> findByIdForUser(UUID repositoryId, UUID userId) {
             return Optional.of(repository);
-        }
-    }
-
-    private static final class CapturingWeeklyActivityService extends GitHubWeeklyActivityService {
-        UUID userId;
-        SourceRepository repository;
-        List<ProviderContributorActivityWeek> activity;
-
-        @Override
-        public void replace(UUID userId, SourceRepository repository, List<ProviderContributorActivityWeek> activity) {
-            this.userId = userId;
-            this.repository = repository;
-            this.activity = activity;
         }
     }
 }
