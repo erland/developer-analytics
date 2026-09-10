@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
@@ -27,7 +28,7 @@ class FlywayMigrationTest {
         }
         try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement();
              ResultSet weeklyTable = statement.executeQuery("SELECT to_regclass('public.repository_user_activity_week') IS NOT NULL")) {
-            assertTrue(weeklyTable.next()); assertTrue(weeklyTable.getBoolean(1));
+            assertTrue(weeklyTable.next()); assertFalse(weeklyTable.getBoolean(1));
         }
         try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement();
              ResultSet fileChangesTable = statement.executeQuery("SELECT to_regclass('public.contribution_file_change') IS NOT NULL")) {
@@ -44,7 +45,7 @@ class FlywayMigrationTest {
         try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement();
              ResultSet result = statement.executeQuery(
                      "SELECT count(*) FILTER (WHERE success = false), count(*) FILTER (WHERE version IS NOT NULL) FROM flyway_schema_history")) {
-            assertTrue(result.next()); assertEquals(0, result.getInt(1)); assertEquals(40, result.getInt(2));
+            assertTrue(result.next()); assertEquals(0, result.getInt(1)); assertEquals(41, result.getInt(2));
         }
     }
 
