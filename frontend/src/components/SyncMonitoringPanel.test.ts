@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SyncJob, SyncJobOverview } from '../hooks/useSyncMonitoring'
-import { partitionSyncIssues, syncHeadline } from './SyncMonitoringPanel'
+import { diagnosticSummary, partitionSyncIssues, syncHeadline } from './SyncMonitoringPanel'
 
 function jobs(overrides: Partial<SyncJobOverview> = {}): SyncJobOverview {
   return {
@@ -81,5 +81,27 @@ describe('partitionSyncIssues', () => {
 
     expect(result.activeIssues).toEqual([failed, waiting, rateLimited])
     expect(result.recoveredIssues).toEqual([recovered])
+  })
+})
+
+describe('diagnosticSummary', () => {
+  const base = {
+    completeCommitCount: 100,
+    matchingCommitCount: 100,
+    mismatchingCommitCount: 0,
+    commitAdditions: 1000,
+    commitDeletions: 200,
+    fileAdditions: 1000,
+    fileDeletions: 200,
+    netLineDifference: 0,
+  }
+
+  it('reports consistency when commit and file statistics match', () => {
+    expect(diagnosticSummary(base)).toBe('Commit and file line statistics are consistent.')
+  })
+
+  it('surfaces mismatching commits and the net-line difference', () => {
+    expect(diagnosticSummary({ ...base, matchingCommitCount: 97, mismatchingCommitCount: 3, netLineDifference: 1250 }))
+      .toContain('3 commits differ')
   })
 })
