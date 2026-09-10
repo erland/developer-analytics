@@ -10,11 +10,10 @@ import jakarta.transaction.Transactional;
 
 import java.util.UUID;
 
-/** Persists contributor totals and weekly activity from one provider snapshot. */
+/** Persists contributor totals from one provider snapshot. */
 @ApplicationScoped
 public class ContributorSnapshotPersistenceService {
 
-    @Inject GitHubWeeklyActivityService weeklyActivity;
     @Inject SourceRepositoryRepository repositories;
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
@@ -38,6 +37,5 @@ public class ContributorSnapshotPersistenceService {
                 statistics.userDeletions(),
                 statistics.observedAt()
         );
-        weeklyActivity.replace(userId, managedRepository, snapshot.userActivityWeeks());
     }
 }
