@@ -6,6 +6,7 @@ import io.github.developeranalytics.domain.change.ChangeKind;
 import io.github.developeranalytics.service.activity.ActivityApplicationService;
 import io.github.developeranalytics.service.activity.ChangeKindActivityService;
 import io.github.developeranalytics.service.activity.ChangeKindCoverageService;
+import io.github.developeranalytics.service.activity.LineStatisticConsistencyService;
 import io.github.developeranalytics.service.change.ChangeKindSelection;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -23,6 +24,7 @@ public class MeActivityResource {
     @Inject ActivityApplicationService activity;
     @Inject ChangeKindActivityService filteredActivity;
     @Inject ChangeKindCoverageService changeKindCoverage;
+    @Inject LineStatisticConsistencyService lineStatisticConsistency;
 
     @GET
     @Path("/activity")
@@ -50,6 +52,14 @@ public class MeActivityResource {
         var coverage = changeKindCoverage.get(current.user().getId(), period.from(), period.to(), search, ownership,
                 visibility, selectedProjectTypes, technologiesFilter);
         return toResponse(result, coverage);
+    }
+
+    @GET
+    @Path("/activity/line-stat-consistency")
+    public LineStatisticConsistencyService.Result lineStatisticConsistency(
+            @CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken) {
+        var current = currentUserService.requireCurrentUser(sessionToken);
+        return lineStatisticConsistency.get(current.user().getId());
     }
 
     private ActivityResponse toResponse(
