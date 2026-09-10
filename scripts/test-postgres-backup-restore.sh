@@ -10,17 +10,22 @@ RESTORE_DB="${RESTORE_DB:-developer_analytics_restore_test}"
 tmp="$(mktemp -d)"
 trap 'rm -rf "${tmp}"' EXIT
 
-echo "Waiting for migrated source database..."
+echo "Waiting for backend startup and completed Flyway migrations..."
 for _ in $(seq 1 90); do
-  if docker compose -f "${COMPOSE_FILE}" -f "${LOCAL_BUILD_COMPOSE}" exec -T db \
-       psql --username="${DB_USERNAME}" --dbname="${DB_NAME}" \
-       --tuples-only --no-align \
-       --command="SELECT to_regclass('public.user_ai_insight') IS NOT NULL;" \
-       2>/dev/null | grep -qx 't'; then
+  if docker compose -f "${COMPOSE_FILE}" -f "${LOCAL_BUILD_COMPOSE}" exec -T backend \
+       bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080' \
+       >/dev/null 2>&1; then
     break
   fi
   sleep 2
 done
+
+if ! docker compose -f "${COMPOSE_FILE}" -f "${LOCAL_BUILD_COMPOSE}" exec -T backend \
+     bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080' \
+     >/dev/null 2>&1; then
+  echo "Backend did not become ready after Flyway migrations." >&2
+  exit 1
+fi
 
 docker compose -f "${COMPOSE_FILE}" -f "${LOCAL_BUILD_COMPOSE}" exec -T db \
   psql --username="${DB_USERNAME}" --dbname="${DB_NAME}" \
