@@ -43,20 +43,28 @@ public class GitHubContributionDiscoveryService {
     @Transactional(Transactional.TxType.NOT_SUPPORTED)
     public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since) throws ProviderException {
         ContributionSyncMode mode = since == null ? ContributionSyncMode.INITIAL_FULL : ContributionSyncMode.INCREMENTAL;
-        return discover(user, repository, since, null, ignored -> {}, mode, null);
+        return discover(user, repository, since, null, ignored -> {}, mode, null, false);
     }
 
     @Transactional(Transactional.TxType.NOT_SUPPORTED)
     public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since,
                                     String initialCursor, Consumer<String> checkpoint,
                                     ContributionSyncMode syncMode) throws ProviderException {
-        return discover(user, repository, since, initialCursor, checkpoint, syncMode, null);
+        return discover(user, repository, since, initialCursor, checkpoint, syncMode, null, false);
     }
 
     @Transactional(Transactional.TxType.NOT_SUPPORTED)
     public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since,
                                     String initialCursor, Consumer<String> checkpoint,
                                     ContributionSyncMode syncMode, ProviderSyncRun providerSyncRun) throws ProviderException {
+        return discover(user, repository, since, initialCursor, checkpoint, syncMode, providerSyncRun, false);
+    }
+
+    @Transactional(Transactional.TxType.NOT_SUPPORTED)
+    public DiscoveryResult discover(AppUser user, SourceRepository repository, OffsetDateTime since,
+                                    String initialCursor, Consumer<String> checkpoint,
+                                    ContributionSyncMode syncMode, ProviderSyncRun providerSyncRun,
+                                    boolean forceRefreshCommitDetails) throws ProviderException {
         GitHubContributionSyncContextResolver.SyncContext context = contextResolver.resolve(user.getId(), repository);
         ProviderAccessToken token = context.accessToken();
         String userLogin = context.userLogin();
@@ -73,7 +81,8 @@ public class GitHubContributionDiscoveryService {
         StructuredLog.info(LOG, "contribution_sync_started",
                 StructuredLog.fields("syncId", runId, "providerSyncRunId", providerSyncRun == null ? null : providerSyncRun.getId(),
                         "provider", "github", "repositoryId", repository.getId(), "syncMode", effectiveMode,
-                        "resumeCursor", initialCursor, "contributorStatsOnly", contributorStatsOnly));
+                        "resumeCursor", initialCursor, "contributorStatsOnly", contributorStatsOnly,
+                        "forceRefreshCommitDetails", forceRefreshCommitDetails));
 
         int seen = 0, created = 0, updated = 0, pages = 0;
         String cursor = contributorStatsOnly ? null : blankToNull(initialCursor);
@@ -84,7 +93,8 @@ public class GitHubContributionDiscoveryService {
                     PagedResult<ProviderContribution> page = github.listContributions(token, providerRepository, since, cursor, userLogin);
                     pages++;
                     for (ProviderContribution providerContribution : page.items()) {
-                        GitHubContributionIngestionService.IngestionResult result = ingestion.ingest(user, repository, providerContribution, token);
+                        GitHubContributionIngestionService.IngestionResult result = ingestion.ingest(
+                                user, repository, providerContribution, token, forceRefreshCommitDetails);
                         if (result.created()) created++;
                         if (result.updated()) updated++;
                         seen++;
