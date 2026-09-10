@@ -1,5 +1,6 @@
 package io.github.developeranalytics.persistence.repository;
 
+import io.github.developeranalytics.domain.model.Contribution;
 import io.github.developeranalytics.domain.model.RepositorySyncStatus;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -56,18 +57,28 @@ public class SourceRepositoryRepository {
             .getResultList();
     }
 
+    /**
+     * Returns repositories that need contribution-scope work. Besides schema/scope upgrades,
+     * this deliberately reconciles repositories already marked current when a previous provider
+     * failure left commit line statistics incomplete. Existing contribution rows are preserved;
+     * the backfill job only enriches the missing commit details.
+     */
     public List<SourceRepository> findContributionScopeUpgradeCandidates(int limit) {
         return entityManager.createQuery(
                 "select r from SourceRepository r " +
                 "where r.provider=:provider " +
                 "and r.includedInAnalysis = true " +
                 "and r.syncStatus <> :accessRevoked " +
-                "and r.contributionScopeVersion < :currentVersion " +
+                "and (r.contributionScopeVersion < :currentVersion " +
+                "or exists (select c.id from Contribution c " +
+                "where c.repository=r and c.type=:commitType " +
+                "and (c.additions is null or c.deletions is null or c.changedFiles is null))) " +
                 "order by r.lastActivityAt desc nulls last, r.name",
                 SourceRepository.class)
             .setParameter("provider", "github")
             .setParameter("accessRevoked", RepositorySyncStatus.ACCESS_REVOKED)
             .setParameter("currentVersion", SourceRepository.CURRENT_CONTRIBUTION_SCOPE_VERSION)
+            .setParameter("commitType", Contribution.Type.COMMIT)
             .setMaxResults(Math.max(1, Math.min(limit, 500)))
             .getResultList();
     }
