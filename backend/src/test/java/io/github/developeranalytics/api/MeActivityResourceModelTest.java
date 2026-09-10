@@ -27,7 +27,9 @@ class MeActivityResourceModelTest {
                 List.of(new MeActivityResource.WeekPoint("2026-08-17", 4, 50, 20, 70, 4, 2, List.of("demo"))),
                 List.of(),
                 true,
-                40
+                40,
+                42,
+                38
         );
 
         assertEquals(42, response.commitCount());
@@ -36,7 +38,10 @@ class MeActivityResourceModelTest {
         assertEquals(3, response.commitsPerMonth().getFirst().activeProjects());
         assertEquals(710, response.commitsPerYear().getFirst().changedLines());
         assertEquals(40, response.lineStatisticsCommitCount());
+        assertEquals(42, response.changeKindTotalCommitCount());
+        assertEquals(38, response.changeKindClassifiedCommitCount());
     }
+
     @Test
     void projectLifecycleKeepsAllTechnologiesAndProjectTypesAlongsidePrimaryLabels() {
         var lifecycle = new MeActivityResource.ProjectLifecycle(

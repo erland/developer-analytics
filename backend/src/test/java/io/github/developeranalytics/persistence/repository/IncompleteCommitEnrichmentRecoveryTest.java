@@ -62,7 +62,8 @@ class IncompleteCommitEnrichmentRecoveryTest {
 
         QuarkusTransaction.requiringNew().run(() -> {
             assertTrue(
-                    repositories.findContributionScopeUpgradeCandidates(500).stream()
+                    repositories.findContributionScopeUpgradeCandidates(
+                                    500, ChangeKindClassifier.CLASSIFIER_VERSION).stream()
                             .anyMatch(repository -> ids[1].equals(repository.getId())),
                     "a repository already marked current must still be reconciled when line statistics are incomplete"
             );
@@ -96,7 +97,8 @@ class IncompleteCommitEnrichmentRecoveryTest {
                     "repository completion should become true after line statistics have been repaired"
             );
             assertFalse(
-                    repositories.findContributionScopeUpgradeCandidates(500).stream()
+                    repositories.findContributionScopeUpgradeCandidates(
+                                    500, ChangeKindClassifier.CLASSIFIER_VERSION).stream()
                             .anyMatch(repository -> ids[1].equals(repository.getId())),
                     "a fully repaired current repository must leave the reconciliation queue"
             );

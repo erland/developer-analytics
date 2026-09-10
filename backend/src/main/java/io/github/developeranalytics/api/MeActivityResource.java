@@ -5,6 +5,7 @@ import io.github.developeranalytics.auth.CurrentUserService;
 import io.github.developeranalytics.domain.change.ChangeKind;
 import io.github.developeranalytics.service.activity.ActivityApplicationService;
 import io.github.developeranalytics.service.activity.ChangeKindActivityService;
+import io.github.developeranalytics.service.activity.ChangeKindCoverageService;
 import io.github.developeranalytics.service.change.ChangeKindSelection;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -21,6 +22,7 @@ public class MeActivityResource {
     @Inject CurrentUserService currentUserService;
     @Inject ActivityApplicationService activity;
     @Inject ChangeKindActivityService filteredActivity;
+    @Inject ChangeKindCoverageService changeKindCoverage;
 
     @GET
     @Path("/activity")
@@ -45,10 +47,15 @@ public class MeActivityResource {
                         selectedProjectTypes, technologiesFilter)
                 : filteredActivity.get(current.user().getId(), period.from(), period.to(), search, ownership, visibility,
                         selectedProjectTypes, technologiesFilter, changeKinds);
-        return toResponse(result);
+        var coverage = changeKindCoverage.get(current.user().getId(), period.from(), period.to(), search, ownership,
+                visibility, selectedProjectTypes, technologiesFilter);
+        return toResponse(result, coverage);
     }
 
-    private ActivityResponse toResponse(ActivityApplicationService.ActivityResult result) {
+    private ActivityResponse toResponse(
+            ActivityApplicationService.ActivityResult result,
+            ChangeKindCoverageService.Coverage coverage
+    ) {
         return new ActivityResponse(
                 result.commitCount(), result.activeProjects(), result.averageCommitSize(), result.medianCommitSize(),
                 result.additions(), result.deletions(), result.firstActivityAt(), result.lastActivityAt(),
@@ -66,7 +73,8 @@ public class MeActivityResource {
                         project.commits(), project.projectType(), project.technology(), project.projectTypes(), project.technologies(),
                         project.monthlyActivity().stream().map(MeActivityResource::toProjectPeriod).toList(),
                         project.weeklyActivity().stream().map(MeActivityResource::toProjectPeriod).toList())).toList(),
-                result.commitSizeStatisticsAvailable(), result.lineStatisticsCommitCount());
+                result.commitSizeStatisticsAvailable(), result.lineStatisticsCommitCount(),
+                coverage.totalCommitCount(), coverage.classifiedCommitCount());
     }
 
     private static ProjectPeriodActivity toProjectPeriod(ActivityApplicationService.ProjectPeriodActivity period) {
@@ -74,7 +82,7 @@ public class MeActivityResource {
                 period.deletions(), period.changedLines(), period.lineStatisticsCommitCount());
     }
 
-    public record ActivityResponse(int commitCount,int activeProjects,double averageCommitSize,double medianCommitSize,long additions,long deletions,OffsetDateTime firstActivityAt,OffsetDateTime lastActivityAt,List<YearPoint> commitsPerYear,List<MonthPoint> commitsPerMonth,List<WeekPoint> commitsPerWeek,List<ProjectLifecycle> projectsOverTime,boolean commitSizeStatisticsAvailable,int lineStatisticsCommitCount) {}
+    public record ActivityResponse(int commitCount,int activeProjects,double averageCommitSize,double medianCommitSize,long additions,long deletions,OffsetDateTime firstActivityAt,OffsetDateTime lastActivityAt,List<YearPoint> commitsPerYear,List<MonthPoint> commitsPerMonth,List<WeekPoint> commitsPerWeek,List<ProjectLifecycle> projectsOverTime,boolean commitSizeStatisticsAvailable,int lineStatisticsCommitCount,int changeKindTotalCommitCount,int changeKindClassifiedCommitCount) {}
     public record YearPoint(int year,int commits,long additions,long deletions,long changedLines,int lineStatisticsCommitCount,int activeProjects,List<String> projects) {}
     public record MonthPoint(String month,int commits,long additions,long deletions,long changedLines,int lineStatisticsCommitCount,int activeProjects,List<String> projects) {}
     public record WeekPoint(String week,int commits,long additions,long deletions,long changedLines,int lineStatisticsCommitCount,int activeProjects,List<String> projects) {}

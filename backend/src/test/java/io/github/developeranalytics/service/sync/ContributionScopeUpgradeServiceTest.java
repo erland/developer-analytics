@@ -4,6 +4,7 @@ import io.github.developeranalytics.domain.job.BackgroundJob;
 import io.github.developeranalytics.domain.model.AppUser;
 import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
+import io.github.developeranalytics.service.change.ChangeKindClassifier;
 import io.github.developeranalytics.service.job.RepositoryDiscoveryJobService;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,7 @@ class ContributionScopeUpgradeServiceTest {
         assertEquals(1, service.enqueueMissingBackfills(100));
         assertEquals(2, jobs.calls);
         assertEquals(100, repositories.lastLimit);
+        assertEquals(ChangeKindClassifier.CLASSIFIER_VERSION, repositories.lastClassifierVersion);
     }
 
     @Test
@@ -64,14 +66,16 @@ class ContributionScopeUpgradeServiceTest {
     private static final class StubSourceRepositoryRepository extends SourceRepositoryRepository {
         private final List<SourceRepository> candidates;
         private int lastLimit;
+        private String lastClassifierVersion;
 
         private StubSourceRepositoryRepository(List<SourceRepository> candidates) {
             this.candidates = candidates;
         }
 
         @Override
-        public List<SourceRepository> findContributionScopeUpgradeCandidates(int limit) {
+        public List<SourceRepository> findContributionScopeUpgradeCandidates(int limit, String classifierVersion) {
             lastLimit = limit;
+            lastClassifierVersion = classifierVersion;
             return candidates;
         }
     }

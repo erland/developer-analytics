@@ -48,8 +48,8 @@ public class ContributionRepository {
                 "select c from Contribution c " +
                         "where c.user.id=:userId and c.repository.id=:repositoryId and c.type=:type " +
                         "and (c.additions is null or c.deletions is null or c.changedFiles is null " +
-                        "or (c.changedFiles<>0 and not exists (select f.id from ContributionFileChange f " +
-                        "where f.contribution=c and f.classifierVersion=:version))) " +
+                        "or (c.changedFiles<>0 and (select count(f.id) from ContributionFileChange f " +
+                        "where f.contribution=c and f.classifierVersion=:version) <> c.changedFiles)) " +
                         "order by c.occurredAt desc", Contribution.class)
                 .setParameter("userId", userId)
                 .setParameter("repositoryId", repositoryId)
