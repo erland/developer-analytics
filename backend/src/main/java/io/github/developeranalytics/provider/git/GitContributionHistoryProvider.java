@@ -27,6 +27,7 @@ public class GitContributionHistoryProvider implements ContributionHistoryProvid
 
     private static final Logger LOG = Logger.getLogger(GitContributionHistoryProvider.class);
     private static final Duration MAX_IDLE = Duration.ofHours(6);
+    static final int MAX_CACHED_WORKSPACES = 2;
 
     @Inject GitWorkspaceService workspaces;
     @Inject GitLocalHistoryReader historyReader;
@@ -44,7 +45,7 @@ public class GitContributionHistoryProvider implements ContributionHistoryProvid
 
         URI cloneUri = cloneUri(repository);
         cleanupExpired();
-        CachedWorkspace cached = cachedWorkspaces.computeIfAbsent(cloneUri, ignored -> new CachedWorkspace());
+        CachedWorkspace cached = cachedWorkspace(cloneUri);
 
         synchronized (cached) {
             boolean reused = cached.workspace != null && Files.isDirectory(cached.workspace.repositoryPath());
@@ -75,7 +76,8 @@ public class GitContributionHistoryProvider implements ContributionHistoryProvid
                                 "analyzedCommits", result.size(),
                                 "workspaceReused", reused,
                                 "cloneDurationMs", reused ? 0 : cached.workspace.transferDuration().toMillis(),
-                                "temporaryGitBytes", cached.workspace.sizeBytes()
+                                "temporaryGitBytes", cached.workspace.sizeBytes(),
+                                "cachedWorkspaces", cachedWorkspaces.size()
                         )
                 );
                 return result;
@@ -87,6 +89,25 @@ public class GitContributionHistoryProvider implements ContributionHistoryProvid
                 }
                 throw e;
             }
+        }
+    }
+
+    private CachedWorkspace cachedWorkspace(URI cloneUri) {
+        synchronized (cachedWorkspaces) {
+            CachedWorkspace existing = cachedWorkspaces.get(cloneUri);
+            if (existing != null) return existing;
+
+            while (cachedWorkspaces.size() >= MAX_CACHED_WORKSPACES) {
+                Map.Entry<URI, CachedWorkspace> oldest = cachedWorkspaces.entrySet().stream()
+                        .min(Map.Entry.comparingByValue((left, right) -> left.lastUsed.compareTo(right.lastUsed)))
+                        .orElse(null);
+                if (oldest == null) break;
+                evict(oldest.getKey(), oldest.getValue());
+            }
+
+            CachedWorkspace created = new CachedWorkspace();
+            cachedWorkspaces.put(cloneUri, created);
+            return created;
         }
     }
 
@@ -110,13 +131,7 @@ public class GitContributionHistoryProvider implements ContributionHistoryProvid
     @PreDestroy
     void closeCachedWorkspaces() {
         for (Map.Entry<URI, CachedWorkspace> entry : cachedWorkspaces.entrySet()) {
-            CachedWorkspace cached = entry.getValue();
-            if (cachedWorkspaces.remove(entry.getKey(), cached)) {
-                synchronized (cached) {
-                    closeQuietly(cached.workspace);
-                    cached.workspace = null;
-                }
-            }
+            evict(entry.getKey(), entry.getValue());
         }
     }
 
@@ -124,13 +139,17 @@ public class GitContributionHistoryProvider implements ContributionHistoryProvid
         Instant cutoff = Instant.now().minus(MAX_IDLE);
         for (Map.Entry<URI, CachedWorkspace> entry : cachedWorkspaces.entrySet()) {
             CachedWorkspace cached = entry.getValue();
-            if (cached.lastUsed.isAfter(cutoff)) continue;
-            synchronized (cached) {
-                if (!cached.lastUsed.isAfter(cutoff) && cachedWorkspaces.remove(entry.getKey(), cached)) {
-                    closeQuietly(cached.workspace);
-                    cached.workspace = null;
-                }
+            if (!cached.lastUsed.isAfter(cutoff)) {
+                evict(entry.getKey(), cached);
             }
+        }
+    }
+
+    private void evict(URI cloneUri, CachedWorkspace cached) {
+        if (!cachedWorkspaces.remove(cloneUri, cached)) return;
+        synchronized (cached) {
+            closeQuietly(cached.workspace);
+            cached.workspace = null;
         }
     }
 
