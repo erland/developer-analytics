@@ -13,15 +13,13 @@ import jakarta.ws.rs.core.MediaType;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 @QuarkusTest
 @Tag("persistence")
@@ -31,7 +29,7 @@ class MeActivityResourceCharacterizationTest {
     TestFixtureService fixtures;
 
     @Test
-    void allTimeResponseCombinesCommitAndWeeklyLineStatistics() {
+    void allTimeResponseAggregatesCommitLineStatistics() {
         AppUser user = fixtures.createUserWithSession(
                 "activity-1001", "activity-alice", "Activity Alice", "activity-session-1001");
         SourceRepository alpha = fixtures.createRepository(
@@ -39,20 +37,14 @@ class MeActivityResourceCharacterizationTest {
         SourceRepository beta = fixtures.createRepository(
                 user, "activity-repo-1001-b", "activity-alice", "beta");
 
-        fixtures.createContribution(user, alpha, "activity-c-1001-a1", Contribution.Type.COMMIT,
-                OffsetDateTime.parse("2026-01-05T10:00:00Z"));
-        fixtures.createContribution(user, alpha, "activity-c-1001-a2", Contribution.Type.COMMIT,
-                OffsetDateTime.parse("2026-02-10T11:00:00Z"));
-        fixtures.createContribution(user, beta, "activity-c-1001-b1", Contribution.Type.COMMIT,
-                OffsetDateTime.parse("2026-02-11T12:00:00Z"));
+        fixtures.createCommitWithLineStatistics(user, alpha, "activity-c-1001-a1",
+                OffsetDateTime.parse("2026-01-05T10:00:00Z"), 10, 2, 1);
+        fixtures.createCommitWithLineStatistics(user, alpha, "activity-c-1001-a2",
+                OffsetDateTime.parse("2026-02-10T11:00:00Z"), 20, 3, 1);
+        fixtures.createCommitWithLineStatistics(user, beta, "activity-c-1001-b1",
+                OffsetDateTime.parse("2026-02-11T12:00:00Z"), 7, 1, 1);
         fixtures.createContribution(user, beta, "activity-pr-1001-b1", Contribution.Type.PULL_REQUEST,
                 OffsetDateTime.parse("2026-02-12T12:00:00Z"));
-
-        fixtures.replaceActivityWeeks(user, alpha, List.of(
-                new TestFixtureService.ActivityWeekFixture(LocalDate.parse("2026-01-05"), 1, 10, 2),
-                new TestFixtureService.ActivityWeekFixture(LocalDate.parse("2026-02-09"), 1, 20, 3)));
-        fixtures.replaceActivityWeeks(user, beta, List.of(
-                new TestFixtureService.ActivityWeekFixture(LocalDate.parse("2026-02-09"), 1, 7, 1)));
 
         Response response = given()
                 .cookie(sessionCookie("activity-session-1001"))
@@ -81,26 +73,20 @@ class MeActivityResourceCharacterizationTest {
     }
 
     @Test
-    void monthFilterLimitsBothCommitAndWeeklyMetricsToResolvedPeriod() {
+    void monthFilterLimitsCommitMetricsToResolvedPeriod() {
         AppUser user = fixtures.createUserWithSession(
                 "activity-1002", "activity-bob", "Activity Bob", "activity-session-1002");
         SourceRepository repository = fixtures.createRepository(
                 user, "activity-repo-1002", "activity-bob", "period-repo");
 
-        fixtures.createContribution(user, repository, "activity-c-1002-jan", Contribution.Type.COMMIT,
-                OffsetDateTime.parse("2026-01-20T09:00:00Z"));
-        fixtures.createContribution(user, repository, "activity-c-1002-feb-a", Contribution.Type.COMMIT,
-                OffsetDateTime.parse("2026-02-02T09:00:00Z"));
-        fixtures.createContribution(user, repository, "activity-c-1002-feb-b", Contribution.Type.COMMIT,
-                OffsetDateTime.parse("2026-02-28T20:00:00Z"));
-        fixtures.createContribution(user, repository, "activity-c-1002-mar", Contribution.Type.COMMIT,
-                OffsetDateTime.parse("2026-03-01T00:00:00Z"));
-
-        fixtures.replaceActivityWeeks(user, repository, List.of(
-                new TestFixtureService.ActivityWeekFixture(LocalDate.parse("2026-01-19"), 1, 5, 1),
-                new TestFixtureService.ActivityWeekFixture(LocalDate.parse("2026-02-02"), 1, 11, 2),
-                new TestFixtureService.ActivityWeekFixture(LocalDate.parse("2026-02-23"), 1, 13, 4),
-                new TestFixtureService.ActivityWeekFixture(LocalDate.parse("2026-03-02"), 1, 17, 5)));
+        fixtures.createCommitWithLineStatistics(user, repository, "activity-c-1002-jan",
+                OffsetDateTime.parse("2026-01-20T09:00:00Z"), 5, 1, 1);
+        fixtures.createCommitWithLineStatistics(user, repository, "activity-c-1002-feb-a",
+                OffsetDateTime.parse("2026-02-02T09:00:00Z"), 11, 2, 1);
+        fixtures.createCommitWithLineStatistics(user, repository, "activity-c-1002-feb-b",
+                OffsetDateTime.parse("2026-02-28T20:00:00Z"), 13, 4, 1);
+        fixtures.createCommitWithLineStatistics(user, repository, "activity-c-1002-mar",
+                OffsetDateTime.parse("2026-03-01T00:00:00Z"), 17, 5, 1);
 
         given()
                 .cookie(sessionCookie("activity-session-1002"))
@@ -132,14 +118,10 @@ class MeActivityResourceCharacterizationTest {
         SourceRepository excluded = fixtures.createRepository(
                 user, "activity-repo-1003-b", "activity-carol", "other-service");
 
-        fixtures.createContribution(user, included, "activity-c-1003-a", Contribution.Type.COMMIT,
-                OffsetDateTime.parse("2026-04-06T10:00:00Z"));
-        fixtures.createContribution(user, excluded, "activity-c-1003-b", Contribution.Type.COMMIT,
-                OffsetDateTime.parse("2026-04-07T10:00:00Z"));
-        fixtures.replaceActivityWeeks(user, included, List.of(
-                new TestFixtureService.ActivityWeekFixture(LocalDate.parse("2026-04-06"), 1, 9, 1)));
-        fixtures.replaceActivityWeeks(user, excluded, List.of(
-                new TestFixtureService.ActivityWeekFixture(LocalDate.parse("2026-04-06"), 1, 90, 10)));
+        fixtures.createCommitWithLineStatistics(user, included, "activity-c-1003-a",
+                OffsetDateTime.parse("2026-04-06T10:00:00Z"), 9, 1, 1);
+        fixtures.createCommitWithLineStatistics(user, excluded, "activity-c-1003-b",
+                OffsetDateTime.parse("2026-04-07T10:00:00Z"), 90, 10, 1);
 
         given()
                 .cookie(sessionCookie("activity-session-1003"))
