@@ -29,10 +29,12 @@ class ChangeKindClassificationRecoveryTest {
 
     @Inject EntityManager entityManager;
     @Inject SourceRepositoryRepository repositories;
+    @Inject ContributionRepository contributions;
+    @Inject ContributionFileChangeRepository fileChanges;
 
     @Test
-    void currentRepositoriesAreReconciledWhenFileClassificationIsMissingOrStale() {
-        UUID[] ids = new UUID[5];
+    void currentRepositoriesAreReconciledWhenFileClassificationIsMissingStaleOrPartial() {
+        UUID[] ids = new UUID[6];
 
         QuarkusTransaction.requiringNew().run(() -> {
             AppUser user = AppUser.create();
@@ -40,7 +42,7 @@ class ChangeKindClassificationRecoveryTest {
             ids[0] = user.getId();
 
             SourceRepository missing = repository(user, "missing-classification");
-            Contribution missingCommit = commit(user, missing, "missing", 4, 2, 1);
+            commit(user, missing, "missing", 4, 2, 1);
 
             SourceRepository stale = repository(user, "stale-classification");
             Contribution staleCommit = commit(user, stale, "stale", 3, 1, 1);
@@ -53,6 +55,19 @@ class ChangeKindClassificationRecoveryTest {
                     1,
                     new ChangeKindClassification(ChangeKind.CODE, 1.0, "test-old-version", "0"),
                     staleCommit.getOccurredAt()
+            ));
+
+            SourceRepository partial = repository(user, "partial-classification");
+            Contribution partialCommit = commit(user, partial, "partial", 8, 3, 2);
+            entityManager.persist(new ContributionFileChange(
+                    partialCommit,
+                    user,
+                    partial,
+                    "src/OnlyOneOfTwo.java",
+                    4,
+                    1,
+                    new ChangeKindClassifier().classify("src/OnlyOneOfTwo.java"),
+                    partialCommit.getOccurredAt()
             ));
 
             SourceRepository zeroFiles = repository(user, "zero-files");
@@ -74,8 +89,9 @@ class ChangeKindClassificationRecoveryTest {
             entityManager.flush();
             ids[1] = missing.getId();
             ids[2] = stale.getId();
-            ids[3] = zeroFiles.getId();
-            ids[4] = complete.getId();
+            ids[3] = partial.getId();
+            ids[4] = zeroFiles.getId();
+            ids[5] = complete.getId();
         });
 
         QuarkusTransaction.requiringNew().run(() -> {
@@ -88,10 +104,20 @@ class ChangeKindClassificationRecoveryTest {
                     "a current repository with missing file classification must be reconciled");
             assertTrue(candidateIds.contains(ids[2]),
                     "a current repository with only stale classifier rows must be reconciled");
-            assertFalse(candidateIds.contains(ids[3]),
-                    "a commit with complete 0/0/0 statistics needs no file classification rows");
+            assertTrue(candidateIds.contains(ids[3]),
+                    "a current repository with only some expected current file rows must be reconciled");
             assertFalse(candidateIds.contains(ids[4]),
+                    "a commit with complete 0/0/0 statistics needs no file classification rows");
+            assertFalse(candidateIds.contains(ids[5]),
                     "a repository with current complete classification must not be requeued");
+
+            assertTrue(contributions.findCommitsMissingFileClassification(
+                            ids[0], ids[3], ChangeKindClassifier.CLASSIFIER_VERSION, 1_000).stream()
+                    .anyMatch(commit -> "partial".equals(commit.getProviderContributionId())),
+                    "the backfill must select a partially classified commit");
+            assertTrue(fileChanges.hasMissingCurrentClassification(
+                            ids[0], ids[3], ChangeKindClassifier.CLASSIFIER_VERSION),
+                    "partial current classification must keep repository completion false");
         });
 
         QuarkusTransaction.requiringNew().run(() -> entityManager.createNativeQuery(
