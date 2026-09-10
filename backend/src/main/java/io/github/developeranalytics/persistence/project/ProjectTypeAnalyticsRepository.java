@@ -1,7 +1,6 @@
 package io.github.developeranalytics.persistence.project;
 
 import io.github.developeranalytics.domain.model.Contribution;
-import io.github.developeranalytics.persistence.MonthValueConverter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -25,7 +24,7 @@ public class ProjectTypeAnalyticsRepository {
     public List<CategoryActivityRow> categoryActivity(UUID userId) {
         Map<Key,MutableActivity> grouped=new LinkedHashMap<>();
         List<Object[]> commitRows=entityManager.createQuery(
-                "select c.category.categoryKey, co.occurredAt, co.repository.id " +
+                "select c.category.categoryKey, co.occurredAt, co.repository.id, co.additions, co.deletions " +
                 "from RepositoryProjectCategory c, Contribution co " +
                 "where c.repository.user.id=:userId and c.repository.includedInAnalysis=true " +
                 "and co.user.id=:userId and co.type=:commitType and co.repository.id=c.repository.id order by co.occurredAt",
@@ -33,23 +32,12 @@ public class ProjectTypeAnalyticsRepository {
         for(Object[] row:commitRows){
             Key key=new Key((String)row[0],YearMonth.from((java.time.OffsetDateTime)row[1]));
             MutableActivity a=grouped.computeIfAbsent(key,k->new MutableActivity());
-            a.commitCount++;a.repositories.add((UUID)row[2]);
-        }
-
-        List<Object[]> lineRows=entityManager.createNativeQuery(
-                "select pc.category_key, date_trunc('month', w.week_start), " +
-                "sum(w.additions + w.deletions), sum(w.commits), count(distinct w.repository_id) " +
-                "from repository_user_activity_week w " +
-                "join (select distinct repository_id, category_id from repository_project_category) rpc on rpc.repository_id=w.repository_id " +
-                "join project_category pc on pc.id=rpc.category_id " +
-                "join source_repository r on r.id=w.repository_id " +
-                "where w.user_id=:userId and r.user_id=:userId and r.included_in_analysis=true " +
-                "group by pc.category_key, date_trunc('month', w.week_start)",Object[].class)
-                .setParameter("userId",userId).getResultList();
-        for(Object[] row:lineRows){
-            Key key=new Key((String)row[0],YearMonth.from(MonthValueConverter.toMonth(row[1])));
-            MutableActivity a=grouped.computeIfAbsent(key,k->new MutableActivity());
-            a.changedLines+=numberLong(row[2]);a.lineStatisticsCommitCount+=number(row[3]);
+            a.commitCount++;
+            a.repositories.add((UUID)row[2]);
+            if(row[3]!=null && row[4]!=null){
+                a.changedLines+=((Number)row[3]).longValue()+((Number)row[4]).longValue();
+                a.lineStatisticsCommitCount++;
+            }
         }
 
         return grouped.entrySet().stream().map(entry->new CategoryActivityRow(
@@ -72,8 +60,6 @@ public class ProjectTypeAnalyticsRepository {
                         (java.time.OffsetDateTime)row[5],((Number)row[6]).intValue())).toList();
     }
 
-    private int number(Object value){return value==null?0:((Number)value).intValue();}
-    private long numberLong(Object value){return value==null?0L:((Number)value).longValue();}
     private record Key(String categoryKey,YearMonth month){}
     private static class MutableActivity{int commitCount;long changedLines;int lineStatisticsCommitCount;final Set<UUID> repositories=new HashSet<>();}
     public record CategorySummaryRow(String categoryKey,String categoryName,int projectCount){}
