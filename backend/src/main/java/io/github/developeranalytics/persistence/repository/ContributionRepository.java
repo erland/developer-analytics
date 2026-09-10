@@ -47,9 +47,9 @@ public class ContributionRepository {
         return entityManager.createQuery(
                 "select c from Contribution c " +
                         "where c.user.id=:userId and c.repository.id=:repositoryId and c.type=:type " +
-                        "and (c.changedFiles is null or c.changedFiles<>0) " +
-                        "and not exists (select f.id from ContributionFileChange f " +
-                        "where f.contribution=c and f.classifierVersion=:version) " +
+                        "and (c.additions is null or c.deletions is null or c.changedFiles is null " +
+                        "or (c.changedFiles<>0 and not exists (select f.id from ContributionFileChange f " +
+                        "where f.contribution=c and f.classifierVersion=:version))) " +
                         "order by c.occurredAt desc", Contribution.class)
                 .setParameter("userId", userId)
                 .setParameter("repositoryId", repositoryId)

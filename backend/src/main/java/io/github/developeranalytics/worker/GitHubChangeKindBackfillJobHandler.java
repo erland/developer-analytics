@@ -68,10 +68,9 @@ public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler 
         SourceRepository repository = repositories.findByIdForUser(repositoryId, job.getUser().getId())
                 .orElseThrow(() -> new IllegalStateException("Repository not found for job user"));
 
-        if (repository.getContributionScopeVersion() >= SourceRepository.CURRENT_CONTRIBUTION_SCOPE_VERSION) {
-            return;
-        }
-
+        // Do not short-circuit solely because the repository scope version is current.
+        // Reconciliation also uses this job to repair commits whose line statistics were left
+        // incomplete by a provider/rate-limit failure after the repository had been marked current.
         ProviderAccessToken token = credentials.requireAccessToken(job.getUser().getId(), "github");
         List<Contribution> work = contributions.findCommitsMissingFileClassification(
                 job.getUser().getId(), repositoryId, ChangeKindClassifier.CLASSIFIER_VERSION, MAX_COMMITS_PER_JOB);
@@ -89,6 +88,7 @@ public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler 
             jobs.enqueueChangeKindBackfillContinuation(job.getUser(), repositoryId, job.getId());
         } else {
             repository.markContributionScopeCurrent();
+            contributionHistory.releaseRepository(providerRepositories.map(repository));
         }
 
         StructuredLog.info(
