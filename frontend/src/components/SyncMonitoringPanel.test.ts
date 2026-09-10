@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { SyncJobOverview } from '../hooks/useSyncMonitoring'
-import { syncHeadline } from './SyncMonitoringPanel'
+import type { SyncJob, SyncJobOverview } from '../hooks/useSyncMonitoring'
+import { partitionSyncIssues, syncHeadline } from './SyncMonitoringPanel'
 
 function jobs(overrides: Partial<SyncJobOverview> = {}): SyncJobOverview {
   return {
@@ -14,6 +14,26 @@ function jobs(overrides: Partial<SyncJobOverview> = {}): SyncJobOverview {
     analysisStepsTotal: 804,
     activeJobs: [],
     ...overrides,
+  }
+}
+
+function syncJob(id: string, status: string): SyncJob {
+  return {
+    id,
+    jobType: 'GITHUB_CONTRIBUTION_SYNC',
+    status,
+    repositoryId: `repo-${id}`,
+    repositoryName: `Repository ${id}`,
+    attemptCount: 1,
+    maxAttempts: 3,
+    analysisStep: null,
+    analysisStepsTotal: null,
+    progressPercent: null,
+    lastError: status === 'COMPLETED' ? 'temporary failure' : null,
+    createdAt: '2026-09-10T10:00:00Z',
+    nextExecutionAt: null,
+    startedAt: '2026-09-10T10:01:00Z',
+    completedAt: status === 'COMPLETED' ? '2026-09-10T10:02:00Z' : null,
   }
 }
 
@@ -47,5 +67,19 @@ describe('syncHeadline', () => {
       kind: 'idle',
       title: 'No analysis yet',
     })
+  })
+})
+
+describe('partitionSyncIssues', () => {
+  it('keeps recovered jobs out of the current issue list', () => {
+    const failed = syncJob('failed', 'FAILED')
+    const waiting = syncJob('waiting', 'WAITING')
+    const rateLimited = syncJob('rate-limited', 'PAUSED_RATE_LIMIT')
+    const recovered = syncJob('recovered', 'COMPLETED')
+
+    const result = partitionSyncIssues([failed, recovered, waiting, rateLimited])
+
+    expect(result.activeIssues).toEqual([failed, waiting, rateLimited])
+    expect(result.recoveredIssues).toEqual([recovered])
   })
 })
