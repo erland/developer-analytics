@@ -88,6 +88,7 @@ public class GitHubChangeKindBackfillJobHandler implements BackgroundJobHandler 
             jobs.enqueueChangeKindBackfillContinuation(job.getUser(), repositoryId, job.getId());
         } else {
             repository.markContributionScopeCurrent();
+            contributionHistory.releaseRepository(providerRepositories.map(repository));
         }
 
         StructuredLog.info(
