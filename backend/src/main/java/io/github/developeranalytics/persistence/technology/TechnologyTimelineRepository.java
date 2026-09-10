@@ -46,9 +46,9 @@ public class TechnologyTimelineRepository {
     /**
      * Builds activity metrics for repositories where a technology has been observed.
      *
-     * <p>The technology evidence is repository-level evidence. Contribution and weekly activity are
-     * attributed to that technology when they belong to the same repository. The resulting timeline
-     * therefore means "activity in projects where this technology has been observed"; it must not be
+     * <p>The technology evidence is repository-level evidence. Contribution activity is attributed
+     * to that technology when it belongs to the same repository. The resulting timeline therefore
+     * means "activity in projects where this technology has been observed"; it must not be
      * interpreted as proof that each individual commit or changed line used the technology.</p>
      */
     public List<MetricActivityRow> calculateMetricActivity(UUID userId) {
@@ -63,7 +63,7 @@ public class TechnologyTimelineRepository {
         Map<Key, Mutable> grouped = new LinkedHashMap<>();
 
         List<Object[]> contributionRows = entityManager.createQuery(
-                "select e.technology.technologyKey, c.id, c.occurredAt, c.repository.id " +
+                "select e.technology.technologyKey, c.id, c.occurredAt, c.repository.id, c.additions, c.deletions " +
                 "from RepositoryTechnologyEvidence e, Contribution c " +
                 "where e.user.id=:userId and e.repository.includedInAnalysis=true " +
                 "and c.user.id=:userId and c.type=:commitType and c.repository.id=e.repository.id " +
@@ -74,23 +74,13 @@ public class TechnologyTimelineRepository {
             OffsetDateTime occurredAt=(OffsetDateTime)row[2]; UUID repositoryId=(UUID)row[3];
             Key key=new Key(technologyKey,YearMonth.from(occurredAt)); Mutable value=grouped.computeIfAbsent(key,k->new Mutable());
             if(!value.contributions.add(contributionId)) continue;
-            value.commits++; value.repositories.add(repositoryId);
-        }
-
-        List<Object[]> lineRows = entityManager.createNativeQuery(
-                "select t.technology_key, date_trunc('month', w.week_start), " +
-                "sum(w.additions + w.deletions), sum(w.commits), count(distinct w.repository_id) " +
-                "from repository_user_activity_week w " +
-                "join (select distinct repository_id, technology_id from repository_technology_evidence where user_id=:userId) e " +
-                "on e.repository_id=w.repository_id " +
-                "join technology_catalogue t on t.id=e.technology_id " +
-                "join source_repository r on r.id=w.repository_id " +
-                "where w.user_id=:userId and r.included_in_analysis=true " +
-                "group by t.technology_key, date_trunc('month', w.week_start)", Object[].class)
-                .setParameter("userId", userId).getResultList();
-        for(Object[] row:lineRows){
-            Key key=new Key((String)row[0],YearMonth.from(MonthValueConverter.toMonth(row[1]))); Mutable value=grouped.computeIfAbsent(key,k->new Mutable());
-            value.changedLines+=longNumber(row[2]); value.lineStatisticsCommitCount+=number(row[3]);
+            value.commits++;
+            value.repositories.add(repositoryId);
+            Number additions=(Number)row[4]; Number deletions=(Number)row[5];
+            if(additions!=null&&deletions!=null){
+                value.changedLines+=additions.longValue()+deletions.longValue();
+                value.lineStatisticsCommitCount++;
+            }
         }
 
         return grouped.entrySet().stream().map(entry -> new MetricActivityRow(
@@ -122,7 +112,6 @@ public class TechnologyTimelineRepository {
     }
 
     private int number(Object value){return value==null?0:((Number)value).intValue();}
-    private long longNumber(Object value){return value==null?0L:((Number)value).longValue();}
 
     public record ActivitySourceRow(String technologyKey,LocalDate yearMonth,int repositoryCount,int activityCount,int publicRepositoryCount,int privateRepositoryCount){}
     public record MetricActivityRow(String technologyKey,String month,int commits,long changedLines,int lineStatisticsCommitCount,int activeProjectCount){}

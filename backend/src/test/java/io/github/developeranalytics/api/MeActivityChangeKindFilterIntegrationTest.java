@@ -6,7 +6,6 @@ import io.github.developeranalytics.domain.change.ContributionFileChange;
 import io.github.developeranalytics.domain.model.AppUser;
 import io.github.developeranalytics.domain.model.Contribution;
 import io.github.developeranalytics.domain.model.SourceRepository;
-import io.github.developeranalytics.persistence.repository.RepositoryUserActivityWeekRepository;
 import io.github.developeranalytics.service.activity.ActivityApplicationService;
 import io.github.developeranalytics.service.activity.ChangeKindActivityService;
 import io.github.developeranalytics.service.activity.ChangeKindCoverageService;
@@ -18,7 +17,6 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -34,7 +32,6 @@ class MeActivityChangeKindFilterIntegrationTest {
     @Inject ActivityApplicationService activity;
     @Inject ChangeKindActivityService filteredActivity;
     @Inject ChangeKindCoverageService coverage;
-    @Inject RepositoryUserActivityWeekRepository weeklyActivity;
 
     private final ChangeKindClassifier classifier = new ChangeKindClassifier();
 
@@ -42,7 +39,6 @@ class MeActivityChangeKindFilterIntegrationTest {
     void queryParameterRoutesToDistinctActivityAggregates() {
         AppUser[] currentUser = new AppUser[1];
         UUID[] userId = new UUID[1];
-        LocalDate week = LocalDate.of(2026, 9, 7);
 
         QuarkusTransaction.requiringNew().run(() -> {
             AppUser user = AppUser.create();
@@ -64,12 +60,6 @@ class MeActivityChangeKindFilterIntegrationTest {
             file(mixed, user, repository, "docs/mixed.md", 5, 2);
 
             entityManager.flush();
-            weeklyActivity.replace(
-                    user.getId(), repository.getId(),
-                    List.of(new RepositoryUserActivityWeekRepository.WeekInput(week, 3, 25, 8)),
-                    OffsetDateTime.of(2026, 9, 10, 12, 0, 0, 0, ZoneOffset.UTC)
-            );
-
             currentUser[0] = user;
             userId[0] = user.getId();
         });

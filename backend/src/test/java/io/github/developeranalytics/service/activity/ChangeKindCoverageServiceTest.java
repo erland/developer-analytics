@@ -4,7 +4,6 @@ import io.github.developeranalytics.domain.change.ContributionFileChange;
 import io.github.developeranalytics.domain.model.AppUser;
 import io.github.developeranalytics.domain.model.Contribution;
 import io.github.developeranalytics.domain.model.SourceRepository;
-import io.github.developeranalytics.persistence.repository.RepositoryUserActivityWeekRepository;
 import io.github.developeranalytics.service.change.ChangeKindClassifier;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
@@ -27,13 +26,11 @@ class ChangeKindCoverageServiceTest {
 
     @Inject EntityManager entityManager;
     @Inject ChangeKindCoverageService coverage;
-    @Inject RepositoryUserActivityWeekRepository weeklyActivity;
 
     @Test
     void coverageUsesAllCommitsInScopeAndRequiresCompleteCurrentClassification() {
         UUID[] userId = new UUID[1];
         LocalDate day = LocalDate.of(2026, 9, 10);
-        LocalDate weekStart = day.minusDays(day.getDayOfWeek().getValue() - 1L);
         OffsetDateTime occurredAt = day.atTime(12, 0).atOffset(ZoneOffset.UTC);
 
         QuarkusTransaction.requiringNew().run(() -> {
@@ -64,11 +61,6 @@ class ChangeKindCoverageServiceTest {
                     new ChangeKindClassifier().classify("src/OnlyOne.java"), partial.getOccurredAt()));
 
             entityManager.flush();
-            weeklyActivity.replace(
-                    user.getId(), repository.getId(),
-                    List.of(new RepositoryUserActivityWeekRepository.WeekInput(weekStart, 4, 14, 4)),
-                    occurredAt.plusHours(1)
-            );
         });
 
         ChangeKindCoverageService.Coverage result = coverage.get(

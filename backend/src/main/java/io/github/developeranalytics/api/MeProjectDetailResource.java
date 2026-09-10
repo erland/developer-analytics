@@ -8,7 +8,6 @@ import io.github.developeranalytics.domain.model.SourceRepository;
 import io.github.developeranalytics.domain.project.ProjectSignificanceAssessment;
 import io.github.developeranalytics.persistence.project.ProjectSignificanceRepository;
 import io.github.developeranalytics.persistence.project.RepositoryProjectCategoryRepository;
-import io.github.developeranalytics.persistence.repository.RepositoryUserActivityWeekRepository;
 import io.github.developeranalytics.persistence.repository.SourceRepositoryRepository;
 import io.github.developeranalytics.persistence.technology.RepositoryTechnologyEvidenceRepository;
 import io.github.developeranalytics.service.activity.ProjectChangeKindActivityService;
@@ -34,7 +33,6 @@ public class MeProjectDetailResource {
     @Inject RepositoryProjectCategoryRepository categoryAssignments;
     @Inject ProjectSignificanceRepository significance;
     @Inject EntityManager entityManager;
-    @Inject RepositoryUserActivityWeekRepository weeklyActivity;
     @Inject UserCorrectionService corrections;
     @Inject ProjectSignificanceService significanceService;
     @Inject ProjectChangeKindActivityService filteredActivity;
@@ -109,35 +107,40 @@ public class MeProjectDetailResource {
     private Activity loadActivity(UUID userId,SourceRepository repository){
         UUID repositoryId=repository.getId();
         List<Object[]> rows=entityManager.createQuery(
-                "select c.occurredAt,c.type from Contribution c where c.user.id=:userId and c.repository.id=:repositoryId order by c.occurredAt",
+                "select c.occurredAt,c.type,c.additions,c.deletions from Contribution c " +
+                        "where c.user.id=:userId and c.repository.id=:repositoryId order by c.occurredAt",
                 Object[].class).setParameter("userId",userId).setParameter("repositoryId",repositoryId).getResultList();
         class MonthActivity{int commits;long additions;long deletions;long changedLines;int lineStatisticsCommitCount;}
         Map<YearMonth,MonthActivity> perMonth=new TreeMap<>();
-        int commits=0,pullRequests=0,reviews=0,issues=0;OffsetDateTime first=null,last=null;
+        int commits=0,pullRequests=0,reviews=0,issues=0;long additions=0,deletions=0;OffsetDateTime first=null,last=null;
         for(Object[] row:rows){
             OffsetDateTime at=(OffsetDateTime)row[0];var type=(io.github.developeranalytics.domain.model.Contribution.Type)row[1];
             if(first==null||at.isBefore(first))first=at;if(last==null||at.isAfter(last))last=at;
             switch(type){
-                case COMMIT->{commits++;perMonth.computeIfAbsent(YearMonth.from(at),x->new MonthActivity()).commits++;}
+                case COMMIT->{
+                    commits++;
+                    MonthActivity month=perMonth.computeIfAbsent(YearMonth.from(at),x->new MonthActivity());
+                    month.commits++;
+                    Integer commitAdditions=(Integer)row[2];
+                    Integer commitDeletions=(Integer)row[3];
+                    if(commitAdditions!=null&&commitDeletions!=null){
+                        additions+=commitAdditions;
+                        deletions+=commitDeletions;
+                        month.additions+=commitAdditions;
+                        month.deletions+=commitDeletions;
+                        month.changedLines+=(long)commitAdditions+commitDeletions;
+                        month.lineStatisticsCommitCount++;
+                    }
+                }
                 case PULL_REQUEST->pullRequests++;
                 case REVIEW->reviews++;
                 case ISSUE->issues++;
                 default->{}
             }
         }
-        for(RepositoryUserActivityWeekRepository.WeekRow week:weeklyActivity.findForRepository(userId,repositoryId)){
-            MonthActivity month=perMonth.computeIfAbsent(YearMonth.from(week.weekStart()),x->new MonthActivity());
-            month.additions+=week.additions();
-            month.deletions+=week.deletions();
-            month.changedLines+=week.changedLines();
-            month.lineStatisticsCommitCount+=week.commits();
-        }
         List<ActivityPoint> timeline=perMonth.entrySet().stream().map(entry->new ActivityPoint(
                 entry.getKey().toString(),entry.getValue().commits,entry.getValue().additions,entry.getValue().deletions,
                 entry.getValue().changedLines,entry.getValue().lineStatisticsCommitCount)).toList();
-        long additions=repository.getUserAdditions()==null?0:repository.getUserAdditions();
-        long deletions=repository.getUserDeletions()==null?0:repository.getUserDeletions();
-        if(repository.getUserCommitCount()!=null)commits=repository.getUserCommitCount();
         return new Activity(commits,pullRequests,reviews,issues,additions,deletions,first,last,timeline);
     }
 
