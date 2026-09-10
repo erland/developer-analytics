@@ -38,7 +38,7 @@ public class ContributionFileChangeRepository {
                 .setParameter("contribution", contribution)
                 .setParameter("version", classifierVersion)
                 .getSingleResult();
-        return count != null && count > 0;
+        return count != null && count == contribution.getChangedFiles().longValue();
     }
 
     public boolean hasMissingCurrentClassification(UUID userId, UUID repositoryId, String classifierVersion) {
@@ -46,8 +46,8 @@ public class ContributionFileChangeRepository {
                 "select count(c.id) from Contribution c " +
                         "where c.user.id=:userId and c.repository.id=:repositoryId and c.type=:type " +
                         "and (c.additions is null or c.deletions is null or c.changedFiles is null " +
-                        "or (c.changedFiles<>0 and not exists (select f.id from ContributionFileChange f " +
-                        "where f.contribution=c and f.classifierVersion=:version)))", Long.class)
+                        "or (c.changedFiles<>0 and (select count(f.id) from ContributionFileChange f " +
+                        "where f.contribution=c and f.classifierVersion=:version) <> c.changedFiles))", Long.class)
                 .setParameter("userId", userId)
                 .setParameter("repositoryId", repositoryId)
                 .setParameter("type", Contribution.Type.COMMIT)
