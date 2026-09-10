@@ -35,6 +35,11 @@ public class RepositoryDiscoveryJobService {
         return enqueueDeduplicated(user, repositoryId, GitHubContributionDiscoveryJobHandler.JOB_TYPE, 110, "github:contributions:", extra);
     }
 
+    @Transactional public BackgroundJob enqueueForcedContributionDiscovery(AppUser user, UUID repositoryId) {
+        return enqueueDeduplicated(user, repositoryId, GitHubContributionDiscoveryJobHandler.JOB_TYPE, 105, "github:contributions:",
+                Map.of(GitHubContributionDiscoveryJobHandler.FORCE_FULL_SYNC, "true"));
+    }
+
     @Transactional public BackgroundJob enqueueChangeKindBackfill(AppUser user, UUID repositoryId) {
         if (jobs.existsActiveRepositoryJobExcept(user.getId(), GitHubChangeKindBackfillJobHandler.JOB_TYPE, repositoryId, null)) return null;
         return enqueueDeduplicated(user, repositoryId, GitHubChangeKindBackfillJobHandler.JOB_TYPE, 115, "github:change-kind-backfill:",
