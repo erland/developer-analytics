@@ -27,6 +27,17 @@ public class GitHubContributionIngestionService {
             ProviderContribution providerContribution,
             ProviderAccessToken token
     ) throws ProviderException {
+        return ingest(user, repository, providerContribution, token, false);
+    }
+
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public IngestionResult ingest(
+            AppUser user,
+            SourceRepository repository,
+            ProviderContribution providerContribution,
+            ProviderAccessToken token,
+            boolean forceRefreshCommitDetails
+    ) throws ProviderException {
         if (user == null) throw new IllegalArgumentException("user is required");
         if (repository == null) throw new IllegalArgumentException("repository is required");
         if (providerContribution == null) throw new IllegalArgumentException("providerContribution is required");
@@ -54,6 +65,7 @@ public class GitHubContributionIngestionService {
 
         boolean cachedCommitDetails = type == Contribution.Type.COMMIT
                 && existing
+                && !forceRefreshCommitDetails
                 && commitFileChanges.hasCurrentClassification(contribution);
 
         contribution.updateFromDiscovery(
