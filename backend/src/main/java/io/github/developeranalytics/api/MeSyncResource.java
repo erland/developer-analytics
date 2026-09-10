@@ -99,6 +99,27 @@ public Response queueGitHubLanguageEvidence(
         )).build();
     }
 
+    @POST
+    @Path("/github/repositories/{repositoryId}/force-contributions")
+    public Response forceGitHubContributionDiscovery(
+            @CookieParam(AuthenticationService.SESSION_COOKIE) String sessionToken,
+            @PathParam("repositoryId") java.util.UUID repositoryId
+    ) {
+        CurrentUser current = currentUserService.requireCurrentUser(sessionToken);
+        BackgroundJob job = discoveryJobs.enqueueForcedContributionDiscovery(current.user(), repositoryId);
+        if (job == null) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity(Map.of("status", "ALREADY_QUEUED", "repositoryId", repositoryId))
+                    .build();
+        }
+        return Response.accepted(Map.of(
+                "jobId", job.getId(),
+                "jobType", job.getJobType(),
+                "status", job.getStatus().name(),
+                "mode", "FULL_REPAIR"
+        )).build();
+    }
+
 
     @POST
     @Path("/github/repositories/{repositoryId}/refresh-analysis")
