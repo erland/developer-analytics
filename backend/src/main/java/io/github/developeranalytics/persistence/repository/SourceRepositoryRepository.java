@@ -22,6 +22,23 @@ public class SourceRepositoryRepository {
         entityManager.persist(repository);
     }
 
+    public Optional<SourceRepository> findByExternalIdForUser(
+            UUID userId,
+            String provider,
+            String externalRepositoryId
+    ) {
+        return entityManager.createQuery(
+                "select r from SourceRepository r " +
+                        "where r.user.id = :userId and r.provider = :provider " +
+                        "and r.externalRepositoryId = :externalRepositoryId",
+                SourceRepository.class)
+            .setParameter("userId", userId)
+            .setParameter("provider", provider)
+            .setParameter("externalRepositoryId", externalRepositoryId)
+            .getResultStream()
+            .findFirst();
+    }
+
     public int deleteForRepository(UUID userId, UUID repositoryId) {
         return entityManager.createQuery("delete from Contribution c where c.user.id=:userId and c.repository.id=:repositoryId")
                 .setParameter("userId", userId).setParameter("repositoryId", repositoryId).executeUpdate();
