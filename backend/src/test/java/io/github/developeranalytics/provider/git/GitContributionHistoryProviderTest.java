@@ -3,6 +3,7 @@ package io.github.developeranalytics.provider.git;
 import io.github.developeranalytics.provider.ProviderAccessToken;
 import io.github.developeranalytics.provider.ProviderRepository;
 import io.github.developeranalytics.provider.history.HistoricalCommitFileChanges;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -17,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Tag("unit")
 class GitContributionHistoryProviderTest {
 
     @Test
