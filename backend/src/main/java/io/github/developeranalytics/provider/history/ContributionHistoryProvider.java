@@ -19,4 +19,12 @@ public interface ContributionHistoryProvider {
             ProviderRepository repository,
             Collection<String> commitShas
     ) throws ProviderException;
+
+    /**
+     * Releases provider-specific resources retained while processing one repository.
+     * Implementations that do not retain repository resources may keep the default no-op.
+     */
+    default void releaseRepository(ProviderRepository repository) {
+        // No-op by default.
+    }
 }
