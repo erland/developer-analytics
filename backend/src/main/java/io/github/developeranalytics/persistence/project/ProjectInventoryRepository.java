@@ -1,5 +1,6 @@
 package io.github.developeranalytics.persistence.project;
 
+import io.github.developeranalytics.domain.model.Contribution;
 import io.github.developeranalytics.domain.model.RepositoryOwnershipRelation;
 import io.github.developeranalytics.domain.model.RepositoryVisibility;
 import io.github.developeranalytics.domain.model.SourceRepository;
@@ -7,10 +8,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
-import io.github.developeranalytics.persistence.repository.RepositoryUserActivityWeekRepository;
 
 import java.time.LocalDate;
-
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -20,9 +19,6 @@ public class ProjectInventoryRepository {
 
     @Inject
     EntityManager entityManager;
-
-    @Inject
-    RepositoryUserActivityWeekRepository activityWeeks;
 
     public Page find(
             UUID userId,
@@ -133,15 +129,22 @@ public class ProjectInventoryRepository {
         }
 
         if (activityFrom != null || activityTo != null) {
-            List<UUID> activeRepositoryIds = activityWeeks.findActiveRepositoryIds(userId, activityFrom, activityTo);
-            if (activeRepositoryIds.isEmpty()) return new FilterSpec("", Map.of(), true);
-            where.append(" and r.id in :activityRepositoryIds ");
-            params.put("activityRepositoryIds", activeRepositoryIds);
+            where.append(" and exists (select 1 from Contribution ac where ac.repository.id=r.id " +
+                    "and ac.user.id=:userId and ac.type=:activityCommitType");
+            params.put("activityCommitType", Contribution.Type.COMMIT);
+            if (activityFrom != null) {
+                where.append(" and ac.occurredAt>=:activityFrom");
+                params.put("activityFrom", activityFrom.atStartOfDay().atOffset(ZoneOffset.UTC));
+            }
+            if (activityTo != null) {
+                where.append(" and ac.occurredAt<:activityTo");
+                params.put("activityTo", activityTo.plusDays(1).atStartOfDay().atOffset(ZoneOffset.UTC));
+            }
+            where.append(") ");
         }
 
         return new FilterSpec(where.toString(), params, false);
     }
-
 
     public List<OwnershipFacetRow> ownershipFacets(List<UUID> repositoryIds) {
         if (repositoryIds == null || repositoryIds.isEmpty()) return List.of();
