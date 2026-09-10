@@ -22,6 +22,7 @@ public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandl
     public static final String JOB_TYPE = "GITHUB_CONTRIBUTION_DISCOVERY";
     public static final String CONTINUATION_CURSOR = "contributionCursor";
     public static final String SYNC_MODE = "syncMode";
+    public static final String FORCE_FULL_SYNC = "forceFullSync";
     private static final int INCREMENTAL_OVERLAP_DAYS = 3;
 
     @Inject SourceRepositoryRepository repositories;
@@ -41,7 +42,8 @@ public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandl
 
         SourceRepository repository = repositories.findByIdForUser(UUID.fromString(repositoryId.toString()), job.getUser().getId())
                 .orElseThrow(() -> new IllegalStateException("Repository not found for job user"));
-        OffsetDateTime since = repository.getContributionScopeVersion() < 2 ? null :
+        boolean forceFullSync = Boolean.parseBoolean(payloadString(job, FORCE_FULL_SYNC));
+        OffsetDateTime since = forceFullSync ? null : repository.getContributionScopeVersion() < 2 ? null :
                 contributions.latestCommitAt(job.getUser().getId(), repository.getId())
                         .map(latest -> latest.minusDays(INCREMENTAL_OVERLAP_DAYS)).orElse(null);
 
@@ -54,7 +56,7 @@ public class GitHubContributionDiscoveryJobHandler implements BackgroundJobHandl
         String initialCursor = payloadString(job, CONTINUATION_CURSOR);
         GitHubContributionDiscoveryService.DiscoveryResult result = discovery.discover(
                 job.getUser(), repository, since, initialCursor,
-                cursor -> job.putPayloadValue(CONTINUATION_CURSOR, cursor), syncMode, providerSyncRun);
+                cursor -> job.putPayloadValue(CONTINUATION_CURSOR, cursor), syncMode, providerSyncRun, forceFullSync);
 
         if (!result.complete()) {
             job.putPayloadValue(CONTINUATION_CURSOR, result.nextCursor());
