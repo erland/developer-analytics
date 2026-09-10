@@ -7,6 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -74,8 +75,8 @@ public class SourceRepositoryRepository {
                 "or exists (select c.id from Contribution c " +
                 "where c.repository=r and c.type=:commitType " +
                 "and (c.additions is null or c.deletions is null or c.changedFiles is null " +
-                "or (c.changedFiles<>0 and not exists (select f.id from ContributionFileChange f " +
-                "where f.contribution=c and f.classifierVersion=:classifierVersion))))) " +
+                "or (c.changedFiles<>0 and (select count(f.id) from ContributionFileChange f " +
+                "where f.contribution=c and f.classifierVersion=:classifierVersion) <> c.changedFiles)))) " +
                 "order by r.lastActivityAt desc nulls last, r.name",
                 SourceRepository.class)
             .setParameter("provider", "github")
