@@ -1,7 +1,7 @@
 name: developer-analytics
 
 services:
-  backend:
+  developer-analytics-backend:
     image: ${BACKEND_IMAGE:-ghcr.io/erland/developer-analytics-backend}:${APP_VERSION:-latest}
     restart: unless-stopped
     environment:
@@ -52,8 +52,10 @@ services:
   web:
     image: ${WEB_IMAGE:-ghcr.io/erland/developer-analytics-web}:${APP_VERSION:-latest}
     restart: unless-stopped
+    environment:
+      DEVELOPER_ANALYTICS_BACKEND_HOST: developer-analytics-backend
     depends_on:
-      backend:
+      developer-analytics-backend:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
