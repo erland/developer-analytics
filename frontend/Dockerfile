@@ -14,7 +14,8 @@ FROM nginx:1.31-alpine AS runtime
 # Keep runtime OS packages patched even when the pinned upstream image digest is older.
 RUN apk upgrade --no-cache
 
-COPY deploy/nginx/nginx.conf /etc/nginx/conf.d/default.conf
+ENV DEVELOPER_ANALYTICS_BACKEND_HOST=backend
+COPY deploy/nginx/nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /workspace/frontend/dist /usr/share/nginx/html
 
 EXPOSE 80
