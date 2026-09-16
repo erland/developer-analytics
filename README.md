@@ -66,7 +66,7 @@ The main project documentation is:
 
 - [Functional specification](docs/functional-specification.md)
 - [Architecture specification](docs/architecture-specification.md)
-- [Version 1 development plan](docs/development-plan.md)
+- [Completed Version 1 development plan](docs/development-plan.md)
 - [Installation guide](docs/installation-v1.md)
 - [Operator guide](docs/operator-v1.md)
 - [Release process](docs/release-process.md)
