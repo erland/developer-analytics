@@ -1,0 +1,55 @@
+name: Repository Fixer plan status update
+
+on:
+  push:
+    branches:
+      - repository-fixer/readme-current-state
+    paths:
+      - '.github/workflows/repository-fixer-plan-status.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-plan-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out working branch
+        uses: actions/checkout@v7
+        with:
+          ref: repository-fixer/readme-current-state
+          fetch-depth: 0
+
+      - name: Mark Version 1 plan complete
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('docs/development-plan.md')
+          text = path.read_text(encoding='utf-8')
+          old = '**Status:** Proposed implementation plan  '
+          new = '**Status:** Completed Version 1 implementation plan  '
+          if old not in text:
+              raise SystemExit('Expected development-plan status marker was not found')
+          text = text.replace(old, new, 1)
+
+          anchor = '**Primary implementation approach:** React/TypeScript frontend, Quarkus/Java backend, PostgreSQL, Docker Compose, Nginx, GitHub Actions, GHCR\n'
+          note = anchor + '\n> This document is the completed historical Version 1 implementation plan. New maintenance and product evolution should be planned separately rather than appended as unfinished Version 1 steps.\n'
+          if anchor not in text:
+              raise SystemExit('Expected development-plan header anchor was not found')
+          text = text.replace(anchor, note, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Remove one-shot workflow and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Repository Fixer'
+          git config user.email 'repository-fixer@users.noreply.github.com'
+          git rm .github/workflows/repository-fixer-plan-status.yml
+          git add docs/development-plan.md
+          git commit -m 'Mark Version 1 development plan complete'
+          git push origin HEAD:repository-fixer/readme-current-state
