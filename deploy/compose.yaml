@@ -81,6 +81,8 @@ services:
   web:
     image: ${WEB_IMAGE:-ghcr.io/erland/developer-analytics-web}:${APP_VERSION:-latest}
     restart: unless-stopped
+    environment:
+      DEVELOPER_ANALYTICS_BACKEND_HOST: backend
     ports:
       - "${WEB_PORT:-8080}:80"
     depends_on:
