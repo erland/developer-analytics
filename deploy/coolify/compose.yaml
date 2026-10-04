@@ -57,6 +57,8 @@ services:
     depends_on:
       developer-analytics-backend:
         condition: service_healthy
+    labels:
+      - "traefik.docker.network=coolify"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
       interval: 30s
