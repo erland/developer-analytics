@@ -66,5 +66,6 @@ jobs:
 
       - name: Verify web image backend hostname default
         run: |
-          grep -q '^ENV DEVELOPER_ANALYTICS_BACKEND_HOST=developer-analytics-backend frontend/Dockerfile
+          grep -q '^ENV DEVELOPER_ANALYTICS_BACKEND_HOST=developer-analytics-backend          grep -q 'DEVELOPER_ANALYTICS_BACKEND_HOST: backend' deploy/compose.yaml
+ frontend/Dockerfile
           grep -q 'DEVELOPER_ANALYTICS_BACKEND_HOST: backend' deploy/compose.yaml
